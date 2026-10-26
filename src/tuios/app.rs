@@ -27,6 +27,7 @@ use super::registry;
 
 use crate::applications::character_set::{AppAction, CharacterSetApp};
 use crate::applications::file_explorer::{FileExplorerAction, FileExplorerApp};
+use crate::applications::notes::{NotesApp, NotesKeyResult};
 use crate::applications::text_editor::{TextEditorAction, TextEditorApp};
 use crate::dashboards::{dashboard_1, dashboard_2};
 use crate::dashboards::installed_runner::InstalledDashboard;
@@ -43,6 +44,7 @@ use crate::app_store;
 enum InternalApp {
     CharacterSet(CharacterSetApp),
     FileExplorer(FileExplorerApp),
+    Notes(NotesApp),
     TextEditor(TextEditorApp),
 }
 
@@ -51,6 +53,7 @@ impl InternalApp {
         match self {
             InternalApp::CharacterSet(app) => app.render(frame, area, border_style),
             InternalApp::FileExplorer(app) => app.render(frame, area, border_style),
+            InternalApp::Notes(app) => app.render(frame, area, border_style),
             InternalApp::TextEditor(app) => app.render(frame, area, border_style),
         }
     }
@@ -64,6 +67,7 @@ impl InternalApp {
             InternalApp::FileExplorer(app) => {
                 matches!(app.handle_key(code), Some(FileExplorerAction::Back))
             }
+            InternalApp::Notes(app) => app.handle_key(code) == NotesKeyResult::Close,
             InternalApp::TextEditor(app) => {
                 matches!(app.handle_key(code), Some(TextEditorAction::Back))
             }
@@ -74,6 +78,7 @@ impl InternalApp {
         match self {
             InternalApp::CharacterSet(app) => app.stop(),
             InternalApp::FileExplorer(app) => app.stop(),
+            InternalApp::Notes(app) => app.stop(),
             InternalApp::TextEditor(app) => app.stop(),
         }
     }
@@ -82,6 +87,8 @@ impl InternalApp {
     /// meaning WASD should NOT be mapped to navigation.
     fn wants_raw_wasd(&self) -> bool {
         match self {
+            // Notes decides itself what Back/Q means (close dialog, leave note, quit)
+            InternalApp::Notes(_) => true,
             InternalApp::TextEditor(app) => app.keyboard_active(),
             _ => false,
         }
@@ -859,6 +866,11 @@ fn execute_action(
                     let mut app = FileExplorerApp::new();
                     app.start();
                     InternalApp::FileExplorer(app)
+                }
+                "Notes" => {
+                    let mut app = NotesApp::new();
+                    app.start();
+                    InternalApp::Notes(app)
                 }
                 _ => {
                     let mut app = CharacterSetApp::new();
@@ -3171,6 +3183,28 @@ fn run_app() -> bool {
             }
             _ => false,
         };
+
+        // ---- Intercept: Notes app receives raw keys so it can take text input,
+        // Ctrl shortcuts and numpad digits. The focus toggle key still works,
+        // except while Notes is capturing text and the toggle is a typable key.
+        if state.focus == FocusTarget::Main {
+            if let Some(InternalApp::Notes(notes)) = active_internal_app.as_mut() {
+                let toggle_wins = is_toggle_key
+                    && (key_event.code == crossterm::event::KeyCode::Tab || !notes.captures_text());
+                if !toggle_wins {
+                    match notes.handle_key_event(key_event) {
+                        NotesKeyResult::Handled => continue,
+                        NotesKeyResult::Close => {
+                            notes.stop();
+                            active_internal_app = None;
+                            state.active_app = None;
+                            continue;
+                        }
+                        NotesKeyResult::Ignored => {}
+                    }
+                }
+            }
+        }
 
         // If the configured toggle key is pressed, switch focus
         if is_toggle_key {

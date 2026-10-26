@@ -13,3 +13,4 @@ config/awesome-ratatui-cache.json
 
 temp
 library
+config/notes.json
