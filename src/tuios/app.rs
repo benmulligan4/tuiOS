@@ -1047,6 +1047,7 @@ fn handle_main_key(
             } else if ss.ui_locked() {
                 ui_lock_popup(state);
             } else {
+                state.app_store.reset_pane_sizes();
                 state.active_page = None;
             }
             return MainResult::None;
@@ -1690,6 +1691,7 @@ fn handle_appstore_key(
                         ui_lock_popup(state);
                         return;
                     }
+                    ss.reset_pane_sizes();
                     state.active_page = None;
                     logging::info("App Store: closed");
                     return;
@@ -1698,6 +1700,28 @@ fn handle_appstore_key(
             }
         }
         AppStoreFocus::RightPane => {
+            if ss.details_minimised() {
+                match action {
+                    Action::Enter => ss.restore_details(),
+                    Action::Down => {
+                        if ss.terminal_visible() {
+                            ss.focus = AppStoreFocus::Terminal;
+                        }
+                    }
+                    Action::Left => {
+                        ss.focus = AppStoreFocus::LeftPane;
+                        ss.in_right_actions = false;
+                    }
+                    Action::Right => {
+                        if ss.queue_visible() {
+                            ss.focus = AppStoreFocus::Queue;
+                            ss.queue.clamp_cursor();
+                        }
+                    }
+                    _ => {}
+                }
+                return;
+            }
             if ss.in_right_actions {
                 let status = ss.selected_app_key()
                     .and_then(|k| ss.install_statuses.get(k))
@@ -1763,6 +1787,28 @@ fn handle_appstore_key(
             }
         }
         AppStoreFocus::Terminal => {
+            if ss.terminal_minimised() {
+                match action {
+                    Action::Enter => ss.restore_terminal(),
+                    Action::Up => {
+                        ss.focus = AppStoreFocus::RightPane;
+                        ss.in_right_actions = true;
+                        ss.ensure_action_visible();
+                    }
+                    Action::Down | Action::Right => {
+                        if ss.queue_visible() {
+                            ss.focus = AppStoreFocus::Queue;
+                            ss.queue.clamp_cursor();
+                        }
+                    }
+                    Action::Left => {
+                        ss.focus = AppStoreFocus::LeftPane;
+                        ss.in_right_actions = false;
+                    }
+                    _ => {}
+                }
+                return;
+            }
             match action {
                 Action::Up => {
                     if ss.effective_terminal_scroll() == 0 {
@@ -1778,8 +1824,19 @@ fn handle_appstore_key(
                 }
                 Action::Down => {
                     let max = ss.terminal_max_scroll();
-                    ss.terminal_scroll = (ss.effective_terminal_scroll() + 1).min(max);
-                    ss.terminal_follow = ss.terminal_scroll >= max;
+                    let cur = ss.effective_terminal_scroll();
+                    if cur >= max && ss.queue_minimised() {
+                        // The queue's collapsed line sits directly below
+                        ss.snap_terminal_to_bottom();
+                        ss.focus = AppStoreFocus::Queue;
+                        ss.queue.clamp_cursor();
+                    } else {
+                        ss.terminal_scroll = (cur + 1).min(max);
+                        ss.terminal_follow = ss.terminal_scroll >= max;
+                    }
+                }
+                Action::Enter => {
+                    ss.toggle_terminal_expand();
                 }
                 Action::Left => {
                     ss.snap_terminal_to_bottom();
@@ -1803,6 +1860,18 @@ fn handle_appstore_key(
         }
         AppStoreFocus::Queue => {
             use crate::app_store::queue::QueueItemAction;
+            if ss.queue_minimised() {
+                match action {
+                    Action::Enter => ss.restore_queue(),
+                    Action::Up | Action::Left => {
+                        if ss.terminal_visible() {
+                            ss.focus = AppStoreFocus::Terminal;
+                        }
+                    }
+                    _ => {}
+                }
+                return;
+            }
             let item_focused = ss.queue.item_focused;
             match action {
                 Action::Up => {
@@ -1812,6 +1881,9 @@ fn handle_appstore_key(
                         }
                     } else if ss.queue.cursor > 0 {
                         ss.queue.cursor -= 1;
+                    } else if ss.terminal_minimised() {
+                        // The terminal's collapsed line sits directly above
+                        ss.focus = AppStoreFocus::Terminal;
                     } else {
                         ss.focus = AppStoreFocus::RightPane;
                         ss.in_right_actions = true;
@@ -2220,15 +2292,16 @@ fn pump_install_queue(
     }
 
     // The terminal and queue panes are gone once the queue is empty
-    if state.app_store.queue.is_empty()
-        && matches!(
+    if state.app_store.queue.is_empty() {
+        state.app_store.reset_pane_sizes();
+        if matches!(
             state.app_store.focus,
             crate::app_store::state::AppStoreFocus::Terminal
                 | crate::app_store::state::AppStoreFocus::Queue
-        )
-    {
-        state.app_store.focus = crate::app_store::state::AppStoreFocus::RightPane;
-        state.app_store.in_right_actions = true;
+        ) {
+            state.app_store.focus = crate::app_store::state::AppStoreFocus::RightPane;
+            state.app_store.in_right_actions = true;
+        }
     }
 
     if registries_changed {
@@ -3252,6 +3325,30 @@ fn run_app() -> bool {
             }
             if to_bottom {
                 state.app_store.snap_terminal_to_bottom();
+                continue;
+            }
+        }
+
+        // ---- Intercept: M minimises / restores the focused right-hand pane ----
+        if state.focus == FocusTarget::Main
+            && matches!(state.active_page.as_deref(), Some("appstore"))
+            && !state.app_store.browser.active
+            && state.app_store.queue_visible()
+            && state.app_store.confirm_dialog.is_none()
+            && !state.app_store.install_location_dialog
+            && !state.app_store.search_active
+            && matches!(
+                state.app_store.focus,
+                crate::app_store::state::AppStoreFocus::RightPane
+                    | crate::app_store::state::AppStoreFocus::Terminal
+                    | crate::app_store::state::AppStoreFocus::Queue
+            )
+            && matches!(
+                key_event.code,
+                crossterm::event::KeyCode::Char('m') | crossterm::event::KeyCode::Char('M')
+            )
+        {
+            if state.app_store.toggle_minimise_focused() {
                 continue;
             }
         }

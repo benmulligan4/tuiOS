@@ -91,6 +91,16 @@ pub enum AppStoreFocus {
     Queue,
 }
 
+/// How much vertical space one of the three right-hand panes is taking.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PaneSize {
+    /// Collapsed to a single line that can still be focused
+    Minimised,
+    Normal,
+    /// Terminal only — also takes over the Details pane's space
+    Expanded,
+}
+
 #[derive(Debug, Clone)]
 pub enum LeftRowKind {
     CategoryHeader(String),
@@ -148,6 +158,10 @@ pub struct AppStoreState {
     pub right_action_lines: std::cell::RefCell<Vec<usize>>,
     pub right_view_height: std::cell::Cell<usize>,
     pub right_total_lines: std::cell::Cell<usize>,
+    /// Collapse/expand state of the Details, Terminal and Install Queue panes
+    pub details_size: PaneSize,
+    pub terminal_size: PaneSize,
+    pub queue_size: PaneSize,
     /// Shared output buffer for background install/uninstall thread
     pub thread_output: Arc<Mutex<Vec<String>>>,
     /// Signals that the background operation has completed
@@ -206,6 +220,9 @@ impl AppStoreState {
             right_action_lines: std::cell::RefCell::new(Vec::new()),
             right_view_height: std::cell::Cell::new(20),
             right_total_lines: std::cell::Cell::new(0),
+            details_size: PaneSize::Normal,
+            terminal_size: PaneSize::Normal,
+            queue_size: PaneSize::Normal,
             thread_output: Arc::new(Mutex::new(Vec::new())),
             thread_done: Arc::new(AtomicBool::new(false)),
             thread_success: Arc::new(AtomicBool::new(false)),
@@ -349,6 +366,106 @@ impl AppStoreState {
         self.right_scroll = 0;
         self.right_action_cursor = 0;
         self.in_right_actions = false;
+    }
+
+    pub fn details_minimised(&self) -> bool {
+        self.details_size == PaneSize::Minimised
+    }
+
+    pub fn terminal_minimised(&self) -> bool {
+        self.terminal_size == PaneSize::Minimised
+    }
+
+    pub fn terminal_expanded(&self) -> bool {
+        self.terminal_size == PaneSize::Expanded
+    }
+
+    pub fn queue_minimised(&self) -> bool {
+        self.queue_size == PaneSize::Minimised
+    }
+
+    /// Back to the default 55/45 split with the terminal and queue side by side.
+    pub fn reset_pane_sizes(&mut self) {
+        self.details_size = PaneSize::Normal;
+        self.terminal_size = PaneSize::Normal;
+        self.queue_size = PaneSize::Normal;
+    }
+
+    /// Enter on the terminal swaps between its normal size and taking over the
+    /// Details pane's space.
+    pub fn toggle_terminal_expand(&mut self) {
+        if self.terminal_size == PaneSize::Expanded {
+            self.terminal_size = PaneSize::Normal;
+            self.details_size = PaneSize::Normal;
+        } else {
+            self.terminal_size = PaneSize::Expanded;
+            self.details_size = PaneSize::Minimised;
+        }
+    }
+
+    fn minimise_details(&mut self) {
+        self.details_size = PaneSize::Minimised;
+        // Something has to take the freed space, so a collapsed terminal comes back
+        if self.terminal_size == PaneSize::Minimised {
+            self.terminal_size = PaneSize::Normal;
+        }
+    }
+
+    pub fn restore_details(&mut self) {
+        self.details_size = PaneSize::Normal;
+        // Expanded only ever existed because Details was collapsed for it
+        if self.terminal_size == PaneSize::Expanded {
+            self.terminal_size = PaneSize::Normal;
+        }
+    }
+
+    fn minimise_terminal(&mut self) {
+        self.terminal_size = PaneSize::Minimised;
+        self.details_size = PaneSize::Normal;
+        self.terminal_follow = true;
+    }
+
+    pub fn restore_terminal(&mut self) {
+        self.terminal_size = PaneSize::Normal;
+        self.terminal_follow = true;
+    }
+
+    pub fn restore_queue(&mut self) {
+        self.queue_size = PaneSize::Normal;
+    }
+
+    /// `M` collapses the focused right-hand pane to one line, or restores it.
+    pub fn toggle_minimise_focused(&mut self) -> bool {
+        match self.focus {
+            AppStoreFocus::RightPane => {
+                if self.details_minimised() {
+                    self.restore_details();
+                } else {
+                    self.minimise_details();
+                }
+                true
+            }
+            AppStoreFocus::Terminal => {
+                if self.terminal_minimised() {
+                    self.restore_terminal();
+                } else {
+                    self.minimise_terminal();
+                }
+                true
+            }
+            AppStoreFocus::Queue => {
+                if self.queue.item_focused {
+                    return false;
+                }
+                if self.queue_minimised() {
+                    self.restore_queue();
+                } else {
+                    self.queue_size = PaneSize::Minimised;
+                }
+                true
+            }
+            _ => false,
+        }
     }
 
     /// Scroll the details pane just enough to bring the focused action into view.
