@@ -65,12 +65,14 @@ impl SettingsCategory {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SubPage {
     BootAnimation,
+    NavBar,
 }
 
 impl SubPage {
     pub fn label(&self) -> &'static str {
         match self {
             SubPage::BootAnimation => "Boot Up Animation",
+            SubPage::NavBar => "Navigation Bar",
         }
     }
 }

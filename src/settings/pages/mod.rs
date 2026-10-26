@@ -6,6 +6,7 @@ pub mod button_mapping;
 pub mod display;
 pub mod git;
 pub mod hotkeys;
+pub mod navbar;
 pub mod power;
 pub mod utilities;
 pub mod wifi_bluetooth;
