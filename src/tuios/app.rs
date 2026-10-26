@@ -1909,12 +1909,9 @@ fn handle_appstore_action(
 
     match &status {
         InstallStatus::NotInstalled => {
+            // Buttons: Install(0), Open Repo(1)
             match cursor {
                 0 => {
-                    let repo = meta.get("repository").and_then(|v| v.as_str()).unwrap_or("");
-                    if !repo.is_empty() { app_store::actions::open_url(repo); }
-                }
-                1 => {
                     let methods = app_store::actions::install_methods_for(meta);
 
                     if methods.len() == 1 {
@@ -1928,96 +1925,86 @@ fn handle_appstore_action(
                         ss.install_location_dialog = true;
                     }
                 }
+                1 => {
+                    let repo = meta.get("repository").and_then(|v| v.as_str()).unwrap_or("");
+                    if !repo.is_empty() { app_store::actions::open_url(repo); }
+                }
                 _ => {}
             }
         }
         InstallStatus::Global(path) => {
             let has_local_method = app_store::actions::supports_downloads_install(meta);
 
-            // Buttons: Open Repo(0), Uninstall(1), [Install to Downloads(2) if supported], Open Location
-            match cursor {
-                0 => {
-                    let repo = meta.get("repository").and_then(|v| v.as_str()).unwrap_or("");
-                    if !repo.is_empty() { app_store::actions::open_url(repo); }
-                }
-                1 => {
-                    ss.confirm_dialog = Some(ConfirmAction::UninstallGlobal(key.clone()));
-                    ss.confirm_cursor = 1;
-                }
-                2 if has_local_method => {
-                    enqueue_job(
-                        state,
-                        registered_apps,
-                        &key,
-                        QueueOp::Install(InstallLocation::Local),
-                    );
-                    return;
-                }
-                n => {
-                    // Open Location is after the optional Install button
-                    let open_idx = if has_local_method { 3 } else { 2 };
-                    if n == open_idx {
-                        let dir = app_store::actions::install_dir_from_path(path);
-                        app_store::actions::open_in_os_explorer(&dir);
-                    }
-                }
+            // Buttons: [Install to Downloads(0) if supported], Uninstall, Open Repo, Open Location
+            let uninstall_idx = if has_local_method { 1 } else { 0 };
+            if has_local_method && cursor == 0 {
+                enqueue_job(
+                    state,
+                    registered_apps,
+                    &key,
+                    QueueOp::Install(InstallLocation::Local),
+                );
+                return;
+            } else if cursor == uninstall_idx {
+                ss.confirm_dialog = Some(ConfirmAction::UninstallGlobal(key.clone()));
+                ss.confirm_cursor = 1;
+            } else if cursor == uninstall_idx + 1 {
+                let repo = meta.get("repository").and_then(|v| v.as_str()).unwrap_or("");
+                if !repo.is_empty() { app_store::actions::open_url(repo); }
+            } else if cursor == uninstall_idx + 2 {
+                let dir = app_store::actions::install_dir_from_path(path);
+                app_store::actions::open_in_os_explorer(&dir);
             }
         }
         InstallStatus::Local(path) => {
             let has_global_method = app_store::actions::supports_path_install(meta);
 
-            match cursor {
-                0 => {
-                    let repo = meta.get("repository").and_then(|v| v.as_str()).unwrap_or("");
-                    if !repo.is_empty() { app_store::actions::open_url(repo); }
+            // Buttons: [Install to PATH(0) if supported], Uninstall, Open Repo, Open Location
+            let uninstall_idx = if has_global_method { 1 } else { 0 };
+            if has_global_method && cursor == 0 {
+                let methods: Vec<InstallLocation> = app_store::actions::install_methods_for(meta)
+                    .into_iter()
+                    .filter(|m| !matches!(m, InstallLocation::Local))
+                    .collect();
+                if methods.len() > 1 {
+                    ss.available_install_methods = methods;
+                    ss.install_location_cursor = 0;
+                    ss.install_dialog_note = None;
+                    ss.install_location_dialog = true;
+                } else {
+                    let loc = methods.first().copied().unwrap_or(InstallLocation::Global);
+                    enqueue_job(state, registered_apps, &key, QueueOp::Install(loc));
+                    return;
                 }
-                1 => {
-                    ss.confirm_dialog = Some(ConfirmAction::UninstallLocal(key.clone()));
-                    ss.confirm_cursor = 1;
-                }
-                2 if has_global_method => {
-                    let methods: Vec<InstallLocation> = app_store::actions::install_methods_for(meta)
-                        .into_iter()
-                        .filter(|m| !matches!(m, InstallLocation::Local))
-                        .collect();
-                    if methods.len() > 1 {
-                        ss.available_install_methods = methods;
-                        ss.install_location_cursor = 0;
-                        ss.install_dialog_note = None;
-                        ss.install_location_dialog = true;
-                    } else {
-                        let loc = methods.first().copied().unwrap_or(InstallLocation::Global);
-                        enqueue_job(state, registered_apps, &key, QueueOp::Install(loc));
-                        return;
-                    }
-                }
-                n => {
-                    let open_idx = if has_global_method { 3 } else { 2 };
-                    if n == open_idx {
-                        let dir = app_store::actions::install_dir_from_path(path);
-                        app_store::actions::open_in_os_explorer(&dir);
-                    }
-                }
+            } else if cursor == uninstall_idx {
+                ss.confirm_dialog = Some(ConfirmAction::UninstallLocal(key.clone()));
+                ss.confirm_cursor = 1;
+            } else if cursor == uninstall_idx + 1 {
+                let repo = meta.get("repository").and_then(|v| v.as_str()).unwrap_or("");
+                if !repo.is_empty() { app_store::actions::open_url(repo); }
+            } else if cursor == uninstall_idx + 2 {
+                let dir = app_store::actions::install_dir_from_path(path);
+                app_store::actions::open_in_os_explorer(&dir);
             }
         }
         InstallStatus::Both(g_path, l_path) => {
-            // Buttons: Open Repo(0), Uninstall(1), Set Source(2), Open PATH(3), Open Downloads(4)
+            // Buttons: Uninstall(0), Set Source(1), Open Repo(2), Open PATH(3), Open Downloads(4)
             match cursor {
                 0 => {
-                    let repo = meta.get("repository").and_then(|v| v.as_str()).unwrap_or("");
-                    if !repo.is_empty() { app_store::actions::open_url(repo); }
-                }
-                1 => {
                     ss.confirm_dialog = Some(ConfirmAction::UninstallChoose(key.clone()));
                     ss.confirm_cursor = 0;
                 }
-                2 => {
+                1 => {
                     // Toggle run source between global and local
                     let current = app_store::actions::get_run_source(&key);
                     let new_source = if current == "global" { "local" } else { "global" };
                     app_store::actions::set_run_source(&key, new_source);
                     let label = if new_source == "local" { "Downloads (experimental)" } else { "PATH" };
                     state.popup = Some((format!("Default source set to {}", label), Instant::now()));
+                }
+                2 => {
+                    let repo = meta.get("repository").and_then(|v| v.as_str()).unwrap_or("");
+                    if !repo.is_empty() { app_store::actions::open_url(repo); }
                 }
                 3 => {
                     let dir = app_store::actions::install_dir_from_path(g_path);

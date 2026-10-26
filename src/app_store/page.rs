@@ -547,16 +547,14 @@ fn render_right_pane(
 
     macro_rules! push_action {
         ($text:expr, $base:expr) => {{
-            if action_lines.len() <= action_idx {
-                action_lines.resize(action_idx + 1, lines.len());
-            }
-            action_lines[action_idx] = lines.len();
+            action_lines.push(lines.len());
             let style = if in_actions && state.right_action_cursor == action_idx {
                 Style::default().fg(Color::Black).bg(Color::Cyan)
             } else {
                 $base
             };
             lines.push(Line::from(Span::styled($text, style)));
+            action_idx += 1;
         }};
     }
 
@@ -568,7 +566,7 @@ fn render_right_pane(
     if is_installed {
         let locked = state.ui_locked();
         let run_text = if locked {
-            "  [ Run ]  ⚠ UI locked while the queue is running"
+            "  [ Run ]  ⚠  UI locked while the queue is running"
         } else {
             "  [ Run ]"
         };
@@ -578,11 +576,7 @@ fn render_right_pane(
             Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)
         };
         push_action!(run_text, base);
-        action_idx += 1;
     }
-
-    push_action!("  [ Open Repository ]", accent_style);
-    action_idx += 1;
 
     // Install / Uninstall buttons based on status
     match &install_status {
@@ -590,12 +584,8 @@ fn render_right_pane(
             push_action!("  [ Install ]", Style::default().fg(Color::Green));
         }
         InstallStatus::Global(_) => {
-            push_action!("  [ Uninstall from PATH ]", Style::default().fg(Color::Red));
-            action_idx += 1;
-
             if supports_local {
                 push_action!("  [ Install to Downloads ]", Style::default().fg(Color::Green));
-                action_idx += 1;
             } else {
                 lines.push(Line::from(Span::styled(
                     "    (local install not supported for this app)",
@@ -603,15 +593,11 @@ fn render_right_pane(
                 )));
             }
 
-            push_action!("  [ Open Install Location ]", accent_style);
+            push_action!("  [ Uninstall from PATH ]", Style::default().fg(Color::Red));
         }
         InstallStatus::Local(_) => {
-            push_action!("  [ Uninstall from Downloads ]", Style::default().fg(Color::Red));
-            action_idx += 1;
-
             if supports_global {
                 push_action!("  [ Install to PATH ]", Style::default().fg(Color::Green));
-                action_idx += 1;
             } else {
                 lines.push(Line::from(Span::styled(
                     "    (PATH install not supported for this app)",
@@ -619,11 +605,10 @@ fn render_right_pane(
                 )));
             }
 
-            push_action!("  [ Open Install Location ]", accent_style);
+            push_action!("  [ Uninstall from Downloads ]", Style::default().fg(Color::Red));
         }
         InstallStatus::Both(_, _) => {
             push_action!("  [ Uninstall ]", Style::default().fg(Color::Red));
-            action_idx += 1;
 
             // Run source selector
             let current_source = super::actions::get_run_source(&selected_key);
@@ -632,15 +617,24 @@ fn render_right_pane(
             push_action!(source_text, Style::default().fg(Color::Yellow));
             if current_source == "local" {
                 lines.push(Line::from(Span::styled(
-                    "    ⚠ Downloads source is experimental",
+                    "    ⚠  Downloads source is experimental",
                     Style::default().fg(Color::Yellow),
                 )));
             }
-            action_idx += 1;
+        }
+    }
 
+    lines.push(Line::from(""));
+
+    push_action!("  [ Open Repository ]", accent_style);
+
+    match &install_status {
+        InstallStatus::NotInstalled => {}
+        InstallStatus::Global(_) | InstallStatus::Local(_) => {
+            push_action!("  [ Open Install Location ]", accent_style);
+        }
+        InstallStatus::Both(_, _) => {
             push_action!("  [ Open PATH Location ]", accent_style);
-            action_idx += 1;
-
             push_action!("  [ Open Downloads Location ]", accent_style);
         }
     }
@@ -649,11 +643,10 @@ fn render_right_pane(
     if is_installed {
         let supports_embed = super::actions::supports_embedded(registered.get(&selected_key));
         lines.push(Line::from(""));
-        action_idx += 1;
 
         if !supports_embed {
             lines.push(Line::from(Span::styled(
-                "  ⚠ This app only supports running in a new window",
+                "  ⚠  This app only supports running in a new window",
                 Style::default().fg(Color::Yellow),
             )));
             lines.push(Line::from(Span::styled(
@@ -670,10 +663,10 @@ fn render_right_pane(
 
     // Remove from App Store (only for non-approved, not-installed apps)
     if !is_approved && !is_installed {
-        action_idx += 1;
         lines.push(Line::from(""));
         push_action!("  [ Remove from App Store ]", Style::default().fg(Color::Red));
     }
+    let _ = action_idx;
 
     // Record geometry so key handling can scroll the focused action into view
     let visible_height = (right_inner.height as usize).max(1);
