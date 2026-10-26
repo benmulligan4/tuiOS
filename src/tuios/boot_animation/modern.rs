@@ -3,7 +3,7 @@
 use std::io::{self, Cursor};
 use std::time::{Duration, Instant};
 
-use image::{imageops, imageops::FilterType, DynamicImage, ImageFormat};
+use image::{imageops, imageops::FilterType, DynamicImage, ImageFormat, Rgb, RgbImage};
 use ratatui::{
     backend::Backend,
     layout::Rect,
@@ -14,9 +14,12 @@ use ratatui::{
 };
 use ratatui_splash_screen::{SplashConfig, SplashScreen};
 
-use super::{bar_spans, center, eased, skip_requested, DURATION_MS, HOLD_MS, STAGES};
+use crate::settings::pages::appearance::hue_to_rgb;
 
-const LOGO_PNG: &[u8] = include_bytes!("../tuios_logo.png");
+use super::{bar_spans, center, eased, skip_requested, HOLD_MS, STAGES};
+
+const LOGO_FADED: &[u8] = include_bytes!("../tuios_logo_faded.png");
+const LOGO_STATIC: &[u8] = include_bytes!("../tuios_logo_static.png");
 
 /// Frames the splash takes to resolve from blurred/dark to the full logo.
 const SPLASH_STEPS: i32 = 12;
@@ -37,9 +40,206 @@ const TRIM_LUMA: u16 = 96;
 /// Subtitle, spacers, bar and status line rendered under the logo.
 const TEXT_ROWS: u16 = 7;
 
+/// Degrees of hue the rainbow tint spans across the logo.
+const RAINBOW_SPAN: f32 = 300.0;
+/// Degrees of hue the rainbow tint drifts per millisecond.
+const RAINBOW_DRIFT: f32 = 0.12;
+
+/// How long a directional wipe takes to cross the logo.
+const WIPE_MS: u64 = 900;
+/// Fraction of the logo the wipe's soft leading edge covers.
+const WIPE_FEATHER: f32 = 0.3;
+
+/// Hue the Nebula wheel opens on — deep blue, running up through purple and pink.
+const NEBULA_START: f32 = 240.0;
+
+/// Colour stops blended evenly along the tint axis.
+type Stops = &'static [(u8, u8, u8)];
+
+const AURORA: Stops = &[(0, 255, 163), (0, 229, 255), (138, 43, 226)];
+const WARM: Stops = &[(255, 61, 0), (255, 145, 0), (255, 214, 0)];
+const COOL: Stops = &[(80, 90, 220), (0, 150, 255), (0, 235, 235)];
+const NEON: Stops = &[(200, 0, 255), (120, 60, 255), (0, 180, 255)];
+const SUNSET: Stops = &[(255, 120, 0), (255, 0, 128), (120, 0, 210)];
+const OCEAN: Stops = &[(0, 70, 190), (0, 150, 220), (0, 240, 220)];
+const SYNTHWAVE: Stops = &[(255, 0, 170), (150, 0, 255), (0, 220, 255)];
+const MATRIX: Stops = &[(0, 120, 30), (0, 255, 70), (190, 255, 190)];
+const EMBER: Stops = &[(255, 220, 120), (255, 90, 0), (150, 0, 0)];
+
+/// Direction a tint runs in.
+#[derive(Clone, Copy, PartialEq)]
+pub enum Axis {
+    Across,
+    Down,
+}
+
+impl Axis {
+    fn at(self, x: u32, y: u32, width: f32, height: f32) -> f32 {
+        match self {
+            Self::Across => x as f32 / width,
+            Self::Down => y as f32 / height,
+        }
+    }
+}
+
+/// The colour wash laid over the logo.
+#[derive(Clone, Copy, PartialEq)]
+pub enum Tint {
+    /// Artwork left as-is, bar on the accent colour from Settings.
+    None,
+    /// Hue wheel from `start` degrees, optionally drifting through the spectrum.
+    Rainbow { axis: Axis, drift: bool, start: f32 },
+    /// Fixed palette blended along an axis.
+    Gradient { stops: Stops, axis: Axis },
+}
+
+impl Tint {
+    pub fn from_name(name: &str) -> Self {
+        match name.to_ascii_lowercase().as_str() {
+            "rainbow dynamic" | "rainbow" => {
+                Self::Rainbow { axis: Axis::Across, drift: true, start: 0.0 }
+            }
+            "rainbow static" => Self::Rainbow { axis: Axis::Across, drift: false, start: 0.0 },
+            "rainbow vertical" => Self::Rainbow { axis: Axis::Down, drift: false, start: 0.0 },
+            "nebula" => Self::Rainbow { axis: Axis::Across, drift: false, start: NEBULA_START },
+            "aurora" => Self::Gradient { stops: AURORA, axis: Axis::Across },
+            "warm" => Self::Gradient { stops: WARM, axis: Axis::Across },
+            "cool" => Self::Gradient { stops: COOL, axis: Axis::Across },
+            "neon" => Self::Gradient { stops: NEON, axis: Axis::Across },
+            "synthwave" => Self::Gradient { stops: SYNTHWAVE, axis: Axis::Across },
+            "sunset" => Self::Gradient { stops: SUNSET, axis: Axis::Down },
+            "ocean" => Self::Gradient { stops: OCEAN, axis: Axis::Down },
+            "matrix" => Self::Gradient { stops: MATRIX, axis: Axis::Down },
+            "ember" => Self::Gradient { stops: EMBER, axis: Axis::Down },
+            _ => Self::None,
+        }
+    }
+
+    fn drifts(self) -> bool {
+        matches!(self, Self::Rainbow { drift: true, .. })
+    }
+
+    /// Hue offset for this frame; only the drifting rainbow moves.
+    fn phase(self, tick: u64) -> f32 {
+        if self.drifts() { (tick as f32 * RAINBOW_DRIFT) % 360.0 } else { 0.0 }
+    }
+
+    /// Colour for a pixel, before the artwork's own brightness is applied.
+    fn colour(self, x: u32, y: u32, width: f32, height: f32, phase: f32) -> (u8, u8, u8) {
+        match self {
+            Self::None => (255, 255, 255),
+            Self::Rainbow { axis, start, .. } => {
+                hue_to_rgb((start + phase + axis.at(x, y, width, height) * RAINBOW_SPAN) % 360.0)
+            }
+            Self::Gradient { stops, axis } => sample(stops, axis.at(x, y, width, height)),
+        }
+    }
+}
+
+/// Blend between the stops either side of `t`.
+fn sample(stops: Stops, t: f32) -> (u8, u8, u8) {
+    match stops.len() {
+        0 => (255, 255, 255),
+        1 => stops[0],
+        len => {
+            let scaled = t.clamp(0.0, 1.0) * (len - 1) as f32;
+            let i = (scaled as usize).min(len - 2);
+            let f = scaled - i as f32;
+            let (a, b) = (stops[i], stops[i + 1]);
+            let mix = |from: u8, to: u8| (from as f32 + (to as f32 - from as f32) * f) as u8;
+            (mix(a.0, b.0), mix(a.1, b.1), mix(a.2, b.2))
+        }
+    }
+}
+
+/// Which artwork the splash is built from.
+#[derive(Clone, Copy, PartialEq)]
+pub enum Logo {
+    /// Badge that fades out to the left.
+    Faded,
+    /// Solid badge.
+    Static,
+}
+
+impl Logo {
+    pub fn from_name(name: &str) -> Self {
+        if name.eq_ignore_ascii_case("Faded") { Self::Faded } else { Self::Static }
+    }
+
+    fn bytes(self) -> &'static [u8] {
+        match self {
+            Self::Faded => LOGO_FADED,
+            Self::Static => LOGO_STATIC,
+        }
+    }
+}
+
+/// Edge the logo appears from.
+#[derive(Clone, Copy, PartialEq)]
+pub enum Reveal {
+    /// The widget's own blur-in, with no direction to it.
+    Center,
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+impl Reveal {
+    pub fn from_name(name: &str) -> Self {
+        match name.to_ascii_lowercase().as_str() {
+            "up" => Self::Up,
+            "down" => Self::Down,
+            "left" => Self::Left,
+            "right" => Self::Right,
+            _ => Self::Center,
+        }
+    }
+
+    /// How far along the wipe a pixel sits, 0 at the edge it starts from.
+    fn distance(self, x: u32, y: u32, width: f32, height: f32) -> f32 {
+        match self {
+            Self::Up => y as f32 / height,
+            Self::Down => 1.0 - y as f32 / height,
+            Self::Left => x as f32 / width,
+            Self::Right => 1.0 - x as f32 / width,
+            Self::Center => 0.0,
+        }
+    }
+}
+
+/// Resolved look of the modern intro.
+#[derive(Clone, Copy, PartialEq)]
+pub struct Look {
+    pub tint: Tint,
+    pub logo: Logo,
+    pub reveal: Reveal,
+    /// When false the logo appears at once, with no reveal step.
+    pub effect: bool,
+    /// Total run time, which the reveal is scaled against.
+    pub duration_ms: u64,
+}
+
+impl Look {
+    fn wipes(self) -> bool {
+        self.effect && self.reveal != Reveal::Center
+    }
+
+    /// The reveal keeps its share of the run, so a short boot wipes in quickly.
+    fn wipe_ms(self) -> u64 {
+        (WIPE_MS * self.duration_ms / super::DURATION_MS).max(200)
+    }
+
+    fn steps(self) -> i32 {
+        ((SPLASH_STEPS as u64 * self.duration_ms / super::DURATION_MS) as i32).clamp(3, 40)
+    }
+}
+
 /// The logo plus the cell box it was built for.
-struct Splash {
+pub struct Splash {
     screen: SplashScreen,
+    /// One pixel per terminal cell, kept for re-tinting.
+    cells: RgbImage,
     cells_w: u16,
     cells_h: u16,
 }
@@ -67,23 +267,96 @@ fn trim_padding(logo: DynamicImage) -> DynamicImage {
 /// The widget colours a whole cell from the last dot drawn in it, so the logo is
 /// first resolved down to one pixel per cell and then blown back up to the dot
 /// grid — every dot in a cell then shares a colour instead of fighting for it.
-fn splash_image_data(logo: &DynamicImage, cells_w: u16, cells_h: u16) -> Option<Vec<u8>> {
+fn cell_image(logo: &DynamicImage, cells_w: u16, cells_h: u16) -> RgbImage {
     let cells = logo
         .resize_exact(cells_w as u32, cells_h as u32, FilterType::Lanczos3)
         .to_rgb8();
     // Downscaling smears the small lettering into grey, so pull the edges back
-    let sharpened = DynamicImage::ImageRgb8(imageops::unsharpen(&cells, 0.8, 1));
+    imageops::unsharpen(&cells, 0.8, 1)
+}
+
+fn splash_screen(cells: &RgbImage, steps: i32) -> Option<SplashScreen> {
     let mut data = Vec::new();
-    sharpened
-        .resize_exact(cells_w as u32 * 2, cells_h as u32 * 4, FilterType::Nearest)
+    DynamicImage::ImageRgb8(cells.clone())
+        .resize_exact(cells.width() * 2, cells.height() * 4, FilterType::Nearest)
         .write_to(&mut Cursor::new(&mut data), ImageFormat::Png)
         .ok()?;
-    Some(data)
+    SplashScreen::new(SplashConfig {
+        image_data: &data,
+        sha256sum: None,
+        render_steps: steps,
+        use_colors: true,
+    })
+    .ok()
+}
+
+/// Lay the tint over the mark, keeping each pixel's brightness so the
+/// background stays black.
+fn colourise(cells: &RgbImage, tint: Tint, phase: f32) -> RgbImage {
+    let width = cells.width().max(1) as f32;
+    let height = cells.height().max(1) as f32;
+    let mut out = cells.clone();
+    for (x, y, px) in out.enumerate_pixels_mut() {
+        let luma = (px[0] as u32 * 299 + px[1] as u32 * 587 + px[2] as u32 * 114) / 1000;
+        let (r, g, b) = tint.colour(x, y, width, height, phase);
+        *px = Rgb([
+            (r as u32 * luma / 255) as u8,
+            (g as u32 * luma / 255) as u8,
+            (b as u32 * luma / 255) as u8,
+        ]);
+    }
+    out
+}
+
+/// Sweep the mark in from one edge, dimming what the wipe has not reached yet.
+fn wipe(mut cells: RgbImage, reveal: Reveal, progress: f32) -> RgbImage {
+    let width = cells.width().max(1) as f32;
+    let height = cells.height().max(1) as f32;
+    // Run the edge past the far side so the last pixels reach full brightness
+    let edge = progress * (1.0 + WIPE_FEATHER);
+    for (x, y, px) in cells.enumerate_pixels_mut() {
+        let lit = ((edge - reveal.distance(x, y, width, height)) / WIPE_FEATHER).clamp(0.0, 1.0);
+        let scale = (lit * 255.0) as u32;
+        *px = Rgb([
+            (px[0] as u32 * scale / 255) as u8,
+            (px[1] as u32 * scale / 255) as u8,
+            (px[2] as u32 * scale / 255) as u8,
+        ]);
+    }
+    cells
+}
+
+/// The logo as it should look this frame, before it is handed to the widget.
+fn frame_image(cells: &RgbImage, look: Look, tick: u64) -> RgbImage {
+    let tinted = if look.tint == Tint::None {
+        cells.clone()
+    } else {
+        colourise(cells, look.tint, look.tint.phase(tick))
+    };
+    if look.wipes() {
+        wipe(tinted, look.reveal, (tick as f32 / look.wipe_ms() as f32).min(1.0))
+    } else {
+        tinted
+    }
+}
+
+/// Rebuild the splash when the wipe or the tint has moved on. A one-step screen
+/// paints at full colour on its first render, so the reveal is not restarted.
+pub(super) fn update(splash: &mut Splash, look: Look, tick: u64) {
+    let wiping = look.wipes() && tick <= look.wipe_ms();
+    let drifting = look.tint.drifts() && splash.screen.is_rendered();
+    if !wiping && !drifting {
+        return;
+    }
+    if let Some(screen) = splash_screen(&frame_image(&splash.cells, look, tick), 1) {
+        splash.screen = screen;
+    }
 }
 
 /// Fit the logo to the screen at its own aspect, leaving room for the text below.
-fn splash(width: u16, height: u16) -> Option<Splash> {
-    let logo = trim_padding(image::load_from_memory_with_format(LOGO_PNG, ImageFormat::Png).ok()?);
+pub(super) fn build_splash(width: u16, height: u16, look: Look) -> Option<Splash> {
+    let logo =
+        trim_padding(image::load_from_memory_with_format(look.logo.bytes(), ImageFormat::Png).ok()?);
     let (px_w, px_h) = (logo.width().max(1), logo.height().max(1));
 
     let room_w = (width as u32 * SPLASH_WIDTH_PCT / 100).min(SPLASH_MAX_W as u32);
@@ -94,28 +367,30 @@ fn splash(width: u16, height: u16) -> Option<Splash> {
         return None;
     }
 
-    let data = splash_image_data(&logo, cells_w, cells_h)?;
-    let screen = SplashScreen::new(SplashConfig {
-        image_data: &data,
-        sha256sum: None,
-        render_steps: SPLASH_STEPS,
-        use_colors: true,
-    })
-    .ok()?;
+    // A directional wipe does the revealing itself, so the widget paints in one step
+    let steps = if look.effect && !look.wipes() { look.steps() } else { 1 };
+    let cells = cell_image(&logo, cells_w, cells_h);
+    let screen = splash_screen(&frame_image(&cells, look, 0), steps)?;
     Some(Splash {
         screen,
+        cells,
         cells_w,
         cells_h,
     })
 }
 
 /// Play the intro animation. Returns early if the user presses a key.
-pub fn play<B: Backend>(terminal: &mut Terminal<B>, accent: Color) -> io::Result<()> {
+pub fn play<B: Backend>(
+    terminal: &mut Terminal<B>,
+    accent: Color,
+    look: Look,
+    duration_ms: u64,
+) -> io::Result<()> {
     let start = Instant::now();
-    let total = Duration::from_millis(DURATION_MS);
+    let total = Duration::from_millis(duration_ms);
 
     let size = terminal.size()?;
-    let mut splash = splash(size.width, size.height);
+    let mut splash = build_splash(size.width, size.height, look);
 
     loop {
         let elapsed = start.elapsed();
@@ -123,9 +398,15 @@ pub fn play<B: Backend>(terminal: &mut Terminal<B>, accent: Color) -> io::Result
             break;
         }
         let tick = elapsed.as_millis() as u64;
-        let progress = eased(tick as f64 / DURATION_MS as f64);
+        let progress = eased(tick as f64 / duration_ms as f64);
+        let accent = frame_accent(accent, look.tint, tick);
+        if let Some(splash) = splash.as_mut() {
+            update(splash, look, tick);
+        }
 
-        terminal.draw(|frame| render(frame, splash.as_mut(), progress, tick, accent, false))?;
+        terminal.draw(|frame| {
+            render(frame, frame.area(), splash.as_mut(), progress, tick, accent, false)
+        })?;
 
         if skip_requested()? {
             return Ok(());
@@ -139,8 +420,14 @@ pub fn play<B: Backend>(terminal: &mut Terminal<B>, accent: Color) -> io::Result
         if elapsed >= Duration::from_millis(HOLD_MS) {
             break;
         }
-        let tick = DURATION_MS + elapsed.as_millis() as u64;
-        terminal.draw(|frame| render(frame, splash.as_mut(), 1.0, tick, accent, true))?;
+        let tick = duration_ms + elapsed.as_millis() as u64;
+        let accent = frame_accent(accent, look.tint, tick);
+        if let Some(splash) = splash.as_mut() {
+            update(splash, look, tick);
+        }
+        terminal.draw(|frame| {
+            render(frame, frame.area(), splash.as_mut(), 1.0, tick, accent, true)
+        })?;
         if skip_requested()? {
             break;
         }
@@ -149,15 +436,25 @@ pub fn play<B: Backend>(terminal: &mut Terminal<B>, accent: Color) -> io::Result
     Ok(())
 }
 
-fn render(
+/// Only the drifting rainbow takes over the bar and status text; every other
+/// tint leaves them on the tuiOS colour.
+pub(super) fn frame_accent(accent: Color, tint: Tint, tick: u64) -> Color {
+    if !tint.drifts() {
+        return accent;
+    }
+    let (r, g, b) = hue_to_rgb(tint.phase(tick));
+    Color::Rgb(r, g, b)
+}
+
+pub(super) fn render(
     frame: &mut Frame,
+    area: Rect,
     splash: Option<&mut Splash>,
     progress: f64,
     tick: u64,
     accent: Color,
     ready: bool,
 ) {
-    let area = frame.area();
     let progress = progress.clamp(0.0, 1.0);
 
     let dim = Color::Rgb(70, 70, 70);
@@ -257,3 +554,12 @@ fn render(
         },
     );
 }
+
+
+
+
+
+
+
+
+

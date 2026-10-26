@@ -12,7 +12,7 @@ use ratatui::{
     Frame, Terminal,
 };
 
-use super::{bar_spans, center, eased, skip_requested, DURATION_MS, HOLD_MS, STAGES};
+use super::{bar_spans, center, eased, skip_requested, HOLD_MS, STAGES};
 
 const MARK_ROWS: usize = 9;
 const SMALL_ROWS: usize = 5;
@@ -78,9 +78,13 @@ const SMALL_W: usize = 3 + LETTER_GAP + 3 + LETTER_GAP + 1;
 const MARK_COLS: usize = BADGE_W + BADGE_GAP + BIG_COLS * 2 + LETTER_GAP;
 
 /// Play the intro animation. Returns early if the user presses a key.
-pub fn play<B: Backend>(terminal: &mut Terminal<B>, accent: Color) -> io::Result<()> {
+pub fn play<B: Backend>(
+    terminal: &mut Terminal<B>,
+    accent: Color,
+    duration_ms: u64,
+) -> io::Result<()> {
     let start = Instant::now();
-    let total = Duration::from_millis(DURATION_MS);
+    let total = Duration::from_millis(duration_ms);
 
     loop {
         let elapsed = start.elapsed();
@@ -88,9 +92,9 @@ pub fn play<B: Backend>(terminal: &mut Terminal<B>, accent: Color) -> io::Result
             break;
         }
         let tick = elapsed.as_millis() as u64;
-        let progress = eased(tick as f64 / DURATION_MS as f64);
+        let progress = eased(tick as f64 / duration_ms as f64);
 
-        terminal.draw(|frame| render(frame, progress, tick, accent, false))?;
+        terminal.draw(|frame| render(frame, frame.area(), progress, tick, accent, false))?;
 
         if skip_requested()? {
             return Ok(());
@@ -104,8 +108,8 @@ pub fn play<B: Backend>(terminal: &mut Terminal<B>, accent: Color) -> io::Result
         if elapsed >= Duration::from_millis(HOLD_MS) {
             break;
         }
-        let tick = DURATION_MS + elapsed.as_millis() as u64;
-        terminal.draw(|frame| render(frame, 1.0, tick, accent, true))?;
+        let tick = duration_ms + elapsed.as_millis() as u64;
+        terminal.draw(|frame| render(frame, frame.area(), 1.0, tick, accent, true))?;
         if skip_requested()? {
             break;
         }
@@ -183,8 +187,14 @@ fn wordmark_width(scale: usize) -> u16 {
     (MARK_COLS * scale) as u16
 }
 
-fn render(frame: &mut Frame, progress: f64, tick: u64, accent: Color, ready: bool) {
-    let area = frame.area();
+pub(super) fn render(
+    frame: &mut Frame,
+    area: Rect,
+    progress: f64,
+    tick: u64,
+    accent: Color,
+    ready: bool,
+) {
     let progress = progress.clamp(0.0, 1.0);
 
     let dim = Color::Rgb(70, 70, 70);

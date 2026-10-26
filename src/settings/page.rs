@@ -12,10 +12,10 @@ use ratatui::{
 };
 
 use super::pages::{
-    about, appearance, audio, button_mapping, display, git, hotkeys, power, utilities,
+    about, appearance, audio, boot, button_mapping, display, git, hotkeys, power, utilities,
     wifi_bluetooth,
 };
-use super::state::{SettingsCategory, SettingsState};
+use super::state::{SettingsCategory, SettingsState, SubPage};
 
 pub fn render(frame: &mut Frame, area: Rect, border_style: Style, ss: &mut SettingsState) {
     let border_name = {
@@ -109,7 +109,10 @@ pub fn render(frame: &mut Frame, area: Rect, border_style: Style, ss: &mut Setti
 
     frame.render_widget(
         Paragraph::new(Line::from(Span::styled(
-            format!("  {}", cat.label()),
+            match ss.subpage {
+                Some(sub) => format!("  {} › {}", cat.label(), sub.label()),
+                None => format!("  {}", cat.label()),
+            },
             Style::default().fg(Color::White),
         ))),
         title_area,
@@ -117,6 +120,10 @@ pub fn render(frame: &mut Frame, area: Rect, border_style: Style, ss: &mut Setti
 
     // Render the selected category's content
     let editing = ss.editing_setting;
+    if let Some(SubPage::BootAnimation) = ss.subpage {
+        boot::render(frame, content_area, cursor, scroll, editing);
+        return;
+    }
     match cat {
         SettingsCategory::About => about::render(frame, content_area, cursor, scroll),
         SettingsCategory::WifiBluetooth => {
@@ -138,6 +145,9 @@ pub fn render(frame: &mut Frame, area: Rect, border_style: Style, ss: &mut Setti
 /// Returns true if the current right-pane item supports left/right cycling mode.
 pub fn is_edit_mode_item(ss: &SettingsState) -> bool {
     let cursor = ss.right_cursor;
+    if let Some(SubPage::BootAnimation) = ss.subpage {
+        return boot::is_edit_mode_item(cursor);
+    }
     match ss.selected_category() {
         SettingsCategory::Appearance => appearance::is_edit_mode_item(cursor),
         SettingsCategory::Display => display::is_edit_mode_item(cursor),
@@ -149,6 +159,10 @@ pub fn is_edit_mode_item(ss: &SettingsState) -> bool {
 /// Cycle the current multi-option setting forward or backward.
 pub fn handle_setting_cycle(ss: &mut SettingsState, forward: bool) {
     let cursor = ss.right_cursor;
+    if let Some(SubPage::BootAnimation) = ss.subpage {
+        boot::handle_cycle(cursor, forward);
+        return;
+    }
     match ss.selected_category() {
         SettingsCategory::Appearance => appearance::handle_cycle(cursor, forward),
         SettingsCategory::Display => display::handle_cycle(cursor, forward),
@@ -159,6 +173,9 @@ pub fn handle_setting_cycle(ss: &mut SettingsState, forward: bool) {
 
 /// Get the item count for the currently selected category.
 pub fn current_item_count(ss: &SettingsState) -> usize {
+    if let Some(SubPage::BootAnimation) = ss.subpage {
+        return boot::item_count();
+    }
     match ss.selected_category() {
         SettingsCategory::About => about::item_count(),
         SettingsCategory::WifiBluetooth => wifi_bluetooth::item_count(),
@@ -184,9 +201,22 @@ pub enum SettingsAction {
 /// Handle Enter press in the right pane (binary toggles and actions only).
 pub fn handle_right_pane_enter(ss: &mut SettingsState) -> SettingsAction {
     let cursor = ss.right_cursor;
+    if let Some(SubPage::BootAnimation) = ss.subpage {
+        boot::handle_enter(cursor);
+        return SettingsAction::None;
+    }
     match ss.selected_category() {
         SettingsCategory::Display => { display::handle_enter(cursor); SettingsAction::None }
-        SettingsCategory::Appearance => { appearance::handle_enter(cursor); SettingsAction::None }
+        SettingsCategory::Appearance => {
+            if appearance::is_boot_settings(cursor) {
+                ss.subpage = Some(SubPage::BootAnimation);
+                ss.right_cursor = 0;
+                ss.editing_setting = false;
+            } else {
+                appearance::handle_enter(cursor);
+            }
+            SettingsAction::None
+        }
         SettingsCategory::ButtonMapping => { button_mapping::handle_enter(ss); SettingsAction::None }
         SettingsCategory::Hotkeys => { hotkeys::handle_enter(cursor); SettingsAction::None }
         SettingsCategory::Git => { git::handle_enter(cursor, ss); SettingsAction::None }
@@ -201,3 +231,5 @@ pub fn handle_right_pane_enter(ss: &mut SettingsState) -> SettingsAction {
         _ => SettingsAction::None,
     }
 }
+
+

@@ -1195,7 +1195,12 @@ fn handle_main_key(
                     }
                 }
                 Action::Back => {
-                    ss.in_right_pane = false;
+                    // Back leaves a sub-page before leaving the right pane
+                    if ss.subpage.take().is_some() {
+                        ss.right_cursor = 0;
+                    } else {
+                        ss.in_right_pane = false;
+                    }
                 }
                 _ => {}
             }
@@ -2734,8 +2739,23 @@ fn run_app() -> bool {
             let accent = settings::pages::appearance::color_from_name(
                 &settings::persistence::get_str(&s, "appearance.accent_color", "Cyan"),
             );
-            let style = settings::persistence::get_str(&s, "appearance.boot_animation_style", "Modern");
-            let _ = boot_animation::play(&mut terminal, accent, &style);
+            let style = settings::pages::boot::style(&s);
+            let colour = settings::pages::boot::colour(&s);
+            let logo = settings::pages::boot::logo(&s);
+            let reveal = settings::pages::boot::direction(&s);
+            let duration = settings::pages::boot::duration(&s);
+            let _ = boot_animation::play(
+                &mut terminal,
+                accent,
+                boot_animation::Options {
+                    style: &style,
+                    colour: &colour,
+                    logo: &logo,
+                    reveal: &reveal,
+                    duration: &duration,
+                    effect: settings::pages::boot::effect(&s),
+                },
+            );
         }
     }
 

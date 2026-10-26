@@ -239,7 +239,13 @@ pub fn handle_enter(cursor: usize, ss: &mut SettingsState) {
                     "new_window_keeps_tuios_open": false,
                     "navbar_position": "Top",
                     "intro_animation_enabled": true,
-                    "boot_animation_style": "Modern"
+                    "boot_animation_style": "Modern",
+                    "boot_animation_colour": "Default",
+                    "boot_logo": "Static",
+                    "boot_reveal": "Center",
+                    "boot_duration": "Default",
+                    "boot_splash_effect": true,
+                    "boot_preview": true
                 },
                 "display": {
                     "fullscreen": false

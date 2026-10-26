@@ -61,6 +61,20 @@ impl SettingsCategory {
     }
 }
 
+/// A page opened from inside a category rather than from the category list.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SubPage {
+    BootAnimation,
+}
+
+impl SubPage {
+    pub fn label(&self) -> &'static str {
+        match self {
+            SubPage::BootAnimation => "Boot Up Animation",
+        }
+    }
+}
+
 /// UI state for the Settings page.
 #[derive(Debug, Clone)]
 pub struct SettingsState {
@@ -82,6 +96,8 @@ pub struct SettingsState {
     pub terminal_scroll: usize,
     /// When true, the current multi-option setting is in left/right cycling mode.
     pub editing_setting: bool,
+    /// Sub-page opened from within the selected category.
+    pub subpage: Option<SubPage>,
 }
 
 impl SettingsState {
@@ -96,6 +112,7 @@ impl SettingsState {
             terminal_focused: false,
             terminal_scroll: 0,
             editing_setting: false,
+            subpage: None,
         }
     }
 
@@ -112,5 +129,6 @@ impl SettingsState {
         self.terminal_focused = false;
         self.terminal_scroll = 0;
         self.editing_setting = false;
+        self.subpage = None;
     }
 }
