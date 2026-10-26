@@ -31,6 +31,7 @@ enum Row {
     StatusBar,
     NewWindow,
     NavBar,
+    AppCategories,
     BootSettings,
 }
 
@@ -52,6 +53,7 @@ fn rows() -> Vec<Row> {
         Row::StatusBar,
         Row::NewWindow,
         Row::NavBar,
+        Row::AppCategories,
         Row::BootSettings,
     ]
 }
@@ -63,6 +65,11 @@ fn row_at(cursor: usize) -> Option<Row> {
 /// True when the cursor is on the row that opens the boot animation page.
 pub fn is_boot_settings(cursor: usize) -> bool {
     row_at(cursor) == Some(Row::BootSettings)
+}
+
+/// True when the cursor is on the "Organise Apps by Category" row, which changes the navbar.
+pub fn is_app_categories(cursor: usize) -> bool {
+    row_at(cursor) == Some(Row::AppCategories)
 }
 
 /// Step to the next option in a fixed list and store it.
@@ -153,6 +160,10 @@ fn label_value(row: Row, s: &Value) -> (&'static str, String) {
             },
         ),
         Row::NavBar => ("Navigation Bar", persistence::get_str(s, "appearance.navbar_position", "Top")),
+        Row::AppCategories => (
+            "Organise Apps by Category",
+            enabled(persistence::get_bool(s, "appearance.group_apps_by_category", false)),
+        ),
         Row::BootSettings => ("Boot Up Animation", "Open ›".into()),
     }
 }
@@ -178,14 +189,14 @@ pub fn render(frame: &mut Frame, area: Rect, cursor: usize, _scroll: usize, edit
         // For multi-option items in edit mode, show ◄ value ►
         if is_active && editing && row.cycles() {
             lines.push(Line::from(vec![
-                Span::styled(format!("{}{:<22}", prefix, label), style),
+                Span::styled(format!("{}{:<26}", prefix, label), style),
                 Span::styled("  ◄ ", Style::default().fg(Color::Yellow)),
                 Span::styled(value, Style::default().fg(Color::White)),
                 Span::styled(" ►", Style::default().fg(Color::Yellow)),
             ]));
         } else {
             lines.push(Line::from(vec![
-                Span::styled(format!("{}{:<22}", prefix, label), style),
+                Span::styled(format!("{}{:<26}", prefix, label), style),
                 Span::styled(format!("  {}", value), style),
             ]));
         }
@@ -279,6 +290,14 @@ pub fn handle_enter(cursor: usize) {
             let next = if current == "Bottom" { "Top" } else { "Bottom" };
             persistence::set(&mut settings, "appearance.navbar_position", serde_json::Value::String(next.to_string()));
             crate::utilities::logging::settings(&format!("Navigation bar moved to {}", next.to_lowercase()));
+        }
+        Row::AppCategories => {
+            let current = persistence::get_bool(&settings, "appearance.group_apps_by_category", false);
+            persistence::set(&mut settings, "appearance.group_apps_by_category", serde_json::Value::Bool(!current));
+            crate::utilities::logging::settings(&format!(
+                "Apps dropdown grouping {}",
+                if !current { "enabled" } else { "disabled" }
+            ));
         }
         _ => {}
     }

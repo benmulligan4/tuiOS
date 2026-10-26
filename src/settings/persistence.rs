@@ -32,6 +32,7 @@ fn settings_path() -> PathBuf {
             "status_bar_enabled": false,
             "new_window_keeps_tuios_open": false,
             "navbar_position": "Top",
+            "group_apps_by_category": false,
             "intro_animation_enabled": true,
             "boot_animation_style": "Modern",
             "boot_animation_colour": "Default",
