@@ -319,6 +319,13 @@ impl AppStoreState {
         }
     }
 
+    /// Snap the terminal back to the tail so new output is visible next time it
+    /// is focused. Called whenever focus leaves the terminal pane.
+    pub fn snap_terminal_to_bottom(&mut self) {
+        self.terminal_follow = true;
+        self.terminal_scroll = self.terminal_max_scroll();
+    }
+
     pub fn reset_right_pane(&mut self) {
         self.right_scroll = 0;
         self.right_action_cursor = 0;

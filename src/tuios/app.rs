@@ -1012,6 +1012,7 @@ fn handle_main_key(
             } else if ss.focus == crate::app_store::state::AppStoreFocus::Terminal
                 || ss.focus == crate::app_store::state::AppStoreFocus::Queue
             {
+                ss.snap_terminal_to_bottom();
                 ss.focus = crate::app_store::state::AppStoreFocus::RightPane;
                 ss.in_right_actions = true;
             } else if ss.focus == crate::app_store::state::AppStoreFocus::SearchBar {
@@ -1736,8 +1737,16 @@ fn handle_appstore_key(
         AppStoreFocus::Terminal => {
             match action {
                 Action::Up => {
-                    ss.terminal_follow = false;
-                    ss.terminal_scroll = ss.effective_terminal_scroll().saturating_sub(1);
+                    if ss.effective_terminal_scroll() == 0 {
+                        // Already at the first log line — step up into the details pane
+                        ss.snap_terminal_to_bottom();
+                        ss.focus = AppStoreFocus::RightPane;
+                        ss.in_right_actions = true;
+                        ss.ensure_action_visible();
+                    } else {
+                        ss.terminal_follow = false;
+                        ss.terminal_scroll = ss.effective_terminal_scroll().saturating_sub(1);
+                    }
                 }
                 Action::Down => {
                     let max = ss.terminal_max_scroll();
@@ -1745,16 +1754,19 @@ fn handle_appstore_key(
                     ss.terminal_follow = ss.terminal_scroll >= max;
                 }
                 Action::Left => {
+                    ss.snap_terminal_to_bottom();
                     ss.focus = AppStoreFocus::LeftPane;
                     ss.in_right_actions = false;
                 }
                 Action::Right => {
                     if ss.queue_visible() {
+                        ss.snap_terminal_to_bottom();
                         ss.focus = AppStoreFocus::Queue;
                         ss.queue.clamp_cursor();
                     }
                 }
                 Action::Back => {
+                    ss.snap_terminal_to_bottom();
                     ss.focus = AppStoreFocus::RightPane;
                     ss.in_right_actions = true;
                 }
@@ -3048,6 +3060,9 @@ fn run_app() -> bool {
         {
             use crate::app_store::state::AppStoreFocus;
             let ss = &mut state.app_store;
+            if ss.focus == AppStoreFocus::Terminal {
+                ss.snap_terminal_to_bottom();
+            }
             ss.focus = match ss.focus {
                 AppStoreFocus::Terminal => AppStoreFocus::Queue,
                 AppStoreFocus::Queue => {
