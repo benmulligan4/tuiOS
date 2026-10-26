@@ -12,8 +12,8 @@ use ratatui::{
 };
 
 use super::pages::{
-    about, appearance, audio, boot, button_mapping, display, git, hotkeys, power, utilities,
-    wifi_bluetooth,
+    about, appearance, audio, boot, button_mapping, category_order, display, git, hotkeys, navbar,
+    power, utilities, wifi_bluetooth,
 };
 use super::state::{SettingsCategory, SettingsState, SubPage};
 
@@ -110,7 +110,10 @@ pub fn render(frame: &mut Frame, area: Rect, border_style: Style, ss: &mut Setti
     frame.render_widget(
         Paragraph::new(Line::from(Span::styled(
             match ss.subpage {
-                Some(sub) => format!("  {} › {}", cat.label(), sub.label()),
+                Some(sub) => match sub.parent() {
+                    Some(parent) => format!("  {} › {} › {}", cat.label(), parent.label(), sub.label()),
+                    None => format!("  {} › {}", cat.label(), sub.label()),
+                },
                 None => format!("  {}", cat.label()),
             },
             Style::default().fg(Color::White),
@@ -122,6 +125,14 @@ pub fn render(frame: &mut Frame, area: Rect, border_style: Style, ss: &mut Setti
     let editing = ss.editing_setting;
     if let Some(SubPage::BootAnimation) = ss.subpage {
         boot::render(frame, content_area, cursor, scroll, editing);
+        return;
+    }
+    if let Some(SubPage::NavBar) = ss.subpage {
+        navbar::render(frame, content_area, cursor, scroll, editing);
+        return;
+    }
+    if let Some(SubPage::CategoryOrder) = ss.subpage {
+        category_order::render(frame, content_area, cursor, scroll, editing);
         return;
     }
     match cat {
@@ -148,6 +159,12 @@ pub fn is_edit_mode_item(ss: &SettingsState) -> bool {
     if let Some(SubPage::BootAnimation) = ss.subpage {
         return boot::is_edit_mode_item(cursor);
     }
+    if let Some(SubPage::NavBar) = ss.subpage {
+        return navbar::is_edit_mode_item(cursor);
+    }
+    if let Some(SubPage::CategoryOrder) = ss.subpage {
+        return category_order::is_edit_mode_item(cursor);
+    }
     match ss.selected_category() {
         SettingsCategory::Appearance => appearance::is_edit_mode_item(cursor),
         SettingsCategory::Display => display::is_edit_mode_item(cursor),
@@ -156,12 +173,25 @@ pub fn is_edit_mode_item(ss: &SettingsState) -> bool {
     }
 }
 
+/// True when the current page is moved with ↑ ↓ instead of ◄ ► while editing.
+pub fn uses_vertical_cycle(ss: &SettingsState) -> bool {
+    matches!(ss.subpage, Some(SubPage::CategoryOrder))
+}
+
 /// Cycle the current multi-option setting forward or backward.
-pub fn handle_setting_cycle(ss: &mut SettingsState, forward: bool) {
+/// Returns true when the change needs the navbar dropdowns rebuilt.
+pub fn handle_setting_cycle(ss: &mut SettingsState, forward: bool) -> bool {
     let cursor = ss.right_cursor;
     if let Some(SubPage::BootAnimation) = ss.subpage {
         boot::handle_cycle(cursor, forward);
-        return;
+        return false;
+    }
+    if let Some(SubPage::NavBar) = ss.subpage {
+        return navbar::handle_cycle(cursor, forward);
+    }
+    if let Some(SubPage::CategoryOrder) = ss.subpage {
+        ss.right_cursor = category_order::handle_cycle(cursor, forward);
+        return true;
     }
     match ss.selected_category() {
         SettingsCategory::Appearance => appearance::handle_cycle(cursor, forward),
@@ -169,12 +199,19 @@ pub fn handle_setting_cycle(ss: &mut SettingsState, forward: bool) {
         SettingsCategory::Hotkeys => hotkeys::handle_cycle(cursor, forward),
         _ => {}
     }
+    false
 }
 
 /// Get the item count for the currently selected category.
 pub fn current_item_count(ss: &SettingsState) -> usize {
     if let Some(SubPage::BootAnimation) = ss.subpage {
         return boot::item_count();
+    }
+    if let Some(SubPage::NavBar) = ss.subpage {
+        return navbar::item_count();
+    }
+    if let Some(SubPage::CategoryOrder) = ss.subpage {
+        return category_order::item_count();
     }
     match ss.selected_category() {
         SettingsCategory::About => about::item_count(),
@@ -196,6 +233,8 @@ pub enum SettingsAction {
     Quit,
     Restart,
     ShowPopup(String),
+    /// The navbar dropdowns need rebuilding.
+    RebuildNav,
 }
 
 /// Handle Enter press in the right pane (binary toggles and actions only).
@@ -205,11 +244,27 @@ pub fn handle_right_pane_enter(ss: &mut SettingsState) -> SettingsAction {
         boot::handle_enter(cursor);
         return SettingsAction::None;
     }
+    if let Some(SubPage::NavBar) = ss.subpage {
+        if navbar::is_custom_order(cursor) {
+            ss.subpage = Some(SubPage::CategoryOrder);
+            ss.right_cursor = 0;
+            ss.editing_setting = false;
+            return SettingsAction::None;
+        }
+        let rebuild = navbar::handle_enter(cursor);
+        // Toggling grouping adds or removes the rows below it
+        ss.right_cursor = cursor.min(navbar::item_count().saturating_sub(1));
+        return if rebuild { SettingsAction::RebuildNav } else { SettingsAction::None };
+    }
     match ss.selected_category() {
         SettingsCategory::Display => { display::handle_enter(cursor); SettingsAction::None }
         SettingsCategory::Appearance => {
             if appearance::is_boot_settings(cursor) {
                 ss.subpage = Some(SubPage::BootAnimation);
+                ss.right_cursor = 0;
+                ss.editing_setting = false;
+            } else if appearance::is_navbar_settings(cursor) {
+                ss.subpage = Some(SubPage::NavBar);
                 ss.right_cursor = 0;
                 ss.editing_setting = false;
             } else {

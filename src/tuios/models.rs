@@ -79,6 +79,11 @@ pub struct TuiosState {
     pub pending_nav_action: Option<String>,
     /// Flag: rebuild the navbar dropdowns without a full install sync
     pub needs_nav_rebuild: bool,
+    /// Category headings collapsed in the Apps dropdown.
+    pub nav_collapsed: std::collections::HashSet<String>,
+    /// Category whose submenu is open beside the Apps dropdown.
+    pub nav_submenu: Option<String>,
+    pub submenu_cursor: usize,
 }
 
 impl TuiosState {
@@ -102,6 +107,9 @@ impl TuiosState {
             pending_foreground: None,
             pending_nav_action: None,
             needs_nav_rebuild: false,
+            nav_collapsed: std::collections::HashSet::new(),
+            nav_submenu: None,
+            submenu_cursor: 0,
         }
     }
 }

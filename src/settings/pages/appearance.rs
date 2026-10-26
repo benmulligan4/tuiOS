@@ -30,7 +30,7 @@ enum Row {
     Border,
     StatusBar,
     NewWindow,
-    NavBar,
+    NavBarSettings,
     BootSettings,
 }
 
@@ -51,7 +51,7 @@ fn rows() -> Vec<Row> {
         Row::Border,
         Row::StatusBar,
         Row::NewWindow,
-        Row::NavBar,
+        Row::NavBarSettings,
         Row::BootSettings,
     ]
 }
@@ -63,6 +63,11 @@ fn row_at(cursor: usize) -> Option<Row> {
 /// True when the cursor is on the row that opens the boot animation page.
 pub fn is_boot_settings(cursor: usize) -> bool {
     row_at(cursor) == Some(Row::BootSettings)
+}
+
+/// True when the cursor is on the row that opens the navigation bar page.
+pub fn is_navbar_settings(cursor: usize) -> bool {
+    row_at(cursor) == Some(Row::NavBarSettings)
 }
 
 /// Step to the next option in a fixed list and store it.
@@ -152,7 +157,7 @@ fn label_value(row: Row, s: &Value) -> (&'static str, String) {
                 "Close tuiOS while running".into()
             },
         ),
-        Row::NavBar => ("Navigation Bar", persistence::get_str(s, "appearance.navbar_position", "Top")),
+        Row::NavBarSettings => ("Navigation Bar", "Open ›".into()),
         Row::BootSettings => ("Boot Up Animation", "Open ›".into()),
     }
 }
@@ -178,14 +183,14 @@ pub fn render(frame: &mut Frame, area: Rect, cursor: usize, _scroll: usize, edit
         // For multi-option items in edit mode, show ◄ value ►
         if is_active && editing && row.cycles() {
             lines.push(Line::from(vec![
-                Span::styled(format!("{}{:<22}", prefix, label), style),
+                Span::styled(format!("{}{:<26}", prefix, label), style),
                 Span::styled("  ◄ ", Style::default().fg(Color::Yellow)),
                 Span::styled(value, Style::default().fg(Color::White)),
                 Span::styled(" ►", Style::default().fg(Color::Yellow)),
             ]));
         } else {
             lines.push(Line::from(vec![
-                Span::styled(format!("{}{:<22}", prefix, label), style),
+                Span::styled(format!("{}{:<26}", prefix, label), style),
                 Span::styled(format!("  {}", value), style),
             ]));
         }
@@ -273,12 +278,6 @@ pub fn handle_enter(cursor: usize) {
                 "New window apps: {}",
                 if !current { "tuiOS stays open" } else { "tuiOS closes while running" }
             ));
-        }
-        Row::NavBar => {
-            let current = persistence::get_str(&settings, "appearance.navbar_position", "Top");
-            let next = if current == "Bottom" { "Top" } else { "Bottom" };
-            persistence::set(&mut settings, "appearance.navbar_position", serde_json::Value::String(next.to_string()));
-            crate::utilities::logging::settings(&format!("Navigation bar moved to {}", next.to_lowercase()));
         }
         _ => {}
     }

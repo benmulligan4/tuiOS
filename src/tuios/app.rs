@@ -12,7 +12,7 @@ use crossterm::{
 use ratatui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout, Margin, Rect},
-    style::{Color, Style},
+    style::{Color, Modifier, Style},
     text::Text,
     widgets::{Block, Borders, BorderType, Clear, Paragraph},
     Frame, Terminal,
@@ -113,6 +113,176 @@ pub struct NavItem {
     pub content: NavContent,
 }
 
+/// Dropdown rows whose action starts with this are category headings; the rest of the
+/// action string is the number of apps filed under them.
+const NAV_HEADER_PREFIX: char = '#';
+
+fn is_nav_header(action: &str) -> bool {
+    action.starts_with(NAV_HEADER_PREFIX)
+}
+
+fn header_count(action: &str) -> usize {
+    action[NAV_HEADER_PREFIX.len_utf8()..].parse().unwrap_or(0)
+}
+
+/// The app key out of an "app:name" / "dashboard:name" action string.
+fn action_key(action: &str) -> &str {
+    action.split_once(':').map_or(action, |(_, key)| key)
+}
+
+/// The rows actually on screen: every heading, plus the apps under the expanded ones.
+/// In submenu mode the apps live in their own panel, so only headings are listed here.
+fn visible_children(
+    children: &[(String, String)],
+    collapsed: &std::collections::HashSet<String>,
+    submenu_mode: bool,
+) -> Vec<(String, String)> {
+    let mut out = Vec::new();
+    let mut hidden = false;
+    for entry in children {
+        if is_nav_header(&entry.1) {
+            hidden = submenu_mode || collapsed.contains(&entry.0);
+            out.push(entry.clone());
+        } else if !hidden {
+            out.push(entry.clone());
+        }
+    }
+    out
+}
+
+/// The apps filed under one category heading.
+fn apps_in_category(children: &[(String, String)], category: &str) -> Vec<(String, String)> {
+    let mut out = Vec::new();
+    let mut inside = false;
+    for entry in children {
+        if is_nav_header(&entry.1) {
+            inside = entry.0 == category;
+        } else if inside {
+            out.push(entry.clone());
+        }
+    }
+    out
+}
+
+/// Everything the dropdowns need out of settings, read once per build/render/keypress.
+struct NavOptions {
+    group: bool,
+    submenu: bool,
+    counts: bool,
+    wrap: bool,
+    category_sort: String,
+    app_sort: String,
+    custom_order: Vec<String>,
+}
+
+fn nav_options() -> NavOptions {
+    use crate::settings::pages::navbar as nb;
+    let s = crate::settings::persistence::load();
+    NavOptions {
+        group: nb::group_by_category(&s),
+        submenu: nb::group_by_category(&s) && nb::category_submenu(&s),
+        counts: nb::show_counts(&s),
+        wrap: nb::wrap_around(&s),
+        category_sort: nb::category_sort(&s),
+        app_sort: nb::app_sort(&s),
+        custom_order: nb::custom_order(&s),
+    }
+}
+
+/// True when categories open a second panel instead of expanding in place.
+fn nav_submenu_mode() -> bool {
+    nav_options().submenu
+}
+
+fn close_nav_menus(state: &mut TuiosState) {
+    state.nav_expanded = false;
+    state.dropdown_cursor = 0;
+    state.nav_submenu = None;
+    state.submenu_cursor = 0;
+}
+
+fn clamp_dropdown_cursor(state: &mut TuiosState, children: &[(String, String)]) {
+    let len = visible_children(children, &state.nav_collapsed, nav_submenu_mode()).len();
+    if state.dropdown_cursor >= len {
+        state.dropdown_cursor = len.saturating_sub(1);
+    }
+}
+
+/// Step a menu cursor, optionally wrapping past either end.
+fn step_cursor(cursor: usize, len: usize, forward: bool, wrap: bool) -> usize {
+    if len == 0 {
+        return 0;
+    }
+    if forward {
+        if cursor + 1 < len { cursor + 1 } else if wrap { 0 } else { cursor }
+    } else if cursor > 0 {
+        cursor - 1
+    } else if wrap {
+        len - 1
+    } else {
+        cursor
+    }
+}
+
+/// Order the app rows by the user's chosen App Order.
+fn sort_app_children(items: &mut [(String, String)], mode: &str) {
+    let by_label = |a: &(String, String), b: &(String, String)| {
+        a.0.to_lowercase().cmp(&b.0.to_lowercase())
+    };
+    match mode {
+        "Z → A" => items.sort_by(|a, b| by_label(b, a)),
+        "Recently Installed" => {
+            let times = app_store::actions::load_install_times();
+            items.sort_by(|a, b| {
+                let ta = times.get(action_key(&a.1)).copied().unwrap_or(0);
+                let tb = times.get(action_key(&b.1)).copied().unwrap_or(0);
+                tb.cmp(&ta).then_with(|| by_label(a, b))
+            });
+        }
+        _ => items.sort_by(by_label),
+    }
+}
+
+/// Bucket dropdown entries under category headings. `children` must already be in the
+/// wanted app order — grouping keeps it.
+fn group_children_by_category(
+    children: Vec<(String, String)>,
+    registered: &std::collections::HashMap<String, Value>,
+    opts: &NavOptions,
+) -> Vec<(String, String)> {
+    let mut groups: Vec<(String, Vec<(String, String)>)> = Vec::new();
+    for (label, action) in children {
+        let category = registered
+            .get(action_key(&action))
+            .and_then(|m| m.get("category"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("Other")
+            .to_string();
+        match groups.iter_mut().find(|(c, _)| *c == category) {
+            Some((_, items)) => items.push((label, action)),
+            None => groups.push((category, vec![(label, action)])),
+        }
+    }
+
+    match opts.category_sort.as_str() {
+        "Z → A" => groups.sort_by(|a, b| b.0.to_lowercase().cmp(&a.0.to_lowercase())),
+        "Custom" => groups.sort_by_key(|(c, _)| {
+            (
+                opts.custom_order.iter().position(|s| s == c).unwrap_or(usize::MAX),
+                c.to_lowercase(),
+            )
+        }),
+        _ => groups.sort_by_key(|(c, _)| c.to_lowercase()),
+    }
+
+    let mut out: Vec<(String, String)> = Vec::new();
+    for (category, items) in groups {
+        out.push((category, format!("{}{}", NAV_HEADER_PREFIX, items.len())));
+        out.extend(items);
+    }
+    out
+}
+
 fn build_nav_items(
     dashboards: &std::collections::HashMap<String, Value>,
     apps_registry: &std::collections::HashMap<String, Value>,
@@ -136,7 +306,7 @@ fn build_nav_items(
         })
         .collect();
 
-    let app_children: Vec<(String, String)> = apps_registry
+    let mut app_children: Vec<(String, String)> = apps_registry
         .iter()
         .filter(|(name, _)| enabled(name))
         .map(|(name, meta)| {
@@ -148,6 +318,13 @@ fn build_nav_items(
             (label, format!("app:{}", name))
         })
         .collect();
+
+    let opts = nav_options();
+    sort_app_children(&mut app_children, &opts.app_sort);
+    if opts.group {
+        app_children =
+            group_children_by_category(app_children, &registry::load_registered_apps(), &opts);
+    }
 
     vec![
         NavItem {
@@ -259,6 +436,108 @@ fn render_navbar(frame: &mut Frame, area: Rect, nav_items: &[NavItem], state: &T
     }
 }
 
+/// Draw one dropdown panel and return the rect it occupied.
+fn render_menu_panel(
+    frame: &mut Frame,
+    area: Rect,
+    x: u16,
+    open_upward: bool,
+    rows: &[(String, String)],
+    cursor: usize,
+    collapsed: &std::collections::HashSet<String>,
+    opts: &NavOptions,
+) -> Rect {
+    let texts: Vec<String> = rows
+        .iter()
+        .map(|(label, action)| {
+            if is_nav_header(action) {
+                let glyph = if opts.submenu {
+                    "›"
+                } else if collapsed.contains(label) {
+                    "▸"
+                } else {
+                    "▾"
+                };
+                let count = if opts.counts {
+                    format!(" ({})", header_count(action))
+                } else {
+                    String::new()
+                };
+                format!(" {} {}{} ", glyph, label, count)
+            } else {
+                format!("   {} ", label)
+            }
+        })
+        .collect();
+
+    let mut width = (texts.iter().map(|t| t.chars().count()).max().unwrap_or(0) + 2) as u16;
+    let available_width = area.width.saturating_sub(x.saturating_sub(area.x));
+    if width > available_width {
+        width = available_width.max(10);
+    }
+
+    let height = ((rows.len() + 2) as u16).min(area.height);
+    let rect = Rect {
+        x,
+        y: if open_upward { area.y + area.height - height } else { area.y },
+        width,
+        height,
+    };
+
+    frame.render_widget(Clear, rect);
+    frame.render_widget(
+        Block::default()
+            .borders(Borders::ALL)
+            .style(Style::default().bg(Color::Black)),
+        rect,
+    );
+
+    let inner = rect.inner(Margin { horizontal: 1, vertical: 1 });
+
+    // Category headings can push the list past the available height, so scroll with the cursor.
+    let visible = (inner.height as usize).max(1);
+    let scroll = if rows.len() <= visible {
+        0
+    } else {
+        cursor.saturating_sub(visible - 1).min(rows.len() - visible)
+    };
+    let end = (scroll + visible).min(rows.len());
+
+    let inner_rows = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(vec![Constraint::Length(1); end - scroll])
+        .split(inner);
+
+    for (row, i) in (scroll..end).enumerate() {
+        let selected = i == cursor;
+        let style = if is_nav_header(&rows[i].1) {
+            let base = if selected {
+                Style::default().fg(Color::Black).bg(Color::Cyan)
+            } else {
+                Style::default().fg(Color::Cyan).bg(Color::Black)
+            };
+            base.add_modifier(Modifier::BOLD)
+        } else if selected {
+            Style::default().fg(Color::Black).bg(Color::Cyan)
+        } else {
+            Style::default().fg(Color::White).bg(Color::Black)
+        };
+        let text = if selected && !is_nav_header(&rows[i].1) {
+            format!(" » {} ", rows[i].0)
+        } else {
+            texts[i].clone()
+        };
+        if row < inner_rows.len() {
+            frame.render_widget(
+                Paragraph::new(Text::raw(text)).style(style),
+                inner_rows[row],
+            );
+        }
+    }
+
+    rect
+}
+
 fn render_dropdown(frame: &mut Frame, area: Rect, nav_items: &[NavItem], state: &TuiosState, open_upward: bool) {
     if !state.nav_expanded {
         return;
@@ -274,6 +553,12 @@ fn render_dropdown(frame: &mut Frame, area: Rect, nav_items: &[NavItem], state: 
         return;
     }
 
+    let opts = nav_options();
+    let rows = visible_children(children, &state.nav_collapsed, opts.submenu);
+    if rows.is_empty() {
+        return;
+    }
+
     // Calculate x offset below the nav item
     let labels: Vec<&str> = nav_items.iter().map(|i| i.label.as_str()).collect();
     let x_offset: u16 = labels[..state.nav_cursor]
@@ -281,66 +566,34 @@ fn render_dropdown(frame: &mut Frame, area: Rect, nav_items: &[NavItem], state: 
         .map(|lbl| (lbl.len() + 4) as u16)
         .sum();
 
-    let max_label_len = children.iter().map(|(l, _)| l.len()).max().unwrap_or(0);
-    let mut dropdown_width = (max_label_len + 6) as u16;
-    let dropdown_height = (children.len() + 2) as u16;
+    let submenu = state
+        .nav_submenu
+        .as_ref()
+        .map(|cat| apps_in_category(children, cat))
+        .filter(|apps| !apps.is_empty());
 
-    let available_width = area.width.saturating_sub(x_offset);
-    if dropdown_width > available_width {
-        dropdown_width = available_width.max(10);
-    }
-
-    let dropdown_height = dropdown_height.min(area.height);
-    let dropdown_rect = Rect {
-        x: area.x + x_offset,
-        y: if open_upward {
-            area.y + area.height - dropdown_height
-        } else {
-            area.y
-        },
-        width: dropdown_width,
-        height: dropdown_height,
-    };
-
-    // Clear the area and draw border
-    frame.render_widget(Clear, dropdown_rect);
-    frame.render_widget(
-        Block::default()
-            .borders(Borders::ALL)
-            .style(Style::default().bg(Color::Black)),
-        dropdown_rect,
+    let main_rect = render_menu_panel(
+        frame,
+        area,
+        area.x + x_offset,
+        open_upward,
+        &rows,
+        state.dropdown_cursor,
+        &state.nav_collapsed,
+        &opts,
     );
 
-    let inner = dropdown_rect.inner(Margin { horizontal: 1, vertical: 1 });
-
-    let row_constraints: Vec<Constraint> = children
-        .iter()
-        .map(|_| Constraint::Length(1))
-        .collect();
-
-    let inner_rows = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(row_constraints)
-        .split(inner);
-
-    for (i, (label, _)) in children.iter().enumerate() {
-        let (style, text) = if i == state.dropdown_cursor {
-            (
-                Style::default().fg(Color::Black).bg(Color::Cyan),
-                format!(" » {} ", label),
-            )
-        } else {
-            (
-                Style::default().fg(Color::White).bg(Color::Black),
-                format!("   {} ", label),
-            )
-        };
-        if i < inner_rows.len() {
-            frame.render_widget(
-                Paragraph::new(Text::raw(text)).style(style),
-                inner_rows[i],
-            );
-        }
+    if let Some(apps) = submenu {
+        render_menu_panel(
+            frame,
+            area,
+            main_rect.x + main_rect.width,
+            open_upward,
+            &apps,
+            state.submenu_cursor,
+            &state.nav_collapsed,
+            &opts,
+        );
     }
 }
 
@@ -720,9 +973,10 @@ fn handle_navbar_key(
     }
 
     if action == Action::Back {
-        if state.nav_expanded {
-            state.nav_expanded = false;
-            state.dropdown_cursor = 0;
+        if state.nav_submenu.take().is_some() {
+            state.submenu_cursor = 0;
+        } else if state.nav_expanded {
+            close_nav_menus(state);
         }
         return NavResult::None;
     }
@@ -731,30 +985,94 @@ fn handle_navbar_key(
     if state.nav_expanded {
         let item = &nav_items[state.nav_cursor];
         if let NavContent::Children(children) = &item.content {
+            let opts = nav_options();
+
+            // --- Category submenu has focus ---
+            if let Some(cat) = state.nav_submenu.clone() {
+                let apps = apps_in_category(children, &cat);
+                match action {
+                    Action::Up => {
+                        state.submenu_cursor =
+                            step_cursor(state.submenu_cursor, apps.len(), false, opts.wrap);
+                    }
+                    Action::Down => {
+                        state.submenu_cursor =
+                            step_cursor(state.submenu_cursor, apps.len(), true, opts.wrap);
+                    }
+                    Action::Left => {
+                        state.nav_submenu = None;
+                        state.submenu_cursor = 0;
+                    }
+                    Action::Enter => {
+                        if let Some((_, data)) = apps.get(state.submenu_cursor) {
+                            let data = data.clone();
+                            return execute_action(
+                                &data,
+                                state,
+                                apps_registry,
+                                dashboards_registry,
+                                registered_apps,
+                                active_internal_app,
+                                active_installed_dash,
+                                active_installed_app,
+                            );
+                        }
+                    }
+                    _ => {}
+                }
+                return NavResult::None;
+            }
+
+            let rows = visible_children(children, &state.nav_collapsed, opts.submenu);
+            let current = rows.get(state.dropdown_cursor).cloned();
             match action {
                 Action::Up => {
-                    if state.dropdown_cursor > 0 {
-                        state.dropdown_cursor -= 1;
+                    // Up off the top row is the way back out to the navbar
+                    if state.dropdown_cursor == 0 {
+                        close_nav_menus(state);
+                    } else {
+                        state.dropdown_cursor =
+                            step_cursor(state.dropdown_cursor, rows.len(), false, opts.wrap);
                     }
                 }
                 Action::Down => {
-                    if state.dropdown_cursor < children.len().saturating_sub(1) {
-                        state.dropdown_cursor += 1;
-                    }
+                    state.dropdown_cursor =
+                        step_cursor(state.dropdown_cursor, rows.len(), true, opts.wrap);
                 }
-                Action::Enter => {
-                    if !children.is_empty() {
-                        let data = children[state.dropdown_cursor].1.clone();
-                        return execute_action(
-                            &data,
-                            state,
-                            apps_registry,
-                            dashboards_registry,
-                            registered_apps,
-                            active_internal_app,
-                            active_installed_dash,
-                            active_installed_app,
-                        );
+                Action::Left | Action::Right | Action::Enter => {
+                    let (label, data) = match current {
+                        Some(c) => c,
+                        None => return NavResult::None,
+                    };
+                    if !is_nav_header(&data) {
+                        if action == Action::Enter {
+                            return execute_action(
+                                &data,
+                                state,
+                                apps_registry,
+                                dashboards_registry,
+                                registered_apps,
+                                active_internal_app,
+                                active_installed_dash,
+                                active_installed_app,
+                            );
+                        }
+                    } else if opts.submenu {
+                        if action != Action::Left && !apps_in_category(children, &label).is_empty() {
+                            state.nav_submenu = Some(label);
+                            state.submenu_cursor = 0;
+                        }
+                    } else {
+                        match action {
+                            Action::Right => { state.nav_collapsed.remove(&label); }
+                            Action::Left => { state.nav_collapsed.insert(label); }
+                            _ => {
+                                if !state.nav_collapsed.remove(&label) {
+                                    state.nav_collapsed.insert(label);
+                                }
+                            }
+                        }
+                        clamp_dropdown_cursor(state, children);
                     }
                 }
                 _ => {}
@@ -813,8 +1131,7 @@ fn execute_action(
     active_installed_dash: &mut Option<InstalledDashboard>,
     active_installed_app: &mut Option<InstalledDashboard>,
 ) -> NavResult {
-    state.nav_expanded = false;
-    state.dropdown_cursor = 0;
+    close_nav_menus(state);
 
     if let Some(name) = data.strip_prefix("dashboard:") {
         logging::info(&format!("Navigated to dashboard: {}", name));
@@ -1181,18 +1498,26 @@ fn handle_main_key(
         if ss.in_right_pane {
             // ---- Edit mode: Left/Right cycles the current multi-option setting ----
             if ss.editing_setting {
-                match action {
-                    Action::Left => {
-                        settings::page::handle_setting_cycle(ss, false);
+                let vertical = settings::page::uses_vertical_cycle(ss);
+                let step = match action {
+                    Action::Up if vertical => Some(false),
+                    Action::Down if vertical => Some(true),
+                    Action::Left if !vertical => Some(false),
+                    Action::Right if !vertical => Some(true),
+                    _ => None,
+                };
+                match step {
+                    Some(forward) => {
+                        if settings::page::handle_setting_cycle(ss, forward) {
+                            state.needs_nav_rebuild = true;
+                        }
                     }
-                    Action::Right => {
-                        settings::page::handle_setting_cycle(ss, true);
+                    None => {
+                        if matches!(action, Action::Enter | Action::Back) {
+                            // Exit edit mode; Back exits without further action
+                            ss.editing_setting = false;
+                        }
                     }
-                    Action::Enter | Action::Back => {
-                        // Exit edit mode; Back exits without further action
-                        ss.editing_setting = false;
-                    }
-                    _ => {}
                 }
                 return MainResult::None;
             }
@@ -1212,13 +1537,19 @@ fn handle_main_key(
                 }
                 // Left/Right (including numpad 4/6) directly cycle multi-option settings
                 Action::Left => {
-                    if settings::page::is_edit_mode_item(ss) {
-                        settings::page::handle_setting_cycle(ss, false);
+                    if settings::page::is_edit_mode_item(ss)
+                        && !settings::page::uses_vertical_cycle(ss)
+                        && settings::page::handle_setting_cycle(ss, false)
+                    {
+                        state.needs_nav_rebuild = true;
                     }
                 }
                 Action::Right => {
-                    if settings::page::is_edit_mode_item(ss) {
-                        settings::page::handle_setting_cycle(ss, true);
+                    if settings::page::is_edit_mode_item(ss)
+                        && !settings::page::uses_vertical_cycle(ss)
+                        && settings::page::handle_setting_cycle(ss, true)
+                    {
+                        state.needs_nav_rebuild = true;
                     }
                 }
                 Action::Enter => {
@@ -1232,13 +1563,17 @@ fn handle_main_key(
                             settings::page::SettingsAction::ShowPopup(msg) => {
                                 state.popup = Some((msg, Instant::now()));
                             }
+                            settings::page::SettingsAction::RebuildNav => {
+                                state.needs_nav_rebuild = true;
+                            }
                             settings::page::SettingsAction::None => {}
                         }
                     }
                 }
                 Action::Back => {
-                    // Back leaves a sub-page before leaving the right pane
-                    if ss.subpage.take().is_some() {
+                    // Back walks up the sub-page stack before leaving the right pane
+                    if let Some(sub) = ss.subpage {
+                        ss.subpage = sub.parent();
                         ss.right_cursor = 0;
                     } else {
                         ss.in_right_pane = false;
@@ -3521,7 +3856,7 @@ fn run_app() -> bool {
                 FocusTarget::Navbar => FocusTarget::Main,
                 FocusTarget::Main => FocusTarget::Navbar,
             };
-            state.nav_expanded = false;
+            close_nav_menus(&mut state);
             continue;
         }
 
@@ -3852,6 +4187,8 @@ fn run_app() -> bool {
 
         if state.needs_nav_rebuild {
             state.needs_nav_rebuild = false;
+            state.nav_submenu = None;
+            state.submenu_cursor = 0;
             nav_items = build_nav_items(&dashboards, &apps_registry);
         }
 

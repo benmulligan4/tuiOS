@@ -65,12 +65,24 @@ impl SettingsCategory {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SubPage {
     BootAnimation,
+    NavBar,
+    CategoryOrder,
 }
 
 impl SubPage {
     pub fn label(&self) -> &'static str {
         match self {
             SubPage::BootAnimation => "Boot Up Animation",
+            SubPage::NavBar => "Navigation Bar",
+            SubPage::CategoryOrder => "Custom Category Order",
+        }
+    }
+
+    /// The page Back returns to, or None to leave the sub-page stack entirely.
+    pub fn parent(&self) -> Option<SubPage> {
+        match self {
+            SubPage::BootAnimation | SubPage::NavBar => None,
+            SubPage::CategoryOrder => Some(SubPage::NavBar),
         }
     }
 }
