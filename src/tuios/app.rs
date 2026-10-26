@@ -3559,7 +3559,7 @@ fn run_app() -> bool {
                     continue;
                 }
                 crossterm::event::KeyCode::Enter | crossterm::event::KeyCode::Down => {
-                    state.app_store.browser.focus = crate::app_store::awesome_ratatui_manager::BrowserFocus::List;
+                    state.app_store.browser.focus = crate::app_store::awesome_ratatui_manager::BrowserFocus::RepoButton;
                     continue;
                 }
                 _ => {}
@@ -3601,7 +3601,7 @@ fn run_app() -> bool {
                     continue;
                 }
                 crossterm::event::KeyCode::Enter | crossterm::event::KeyCode::Down => {
-                    state.app_store.focus = crate::app_store::state::AppStoreFocus::LeftPane;
+                    state.app_store.focus = crate::app_store::state::AppStoreFocus::BrowserButton;
                     continue;
                 }
                 _ => {}
