@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 
-fn config_dir() -> PathBuf {
+pub fn config_dir() -> PathBuf {
     let exe_dir = std::env::current_exe()
         .ok()
         .and_then(|p| p.parent().map(|p| p.to_path_buf()));
@@ -31,6 +31,7 @@ fn config_dir() -> PathBuf {
 const BUILTIN_APPS: &[(&str, &str, &str)] = &[
     ("CharacterSet", "Character Set", "applications::character_set"),
     ("FileExplorer", "File Explorer", "applications::file_explorer"),
+    ("Notes", "Notes", "applications::notes"),
     ("TextEditor", "Text Editor", "applications::text_editor"),
 ];
 
