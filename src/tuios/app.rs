@@ -1024,11 +1024,12 @@ fn handle_main_key(
                     }
                 }
             } else if ss.filter_panel_open {
-                ss.filter_panel_open = false;
+                ss.collapse_filter_panel();
                 ss.focus = crate::app_store::state::AppStoreFocus::LeftPane;
             } else if ss.focus == crate::app_store::state::AppStoreFocus::BrowserButton {
                 ss.focus = crate::app_store::state::AppStoreFocus::LeftPane;
             } else if ss.focus == crate::app_store::state::AppStoreFocus::FilterPanel {
+                ss.collapse_filter_panel();
                 ss.focus = crate::app_store::state::AppStoreFocus::LeftPane;
             } else if ss.focus == crate::app_store::state::AppStoreFocus::RightPane {
                 ss.focus = crate::app_store::state::AppStoreFocus::LeftPane;
@@ -1347,8 +1348,9 @@ fn handle_appstore_key(
 
     let ss = &mut state.app_store;
 
-    // Awesome Ratatui browser handles its own navigation when active
-    if ss.browser.active {
+    // Awesome Ratatui browser handles its own navigation when active, unless a
+    // dialog is drawn on top of it
+    if ss.browser.active && !ss.install_location_dialog && ss.confirm_dialog.is_none() {
         handle_browser_key(action, state, registered_apps);
         return;
     }
@@ -1521,6 +1523,7 @@ fn handle_appstore_key(
                         ss.filter_panel_cursor -= 1;
                     } else {
                         ss.focus = AppStoreFocus::BrowserButton;
+                        ss.collapse_filter_panel();
                     }
                 }
                 Action::Down => {
@@ -1528,6 +1531,7 @@ fn handle_appstore_key(
                         ss.filter_panel_cursor += 1;
                     } else {
                         ss.focus = AppStoreFocus::LeftPane;
+                        ss.collapse_filter_panel();
                     }
                 }
                 Action::Enter => {
@@ -1583,8 +1587,7 @@ fn handle_appstore_key(
                 }
                 Action::Back => {
                     if ss.filter_panel_open {
-                        ss.filter_panel_open = false;
-                        ss.sort_dropdown_open = false;
+                        ss.collapse_filter_panel();
                     } else {
                         ss.focus = AppStoreFocus::LeftPane;
                     }
@@ -2751,20 +2754,34 @@ fn handle_browser_action(
             let added_key = awesome_ratatui_manager::add_to_registered(&app);
             logging::info(&format!("Awesome Ratatui: added '{}' to app store, prompting install", app.name));
             state.needs_sync = true;
-            // Open install location dialog
-            ss.browser.active = false;
-            ss.browser.search_query.clear();
-            ss.install_location_dialog = true;
-            ss.install_location_cursor = 0;
-            ss.install_dialog_failed.clear();
-            ss.retry_item_id = None;
-            // Shown inside the dialog rather than as a toast, so the two do not overlap
-            ss.install_dialog_note = Some(format!("✓ {} added to the App Store", app.name));
-            ss.available_install_methods =
-                app_store::actions::install_methods_for(&awesome_ratatui_manager::to_registered_value(&app));
-            // The left-pane cursor still points at the previously selected app, and
-            // `registered_apps` here predates the insert — pin the target explicitly.
-            ss.pending_install_key = Some(added_key);
+            // Stay in the browser on the same row; the dialog (if any) draws on top
+            ss.browser.focus = awesome_ratatui_manager::BrowserFocus::List;
+            ss.browser.action_cursor = 0;
+
+            let methods = app_store::actions::install_methods_for(
+                &awesome_ratatui_manager::to_registered_value(&app),
+            );
+            if methods.len() == 1 {
+                // `registered_apps` predates the insert, so pass a map that has it
+                let fresh = registry::load_registered_apps();
+                enqueue_job(
+                    state,
+                    &fresh,
+                    &added_key,
+                    crate::app_store::queue::QueueOp::Install(methods[0]),
+                );
+            } else {
+                ss.install_location_dialog = true;
+                ss.install_location_cursor = 0;
+                ss.install_dialog_failed.clear();
+                ss.retry_item_id = None;
+                // Shown inside the dialog rather than as a toast, so the two do not overlap
+                ss.install_dialog_note = Some(format!("✓ {} added to the App Store", app.name));
+                ss.available_install_methods = methods;
+                // The left-pane cursor still points at the previously selected app, and
+                // `registered_apps` here predates the insert — pin the target explicitly.
+                ss.pending_install_key = Some(added_key);
+            }
         }
         "Remove from App Store" => {
             let mut reg = registered_apps.clone();
@@ -3195,6 +3212,28 @@ fn run_app() -> bool {
             };
             ss.queue.clamp_cursor();
             continue;
+        }
+
+        // ---- Intercept: Shift+Up/Down (or W/S) jumps to the ends of the terminal log ----
+        if state.focus == FocusTarget::Main
+            && matches!(state.active_page.as_deref(), Some("appstore"))
+            && state.app_store.focus == crate::app_store::state::AppStoreFocus::Terminal
+            && state.app_store.confirm_dialog.is_none()
+            && !state.app_store.install_location_dialog
+        {
+            use crossterm::event::{KeyCode, KeyModifiers};
+            let shift = key_event.modifiers.contains(KeyModifiers::SHIFT);
+            let to_top = matches!(key_event.code, KeyCode::Up | KeyCode::Char('W')) && shift;
+            let to_bottom = matches!(key_event.code, KeyCode::Down | KeyCode::Char('S')) && shift;
+            if to_top {
+                state.app_store.terminal_follow = false;
+                state.app_store.terminal_scroll = 0;
+                continue;
+            }
+            if to_bottom {
+                state.app_store.snap_terminal_to_bottom();
+                continue;
+            }
         }
 
         // ---- Intercept: X asks before clearing the install queue ----

@@ -368,7 +368,7 @@ fn render_left_pane(
                     format!("{}⏳{}", prefix, label)
                 } else {
                     let indicator = if builtin {
-                        if enabled { "◆" } else { "·" }
+                        "◆"
                     } else {
                         match state.install_statuses.get(key.as_str()) {
                             Some(InstallStatus::NotInstalled) | None => " ",

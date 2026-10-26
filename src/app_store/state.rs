@@ -236,6 +236,13 @@ impl AppStoreState {
         self.refresh_cursor_idx(registered)
     }
 
+    /// Fold the Filters & Sort panel away — called whenever focus leaves it.
+    pub fn collapse_filter_panel(&mut self) {
+        self.filter_panel_open = false;
+        self.sort_dropdown_open = false;
+        self.filter_panel_cursor = 0;
+    }
+
     /// Sync output from the background thread into the running item's log.
     /// Returns true if the operation just completed.
     pub fn poll_operation(&mut self) -> bool {
