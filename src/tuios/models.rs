@@ -74,6 +74,11 @@ pub struct TuiosState {
     /// Command the main loop should launch outside the tuiOS container
     /// (new OS window, or by handing over the current terminal).
     pub pending_foreground: Option<Vec<String>>,
+    /// Navbar action ("app:X" / "dashboard:X") the main loop should run next,
+    /// used by the App Store to launch built-ins through the normal path.
+    pub pending_nav_action: Option<String>,
+    /// Flag: rebuild the navbar dropdowns without a full install sync
+    pub needs_nav_rebuild: bool,
 }
 
 impl TuiosState {
@@ -95,6 +100,8 @@ impl TuiosState {
             run_source_dialog: None,
             needs_sync: false,
             pending_foreground: None,
+            pending_nav_action: None,
+            needs_nav_rebuild: false,
         }
     }
 }

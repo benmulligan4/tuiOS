@@ -39,6 +39,64 @@ const BUILTIN_DASHBOARDS: &[(&str, &str, &str)] = &[
     ("Dashboard-2", "Dashboard 2 — System Stats", "dashboards::dashboard_2"),
 ];
 
+/// App Store categories reserved for the apps and dashboards that ship with tuiOS.
+pub const BUILTIN_APP_CATEGORY: &str = "tuiOS Apps";
+pub const BUILTIN_DASHBOARD_CATEGORY: &str = "tuiOS Dashboards";
+
+/// One-line descriptions for the App Store preview pane, keyed by built-in name.
+const BUILTIN_DESCRIPTIONS: &[(&str, &str)] = &[
+    ("CharacterSet", "Browse and copy Unicode characters, box-drawing glyphs and symbols."),
+    ("FileExplorer", "Navigate the filesystem, preview files and open them in the text editor."),
+    ("TextEditor", "A lightweight editor for quick edits without leaving tuiOS."),
+    ("Dashboard-1", "The default home screen — large clock, date and system greeting."),
+    ("Dashboard-2", "Live CPU, memory, disk and network statistics at a glance."),
+];
+
+pub fn is_builtin_store_key(key: &str) -> bool {
+    BUILTIN_APPS.iter().chain(BUILTIN_DASHBOARDS).any(|(k, _, _)| *k == key)
+}
+
+/// True when the key is a built-in dashboard rather than a built-in app.
+pub fn is_builtin_dashboard(key: &str) -> bool {
+    BUILTIN_DASHBOARDS.iter().any(|(k, _, _)| *k == key)
+}
+
+/// Registered-app shaped entries for everything that ships with tuiOS. These are
+/// merged into `load_registered_apps()` so the App Store can list them, but they are
+/// never written back to registered-apps.json.
+pub fn builtin_store_entries() -> HashMap<String, Value> {
+    let mut out = HashMap::new();
+    let groups = [
+        (BUILTIN_APPS, BUILTIN_APP_CATEGORY),
+        (BUILTIN_DASHBOARDS, BUILTIN_DASHBOARD_CATEGORY),
+    ];
+    for (table, category) in groups {
+        for (key, label, module) in table {
+            let description = BUILTIN_DESCRIPTIONS
+                .iter()
+                .find(|(k, _)| k == key)
+                .map(|(_, d)| *d)
+                .unwrap_or("");
+            out.insert(
+                (*key).to_string(),
+                serde_json::json!({
+                    "label": label,
+                    "category": category,
+                    "author": "tuiOS",
+                    "version": "built-in",
+                    "license": "Ships with tuiOS",
+                    "repository": "",
+                    "description": description,
+                    "module": module,
+                    "builtin": true,
+                    "approved": true,
+                }),
+            );
+        }
+    }
+    out
+}
+
 fn builtins_for(filename: &str) -> &'static [(&'static str, &'static str, &'static str)] {
     match filename {
         "apps.json" => BUILTIN_APPS,
@@ -73,9 +131,14 @@ pub fn load_apps() -> HashMap<String, Value> {
     load("apps.json")
 }
 
-/// Return dict of {name: {label, category, ...}} from registered-apps.json.
+/// Return dict of {name: {label, category, ...}} from registered-apps.json, with the
+/// built-in apps and dashboards merged in so the App Store can list them too.
 pub fn load_registered_apps() -> HashMap<String, Value> {
-    load("registered-apps.json")
+    let mut map = load("registered-apps.json");
+    for (key, entry) in builtin_store_entries() {
+        map.insert(key, entry);
+    }
+    map
 }
 
 /// Write an updated registry back to the config file.
@@ -92,9 +155,12 @@ pub fn save_config(filename: &str, data: &HashMap<String, Value>) {
             ordered.insert((*key).to_string(), entry.clone());
         }
     }
+    // Built-ins live in code, so never let them leak into registered-apps.json
+    let skip_builtins = filename == "registered-apps.json";
     let mut rest: Vec<&String> = data
         .keys()
         .filter(|k| !ordered.contains_key(k.as_str()))
+        .filter(|k| !(skip_builtins && is_builtin_store_key(k)))
         .collect();
     rest.sort_by_key(|k| k.to_lowercase());
     for key in rest {

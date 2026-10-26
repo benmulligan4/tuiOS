@@ -12,6 +12,8 @@ const README_URL: &str =
 pub const REPO_URL: &str = "https://github.com/ratatui/awesome-ratatui";
 const CACHE_FILE: &str = "awesome-ratatui-cache.json";
 const CACHE_TTL_SECS: u64 = 3600;
+/// Bumped whenever the parse output shape changes, so stale caches are discarded.
+const CACHE_VERSION: u32 = 2;
 
 // ── Data types ──────────────────────────────────────────────────────────
 
@@ -21,10 +23,15 @@ pub struct AwesomeApp {
     pub repo_url: String,
     pub description: String,
     pub category: String,
+    /// Empty when the app sits directly under its category.
+    #[serde(default)]
+    pub subcategory: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Cache {
+    #[serde(default)]
+    version: u32,
     fetched_at: u64,
     apps: Vec<AwesomeApp>,
 }
@@ -35,6 +42,7 @@ struct Cache {
 pub enum BrowserFocus {
     SearchBar,
     RepoButton,
+    CollapseToggle,
     DescriptionToggle,
     List,
     Actions,
@@ -64,8 +72,14 @@ pub struct BrowserState {
 #[derive(Debug, Clone)]
 pub enum RowKind {
     CategoryHeader(String),
+    SubcategoryHeader { category: String, subcategory: String },
     App(usize),
     Spacer,
+}
+
+/// Key used in `BrowserState::collapsed` for a subcategory row.
+pub fn subcategory_key(category: &str, subcategory: &str) -> String {
+    format!("{}/{}", category, subcategory)
 }
 
 impl BrowserState {
@@ -123,19 +137,71 @@ impl BrowserState {
         self.probe_cache.insert(key, status);
     }
 
+    /// True once every category is collapsed, which flips the button to "expand all".
+    pub fn all_collapsed(&self) -> bool {
+        !self.categories.is_empty()
+            && self.categories.iter().all(|c| self.collapsed.contains(c))
+    }
+
+    pub fn toggle_collapse_all(&mut self) {
+        if self.all_collapsed() {
+            self.collapsed.clear();
+        } else {
+            for cat in &self.categories {
+                self.collapsed.insert(cat.clone());
+            }
+        }
+        self.cursor = 0;
+        self.scroll = 0;
+        self.recompute_visible();
+    }
+
+    /// Move the cursor to the next/previous category header, leaving it put if
+    /// there is none in that direction.
+    pub fn jump_category(&mut self, forward: bool) {
+        let is_header = |r: &RowKind| matches!(r, RowKind::CategoryHeader(_));
+        let target = if forward {
+            self.visible_rows
+                .iter()
+                .enumerate()
+                .skip(self.cursor + 1)
+                .find(|(_, r)| is_header(r))
+                .map(|(i, _)| i)
+        } else {
+            self.visible_rows[..self.cursor.min(self.visible_rows.len())]
+                .iter()
+                .enumerate()
+                .rev()
+                .find(|(_, r)| is_header(r))
+                .map(|(i, _)| i)
+        };
+
+        let Some(idx) = target else { return };
+        self.cursor = idx;
+
+        const VISIBLE_H: usize = 20;
+        if self.cursor < self.scroll {
+            self.scroll = self.cursor;
+        } else if self.cursor >= self.scroll + VISIBLE_H {
+            self.scroll = self.cursor.saturating_sub(VISIBLE_H - 1);
+        }
+        self.probe_selected();
+    }
+
     pub fn recompute_visible(&mut self) {
         let query = self.search_query.to_lowercase();
         let mut rows: Vec<RowKind> = Vec::new();
         let mut has_prev_category = false;
 
+        let matches = |a: &AwesomeApp| {
+            query.is_empty()
+                || a.name.to_lowercase().contains(&query)
+                || a.description.to_lowercase().contains(&query)
+        };
+
         for cat in &self.categories {
             let cat_apps: Vec<usize> = self.apps.iter().enumerate()
-                .filter(|(_, a)| a.category == *cat)
-                .filter(|(_, a)| {
-                    query.is_empty()
-                        || a.name.to_lowercase().contains(&query)
-                        || a.description.to_lowercase().contains(&query)
-                })
+                .filter(|(_, a)| a.category == *cat && matches(a))
                 .map(|(i, _)| i)
                 .collect();
 
@@ -149,8 +215,31 @@ impl BrowserState {
             has_prev_category = true;
 
             rows.push(RowKind::CategoryHeader(cat.clone()));
-            if !self.collapsed.contains(cat) {
-                for idx in cat_apps {
+            if self.collapsed.contains(cat) {
+                continue;
+            }
+
+            // Apps that sit directly under the category come before any subcategory.
+            for idx in cat_apps.iter().filter(|i| self.apps[**i].subcategory.is_empty()) {
+                rows.push(RowKind::App(*idx));
+            }
+
+            for sub in subcategories_for(cat) {
+                let sub_apps: Vec<usize> = cat_apps.iter()
+                    .copied()
+                    .filter(|i| self.apps[*i].subcategory == *sub)
+                    .collect();
+                if sub_apps.is_empty() {
+                    continue;
+                }
+                rows.push(RowKind::SubcategoryHeader {
+                    category: cat.clone(),
+                    subcategory: sub.to_string(),
+                });
+                if self.collapsed.contains(&subcategory_key(cat, sub)) {
+                    continue;
+                }
+                for idx in sub_apps {
                     rows.push(RowKind::App(idx));
                 }
             }
@@ -199,65 +288,107 @@ fn save_cache(cache: &Cache) {
     }
 }
 
-fn category_order() -> Vec<&'static str> {
-    vec![
-        "Development Tools",
-        "Games",
-        "Productivity and Utilities",
-        "Music and Media",
-        "Networking and Internet",
-        "System Administration",
-        "Social Media",
-        "Embedded",
-        "Other",
-    ]
+/// Canonical categories in display order, each with its ordered subcategories.
+const CATEGORY_TABLE: &[(&str, &[&str])] = &[
+    ("Development Tools", &[
+        "Source Control and Collaboration",
+        "Code Search, Editing, and Review",
+        "APIs, Databases, Build, and Debugging",
+    ]),
+    ("AI and Agents", &[]),
+    ("Files, Data, and Documents", &[]),
+    ("Terminal Workflow", &[]),
+    ("Networking and Internet", &[
+        "Network Operations and Infrastructure",
+        "Remote Access, APIs, and File Transfer",
+        "Communications and Social",
+    ]),
+    ("System Administration", &[
+        "Monitoring, Diagnostics, and Logs",
+        "Containers and Orchestration",
+        "OS, Storage, and Package Management",
+        "Batch, Database, and Cluster Operations",
+    ]),
+    ("Hardware and Embedded", &[]),
+    ("Security and Identity", &[]),
+    ("Productivity and Planning", &[
+        "Tasks, Projects, and Calendars",
+        "Notes and Journaling",
+        "Finance and Markets",
+        "Focus, Habits, and Time",
+    ]),
+    ("Reading and Learning", &[]),
+    ("Music and Media", &[
+        "Music and Audio",
+        "Books, Video, and Creative Media",
+    ]),
+    ("Games", &[]),
+    ("Science, Math, and Exploration", &[]),
+    ("Other", &[]),
+];
+
+pub fn subcategories_for(category: &str) -> &'static [&'static str] {
+    CATEGORY_TABLE
+        .iter()
+        .find(|(cat, _)| *cat == category)
+        .map(|(_, subs)| *subs)
+        .unwrap_or(&[])
 }
 
+/// Strip the leading emoji/punctuation from a markdown heading and lowercase it.
+fn normalize_heading(heading: &str) -> String {
+    heading
+        .chars()
+        .skip_while(|c| !c.is_ascii_alphanumeric())
+        .collect::<String>()
+        .trim()
+        .to_lowercase()
+}
+
+/// Map a README category heading onto a canonical category name.
 fn map_category(raw: &str) -> &'static str {
-    match raw {
-        "Development Tools" => "Development Tools",
-        "Games and Entertainment" => "Games",
-        "Productivity and Utilities" => "Productivity and Utilities",
-        "Music and Media" => "Music and Media",
-        "Networking and Internet" => "Networking and Internet",
-        "System Administration" => "System Administration",
-        "Social Media" => "Social Media",
-        "Embedded" => "Embedded",
-        "Other" => "Other",
+    match normalize_heading(raw).as_str() {
+        "development tools" => "Development Tools",
+        "ai and agents" => "AI and Agents",
+        "files, data, and documents" => "Files, Data, and Documents",
+        "terminal workflow" => "Terminal Workflow",
+        "networking and internet" => "Networking and Internet",
+        "system administration" => "System Administration",
+        "hardware and embedded" | "embedded" => "Hardware and Embedded",
+        "security and identity" => "Security and Identity",
+        "productivity and planning" | "productivity and utilities" => "Productivity and Planning",
+        "reading and learning" => "Reading and Learning",
+        "music and media" => "Music and Media",
+        "games and entertainment" | "games" => "Games",
+        "science, math, and exploration" => "Science, Math, and Exploration",
         _ => "Other",
     }
+}
+
+/// Map a README subcategory heading onto one of `category`'s known subcategories.
+fn map_subcategory(category: &str, raw: &str) -> Option<&'static str> {
+    let key = normalize_heading(raw);
+    subcategories_for(category)
+        .iter()
+        .find(|sub| normalize_heading(sub) == key)
+        .copied()
 }
 
 fn parse_readme(md: &str) -> Vec<AwesomeApp> {
     let mut apps: Vec<AwesomeApp> = Vec::new();
     let mut in_apps_section = false;
-    let mut current_category: Option<String> = None;
-
-    // Category headers we care about (### under ## Apps)
-    let cat_headers: HashMap<&str, &str> = [
-        ("development tools", "Development Tools"),
-        ("games and entertainment", "Games and Entertainment"),
-        ("productivity and utilities", "Productivity and Utilities"),
-        ("music and media", "Music and Media"),
-        ("networking and internet", "Networking and Internet"),
-        ("system administration", "System Administration"),
-        ("social media", "Social Media"),
-        ("embedded", "Embedded"),
-        ("other", "Other"),
-    ].into_iter().collect();
+    let mut current_category: Option<&'static str> = None;
+    let mut current_subcategory: Option<&'static str> = None;
 
     for line in md.lines() {
         let trimmed = line.trim();
 
         // Detect top-level sections
-        if trimmed.starts_with("## ") && !trimmed.starts_with("### ") {
-            let heading = trimmed.trim_start_matches("## ").trim();
-            // Strip emoji prefixes
-            let clean = heading.chars().skip_while(|c| !c.is_ascii_alphanumeric()).collect::<String>().trim().to_string();
-            in_apps_section = clean.eq_ignore_ascii_case("Apps");
-            if !in_apps_section {
-                current_category = None;
-            }
+        if trimmed.starts_with("## ") {
+            let clean = normalize_heading(trimmed.trim_start_matches("## "));
+            in_apps_section = clean == "apps";
+            current_category = None;
+            current_subcategory = None;
             continue;
         }
 
@@ -265,28 +396,22 @@ fn parse_readme(md: &str) -> Vec<AwesomeApp> {
             continue;
         }
 
-        // Detect sub-category headings
         if trimmed.starts_with("### ") {
-            let heading = trimmed.trim_start_matches("### ").trim();
-            let clean: String = heading.chars()
-                .skip_while(|c| !c.is_ascii_alphanumeric())
-                .collect::<String>()
-                .trim()
-                .to_string()
-                .to_lowercase();
+            current_category = Some(map_category(trimmed.trim_start_matches("### ")));
+            current_subcategory = None;
+            continue;
+        }
 
-            if let Some(&canonical) = cat_headers.get(clean.as_str()) {
-                current_category = Some(canonical.to_string());
-            } else {
-                current_category = None;
-            }
+        if trimmed.starts_with("#### ") {
+            current_subcategory = current_category
+                .and_then(|cat| map_subcategory(cat, trimmed.trim_start_matches("#### ")));
             continue;
         }
 
         // Parse app entries: "- [Name](url) - Description"
-        if let Some(cat) = &current_category {
-            if trimmed.starts_with("- [") || trimmed.starts_with("- \n[") {
-                if let Some(app) = parse_app_line(trimmed, cat) {
+        if let Some(cat) = current_category {
+            if trimmed.starts_with("- [") {
+                if let Some(app) = parse_app_line(trimmed, cat, current_subcategory.unwrap_or("")) {
                     apps.push(app);
                 }
             }
@@ -296,7 +421,7 @@ fn parse_readme(md: &str) -> Vec<AwesomeApp> {
     apps
 }
 
-fn parse_app_line(line: &str, category: &str) -> Option<AwesomeApp> {
+fn parse_app_line(line: &str, category: &str, subcategory: &str) -> Option<AwesomeApp> {
     // Format: "- [Name](url) - Description" or "- [Name](url) — Description"
     let rest = line.strip_prefix("- ")?;
     let name_start = rest.find('[')? + 1;
@@ -317,13 +442,12 @@ fn parse_app_line(line: &str, category: &str) -> Option<AwesomeApp> {
         .trim()
         .to_string();
 
-    let mapped = map_category(category);
-
     Some(AwesomeApp {
         name,
         repo_url,
         description,
-        category: mapped.to_string(),
+        category: category.to_string(),
+        subcategory: subcategory.to_string(),
     })
 }
 
@@ -331,7 +455,7 @@ fn parse_app_line(line: &str, category: &str) -> Option<AwesomeApp> {
 pub fn load_or_fetch() -> Result<(Vec<AwesomeApp>, u64), String> {
     if let Some(cache) = load_cache() {
         let age = now_epoch().saturating_sub(cache.fetched_at);
-        if age < CACHE_TTL_SECS {
+        if cache.version == CACHE_VERSION && age < CACHE_TTL_SECS {
             logging::info(&format!(
                 "Awesome Ratatui: loaded {} apps from cache ({}s old)",
                 cache.apps.len(), age
@@ -355,7 +479,7 @@ pub fn fetch_and_cache() -> Result<(Vec<AwesomeApp>, u64), String> {
     let ts = now_epoch();
     logging::info(&format!("Awesome Ratatui: parsed {} apps from README", apps.len()));
 
-    let cache = Cache { fetched_at: ts, apps: apps.clone() };
+    let cache = Cache { version: CACHE_VERSION, fetched_at: ts, apps: apps.clone() };
     save_cache(&cache);
 
     Ok((apps, ts))
@@ -363,14 +487,11 @@ pub fn fetch_and_cache() -> Result<(Vec<AwesomeApp>, u64), String> {
 
 /// Build the ordered category list from parsed apps.
 pub fn build_categories(apps: &[AwesomeApp]) -> Vec<String> {
-    let order = category_order();
-    let mut seen: Vec<String> = Vec::new();
-    for cat_name in &order {
-        if apps.iter().any(|a| a.category == *cat_name) {
-            seen.push(cat_name.to_string());
-        }
-    }
-    seen
+    CATEGORY_TABLE
+        .iter()
+        .filter(|(cat, _)| apps.iter().any(|a| a.category == *cat))
+        .map(|(cat, _)| cat.to_string())
+        .collect()
 }
 
 // ── Add / remove from registered apps ───────────────────────────────────

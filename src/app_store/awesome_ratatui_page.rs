@@ -11,8 +11,14 @@ use ratatui::{
 };
 use serde_json::Value;
 
-use super::awesome_ratatui_manager::{BrowserFocus, BrowserState, RowKind};
+use super::awesome_ratatui_manager::{AwesomeApp, BrowserFocus, BrowserState, RowKind};
 use super::state::InstallStatus;
+
+fn matches_query(app: &AwesomeApp, query: &str) -> bool {
+    query.is_empty()
+        || app.name.to_lowercase().contains(query)
+        || app.description.to_lowercase().contains(query)
+}
 
 pub fn render_browser(
     frame: &mut Frame,
@@ -127,6 +133,19 @@ fn render_app_list(
         repo_style,
     )));
 
+    // Collapse / expand all categories
+    let collapse_style = if browser.focus == BrowserFocus::CollapseToggle {
+        Style::default().fg(Color::Black).bg(Color::Cyan)
+    } else {
+        Style::default().fg(Color::White)
+    };
+    let collapse_text = if browser.all_collapsed() {
+        " [▶] Expand All Categories"
+    } else {
+        " [▼] Collapse All Categories"
+    };
+    lines.push(Line::from(Span::styled(collapse_text, collapse_style)));
+
     // Show descriptions toggle
     let toggle_style = if browser.focus == BrowserFocus::DescriptionToggle {
         Style::default().fg(Color::Black).bg(Color::Cyan)
@@ -145,6 +164,7 @@ fn render_app_list(
     )));
 
     let header_lines = lines.len();
+    let query = browser.search_query.to_lowercase();
 
     let available = area.height as usize;
     let visible_height = available.saturating_sub(header_lines);
@@ -171,15 +191,28 @@ fn render_app_list(
                 };
                 let count = browser.apps.iter()
                     .filter(|a| a.category == *cat)
-                    .filter(|a| {
-                        browser.search_query.is_empty()
-                            || a.name.to_lowercase().contains(&browser.search_query.to_lowercase())
-                            || a.description.to_lowercase().contains(&browser.search_query.to_lowercase())
-                    })
+                    .filter(|a| matches_query(a, &query))
                     .count();
                 lines.push(Line::from(Span::styled(
                     format!(" {} {} ({})", arrow, cat, count),
                     cat_style,
+                )));
+            }
+            RowKind::SubcategoryHeader { category, subcategory } => {
+                let key = super::awesome_ratatui_manager::subcategory_key(category, subcategory);
+                let arrow = if browser.collapsed.contains(&key) { "▶" } else { "▼" };
+                let sub_style = if is_cursor {
+                    Style::default().fg(Color::Black).bg(Color::Yellow)
+                } else {
+                    Style::default().fg(Color::Cyan)
+                };
+                let count = browser.apps.iter()
+                    .filter(|a| a.category == *category && a.subcategory == *subcategory)
+                    .filter(|a| matches_query(a, &query))
+                    .count();
+                lines.push(Line::from(Span::styled(
+                    format!("   {} {} ({})", arrow, subcategory, count),
+                    sub_style,
                 )));
             }
             RowKind::App(idx) => {
@@ -191,7 +224,12 @@ fn render_app_list(
                     Some(s) if !matches!(s, InstallStatus::NotInstalled)
                 );
 
-                let prefix = if is_cursor { " » " } else { "   " };
+                let indent = if app.subcategory.is_empty() { "" } else { "  " };
+                let prefix = if is_cursor {
+                    format!("{} » ", indent)
+                } else {
+                    format!("{}   ", indent)
+                };
                 let suffix = if is_inst && is_reg {
                     " (installed)"
                 } else if is_inst {
@@ -292,6 +330,13 @@ fn render_app_detail(
         Span::styled("  Category:    ", label_style),
         Span::styled(&app.category, value_style),
     ]));
+
+    if !app.subcategory.is_empty() {
+        lines.push(Line::from(vec![
+            Span::styled("  Subcategory: ", label_style),
+            Span::styled(&app.subcategory, value_style),
+        ]));
+    }
 
     let author_name = app.repo_url
         .trim_end_matches('/')

@@ -263,21 +263,28 @@ fn render_left_pane(
             }
         }
 
-        // Show Installed (cursor 2)
-        let i_check = if state.filter_show_installed { "[*]" } else { "[ ]" };
+        // Organise by category (cursor 2)
+        let g_check = if state.group_by_category { "[*]" } else { "[ ]" };
         lines.push(Line::from(Span::styled(
-            format!("   {}  Show Installed", i_check),
+            format!("   {}  Organise by Category", g_check),
             item_style(2),
         )));
 
-        // Show Uninstalled (cursor 3)
-        let u_check = if state.filter_show_uninstalled { "[*]" } else { "[ ]" };
+        // Show Installed (cursor 3)
+        let i_check = if state.filter_show_installed { "[*]" } else { "[ ]" };
         lines.push(Line::from(Span::styled(
-            format!("   {}  Show Uninstalled", u_check),
+            format!("   {}  Show Installed", i_check),
             item_style(3),
         )));
 
-        // Category filters (cursor 4..4+N-1)
+        // Show Uninstalled (cursor 4)
+        let u_check = if state.filter_show_uninstalled { "[*]" } else { "[ ]" };
+        lines.push(Line::from(Span::styled(
+            format!("   {}  Show Uninstalled", u_check),
+            item_style(4),
+        )));
+
+        // Category filters (cursor 5..5+N-1)
         if !categories.is_empty() {
             lines.push(Line::from(Span::styled("   Categories:", label_style)));
         }
@@ -286,7 +293,7 @@ fn render_left_pane(
             let check = if is_shown { "[*]" } else { "[ ]" };
             lines.push(Line::from(Span::styled(
                 format!("    {}  {}", check, cat),
-                item_style(4 + ci),
+                item_style(AppStoreState::CATEGORY_FILTER_BASE + ci),
             )));
         }
     }
@@ -326,16 +333,24 @@ fn render_left_pane(
             }
             LeftRowKind::CategoryHeader(cat) => {
                 let collapsed = state.collapsed_store_categories.contains(cat);
+                let native = crate::app_store::state::is_builtin_category(cat);
+                // Native categories get their own glyph, and stay muted so they read
+                // as part of tuiOS rather than as another App Store section.
                 let arrow = if collapsed { "▶" } else { "▼" };
-                let cat_style = if is_selected && in_app_list {
-                    Style::default().fg(Color::Black).bg(Color::Yellow)
+                let text = if native {
+                    format!(" {} ◆ {}", arrow, cat)
                 } else {
-                    Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+                    format!(" {} {}", arrow, cat)
                 };
-                lines.push(Line::from(Span::styled(
-                    format!(" {} {}", arrow, cat),
-                    cat_style,
-                )));
+                let accent = if native { Color::Gray } else { Color::Yellow };
+                let cat_style = if is_selected && in_app_list {
+                    Style::default().fg(Color::Black).bg(accent)
+                } else if native {
+                    Style::default().fg(accent)
+                } else {
+                    Style::default().fg(accent).add_modifier(Modifier::BOLD)
+                };
+                lines.push(Line::from(Span::styled(text, cat_style)));
             }
             LeftRowKind::App(key) => {
                 let meta = match registered.get(key.as_str()) {
@@ -343,6 +358,8 @@ fn render_left_pane(
                     None => continue,
                 };
                 let label = meta.get("label").and_then(|v| v.as_str()).unwrap_or(key);
+                let builtin = super::actions::is_builtin(meta);
+                let enabled = !builtin || super::actions::get_builtin_enabled(key);
 
                 let queued = state.queue.has_active_for(key);
                 let prefix = if is_selected && in_app_list { " » " } else { "   " };
@@ -350,9 +367,13 @@ fn render_left_pane(
                 let text = if queued {
                     format!("{}⏳{}", prefix, label)
                 } else {
-                    let indicator = match state.install_statuses.get(key.as_str()) {
-                        Some(InstallStatus::NotInstalled) | None => " ",
-                        _ => "✓",
+                    let indicator = if builtin {
+                        "◆"
+                    } else {
+                        match state.install_statuses.get(key.as_str()) {
+                            Some(InstallStatus::NotInstalled) | None => " ",
+                            _ => "✓",
+                        }
                     };
                     format!("{}{} {}", prefix, indicator, label)
                 };
@@ -365,6 +386,12 @@ fn render_left_pane(
 
                 let style = if is_selected && in_app_list {
                     Style::default().fg(Color::Black).bg(Color::Cyan)
+                } else if builtin {
+                    if enabled {
+                        Style::default().fg(Color::Green)
+                    } else {
+                        Style::default().fg(Color::White)
+                    }
                 } else if queued {
                     Style::default().fg(Color::Yellow)
                 } else if is_failed {
@@ -439,6 +466,7 @@ fn render_right_pane(
     let accent_style = Style::default().fg(Color::Cyan);
 
     let is_approved = meta.get("approved").and_then(|v| v.as_bool()).unwrap_or(true);
+    let is_builtin = super::actions::is_builtin(meta);
 
     let mut lines: Vec<Line> = Vec::new();
 
@@ -446,7 +474,12 @@ fn render_right_pane(
     lines.push(Line::from(Span::styled(label, title_style)));
 
     // Approved badge or experimental warning
-    if is_approved {
+    if is_builtin {
+        lines.push(Line::from(Span::styled(
+            "  ◆ Built into tuiOS",
+            Style::default().fg(Color::LightBlue),
+        )));
+    } else if is_approved {
         lines.push(Line::from(Span::styled(
             "  ✓ tuiOS Approved",
             Style::default().fg(Color::Green),
@@ -476,10 +509,12 @@ fn render_right_pane(
         Span::styled("  License:     ", label_style),
         Span::styled(license, value_style),
     ]));
-    lines.push(Line::from(vec![
-        Span::styled("  Repository:  ", label_style),
-        Span::styled(repository, accent_style),
-    ]));
+    if !is_builtin {
+        lines.push(Line::from(vec![
+            Span::styled("  Repository:  ", label_style),
+            Span::styled(repository, accent_style),
+        ]));
+    }
     lines.push(Line::from(""));
 
     // Description
@@ -495,13 +530,22 @@ fn render_right_pane(
     lines.push(Line::from(""));
 
     // Install status
-    let via_git = super::actions::installed_via_git(&selected_key, category);
+    let via_git = !is_builtin && super::actions::installed_via_git(&selected_key, category);
     let path_label = if via_git { "PATH via Git" } else { "PATH" };
-    let (status_text, status_color) = match &install_status {
-        InstallStatus::NotInstalled => ("Not installed".to_string(), Color::DarkGray),
-        InstallStatus::Global(path) => (format!("Installed to {}: {}", path_label, path), Color::Green),
-        InstallStatus::Local(path) => (format!("Installed to Downloads: {}", path), Color::Green),
-        InstallStatus::Both(_, _) => ("Installed to Both".to_string(), Color::Green),
+    let builtin_enabled = is_builtin && super::actions::get_builtin_enabled(&selected_key);
+    let (status_text, status_color) = if is_builtin {
+        if builtin_enabled {
+            ("Enabled — shown in the navbar".to_string(), Color::Green)
+        } else {
+            ("Disabled — hidden from the navbar".to_string(), Color::DarkGray)
+        }
+    } else {
+        match &install_status {
+            InstallStatus::NotInstalled => ("Not installed".to_string(), Color::DarkGray),
+            InstallStatus::Global(path) => (format!("Installed to {}: {}", path_label, path), Color::Green),
+            InstallStatus::Local(path) => (format!("Installed to Downloads: {}", path), Color::Green),
+            InstallStatus::Both(_, _) => ("Installed to Both".to_string(), Color::Green),
+        }
     };
 
     lines.push(Line::from(vec![
@@ -540,28 +584,65 @@ fn render_right_pane(
 
     macro_rules! push_action {
         ($text:expr, $base:expr) => {{
-            if action_lines.len() <= action_idx {
-                action_lines.resize(action_idx + 1, lines.len());
-            }
-            action_lines[action_idx] = lines.len();
+            action_lines.push(lines.len());
             let style = if in_actions && state.right_action_cursor == action_idx {
                 Style::default().fg(Color::Black).bg(Color::Cyan)
             } else {
                 $base
             };
             lines.push(Line::from(Span::styled($text, style)));
+            action_idx += 1;
         }};
     }
 
     let supports_local = super::actions::supports_downloads_install(meta);
     let supports_global = super::actions::supports_path_install(meta);
 
+    // Built-ins ship with tuiOS: no install, uninstall or repository, just run,
+    // enable/disable and the window mode.
+    if is_builtin {
+        push_action!("  [ Run ]", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD));
+
+        let toggle = if builtin_enabled {
+            "  [ Enabled — press to disable ]"
+        } else {
+            "  [ Disabled — press to enable ]"
+        };
+        let toggle_style = if builtin_enabled {
+            Style::default().fg(Color::Green)
+        } else {
+            Style::default().fg(Color::DarkGray)
+        };
+        push_action!(toggle, toggle_style);
+
+        let current_mode = super::actions::get_window_mode(&selected_key, Some(meta));
+        let mode_label = super::actions::builtin_window_mode_label(&current_mode);
+        push_action!(
+            format!("  [ Window Mode: {} — press to switch ]", mode_label),
+            Style::default().fg(Color::Yellow)
+        );
+
+        lines.push(Line::from(""));
+        lines.push(Line::from(Span::styled(
+            "  This app is part of tuiOS and cannot be uninstalled.",
+            Style::default().fg(Color::DarkGray),
+        )));
+        lines.push(Line::from(Span::styled(
+            "  Full Screen hides the navbar until you press Tab.",
+            Style::default().fg(Color::DarkGray),
+        )));
+
+        let _ = action_idx;
+        finish_right_pane(frame, right_inner, state, lines, action_lines);
+        return;
+    }
+
     // Run button (only for installed apps)
     let is_installed = !matches!(install_status, InstallStatus::NotInstalled);
     if is_installed {
         let locked = state.ui_locked();
         let run_text = if locked {
-            "  [ Run ]  ⚠ UI locked while the queue is running"
+            "  [ Run ]  ⚠  UI locked while the queue is running"
         } else {
             "  [ Run ]"
         };
@@ -571,11 +652,7 @@ fn render_right_pane(
             Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)
         };
         push_action!(run_text, base);
-        action_idx += 1;
     }
-
-    push_action!("  [ Open Repository ]", accent_style);
-    action_idx += 1;
 
     // Install / Uninstall buttons based on status
     match &install_status {
@@ -583,12 +660,8 @@ fn render_right_pane(
             push_action!("  [ Install ]", Style::default().fg(Color::Green));
         }
         InstallStatus::Global(_) => {
-            push_action!("  [ Uninstall from PATH ]", Style::default().fg(Color::Red));
-            action_idx += 1;
-
             if supports_local {
                 push_action!("  [ Install to Downloads ]", Style::default().fg(Color::Green));
-                action_idx += 1;
             } else {
                 lines.push(Line::from(Span::styled(
                     "    (local install not supported for this app)",
@@ -596,15 +669,11 @@ fn render_right_pane(
                 )));
             }
 
-            push_action!("  [ Open Install Location ]", accent_style);
+            push_action!("  [ Uninstall from PATH ]", Style::default().fg(Color::Red));
         }
         InstallStatus::Local(_) => {
-            push_action!("  [ Uninstall from Downloads ]", Style::default().fg(Color::Red));
-            action_idx += 1;
-
             if supports_global {
                 push_action!("  [ Install to PATH ]", Style::default().fg(Color::Green));
-                action_idx += 1;
             } else {
                 lines.push(Line::from(Span::styled(
                     "    (PATH install not supported for this app)",
@@ -612,11 +681,10 @@ fn render_right_pane(
                 )));
             }
 
-            push_action!("  [ Open Install Location ]", accent_style);
+            push_action!("  [ Uninstall from Downloads ]", Style::default().fg(Color::Red));
         }
         InstallStatus::Both(_, _) => {
             push_action!("  [ Uninstall ]", Style::default().fg(Color::Red));
-            action_idx += 1;
 
             // Run source selector
             let current_source = super::actions::get_run_source(&selected_key);
@@ -625,15 +693,24 @@ fn render_right_pane(
             push_action!(source_text, Style::default().fg(Color::Yellow));
             if current_source == "local" {
                 lines.push(Line::from(Span::styled(
-                    "    ⚠ Downloads source is experimental",
+                    "    ⚠  Downloads source is experimental",
                     Style::default().fg(Color::Yellow),
                 )));
             }
-            action_idx += 1;
+        }
+    }
 
+    lines.push(Line::from(""));
+
+    push_action!("  [ Open Repository ]", accent_style);
+
+    match &install_status {
+        InstallStatus::NotInstalled => {}
+        InstallStatus::Global(_) | InstallStatus::Local(_) => {
+            push_action!("  [ Open Install Location ]", accent_style);
+        }
+        InstallStatus::Both(_, _) => {
             push_action!("  [ Open PATH Location ]", accent_style);
-            action_idx += 1;
-
             push_action!("  [ Open Downloads Location ]", accent_style);
         }
     }
@@ -642,11 +719,10 @@ fn render_right_pane(
     if is_installed {
         let supports_embed = super::actions::supports_embedded(registered.get(&selected_key));
         lines.push(Line::from(""));
-        action_idx += 1;
 
         if !supports_embed {
             lines.push(Line::from(Span::styled(
-                "  ⚠ This app only supports running in a new window",
+                "  ⚠  This app only supports running in a new window",
                 Style::default().fg(Color::Yellow),
             )));
             lines.push(Line::from(Span::styled(
@@ -663,12 +739,22 @@ fn render_right_pane(
 
     // Remove from App Store (only for non-approved, not-installed apps)
     if !is_approved && !is_installed {
-        action_idx += 1;
         lines.push(Line::from(""));
         push_action!("  [ Remove from App Store ]", Style::default().fg(Color::Red));
     }
+    let _ = action_idx;
 
-    // Record geometry so key handling can scroll the focused action into view
+    finish_right_pane(frame, right_inner, state, lines, action_lines);
+}
+
+/// Record the details-pane geometry so key handling can scroll, then draw it.
+fn finish_right_pane(
+    frame: &mut Frame,
+    right_inner: Rect,
+    state: &AppStoreState,
+    lines: Vec<Line>,
+    action_lines: Vec<usize>,
+) {
     let visible_height = (right_inner.height as usize).max(1);
     let total_lines = lines.len();
     state.right_view_height.set(visible_height);
@@ -893,7 +979,6 @@ fn render_queue_panel(
         lines.push(Line::from(Span::styled(row, style)));
 
         if expanded {
-            let key_style = Style::default().fg(Color::Cyan);
             lines.push(Line::from(Span::styled(
                 format!("     {} — {}", item.op.destination_phrase(), item.status.label()),
                 Style::default().fg(base),
@@ -908,23 +993,23 @@ fn render_queue_panel(
                     }
                 }
             }
-            let mut opts: Vec<(&str, &str)> = vec![("Enter", "view log")];
-            if state.queue.can_move(i, true) || state.queue.can_move(i, false) {
-                opts.push(("↑ / ↓", "move in queue"));
+            for (oi, opt) in state.queue.item_actions(i).iter().enumerate() {
+                let sel = oi == state.queue.option_cursor;
+                let opt_style = if sel {
+                    Style::default().fg(Color::Black).bg(Color::Cyan)
+                } else {
+                    Style::default().fg(Color::White)
+                };
+                let prefix = if sel { "   » " } else { "     " };
+                lines.push(Line::from(Span::styled(
+                    format!("{}[ {} ]", prefix, opt.label()),
+                    opt_style,
+                )));
             }
-            if item.status == QueueStatus::Pending {
-                opts.push(("C", "cancel job"));
-            }
-            if item.status == QueueStatus::Failed {
-                opts.push(("R", "retry job"));
-            }
-            opts.push(("Q / ←", "deselect"));
-            for (k, desc) in opts {
-                lines.push(Line::from(vec![
-                    Span::styled(format!("     {:<7}", k), key_style),
-                    Span::styled(desc, Style::default().fg(Color::White)),
-                ]));
-            }
+            lines.push(Line::from(Span::styled(
+                "     Q / ← back",
+                Style::default().fg(Color::DarkGray),
+            )));
         }
     }
 
@@ -1055,7 +1140,7 @@ fn render_confirm_dialog(frame: &mut Frame, area: Rect, state: &AppStoreState) {
 }
 
 fn render_install_location_dialog(frame: &mut Frame, area: Rect, state: &AppStoreState) {
-    let width = 56u16.min(area.width);
+    let width = 66u16.min(area.width);
     let inner_width = width.saturating_sub(4) as usize;
 
     let note_lines: Vec<String> = state
@@ -1076,9 +1161,10 @@ fn render_install_location_dialog(frame: &mut Frame, area: Rect, state: &AppStor
 
     frame.render_widget(Clear, popup_rect);
 
+    let retrying = state.retry_item_id.is_some();
     let block = Block::default()
         .borders(Borders::ALL)
-        .title(" Choose Install Location ")
+        .title(if retrying { " Retry Install " } else { " Choose Install Location " })
         .style(Style::default().fg(Color::Cyan).bg(Color::Black));
     frame.render_widget(block, popup_rect);
 
@@ -1088,27 +1174,35 @@ fn render_install_location_dialog(frame: &mut Frame, area: Rect, state: &AppStor
     for note in &note_lines {
         lines.push(Line::from(Span::styled(
             format!("  {}", note),
-            Style::default().fg(Color::Green),
+            if retrying { Style::default().fg(Color::Yellow) } else { Style::default().fg(Color::Green) },
         )));
     }
     if !note_lines.is_empty() {
         lines.push(Line::from(""));
     }
     lines.push(Line::from(Span::styled(
-        "  Where would you like to install?",
+        if retrying {
+            "  Which source would you like to retry with?"
+        } else {
+            "  Where would you like to install?"
+        },
         Style::default().fg(Color::White),
     )));
     lines.push(Line::from(""));
 
     for (i, method) in state.available_install_methods.iter().enumerate() {
-        let style = if i == state.install_location_cursor {
-            Style::default().fg(Color::Black).bg(Color::Cyan)
-        } else {
-            Style::default().fg(Color::White)
+        let selected = i == state.install_location_cursor;
+        let failed = state.install_dialog_failed.contains(method);
+        let style = match (selected, failed) {
+            (true, true) => Style::default().fg(Color::Black).bg(Color::Red),
+            (true, false) => Style::default().fg(Color::Black).bg(Color::Cyan),
+            (false, true) => Style::default().fg(Color::Red),
+            (false, false) => Style::default().fg(Color::White),
         };
-        let prefix = if i == state.install_location_cursor { "  » " } else { "    " };
+        let prefix = if selected { "  » " } else { "    " };
+        let suffix = if failed { "  ✗ failed previously" } else { "" };
         lines.push(Line::from(Span::styled(
-            format!("{}{}", prefix, method.label()),
+            format!("{}{}{}", prefix, method.label(), suffix),
             style,
         )));
     }
@@ -1143,12 +1237,24 @@ pub fn wrap_text(text: &str, max_width: usize) -> Vec<String> {
 }
 
 /// Get the number of action buttons for the current app's install status.
-pub fn action_count(status: &InstallStatus, supports_embed: bool, supports_local: bool, supports_global: bool, is_approved: bool) -> usize {
+pub fn action_count(status: &InstallStatus, meta: Option<&Value>) -> usize {
+    // Built-ins always show Run, the enable toggle and the window mode
+    if meta.map(super::actions::is_builtin).unwrap_or(false) {
+        return 3;
+    }
+    let supports_embed = super::actions::supports_embedded(meta);
+    let supports_local = meta.map(super::actions::supports_downloads_install).unwrap_or(false);
+    let supports_global = meta.map(super::actions::supports_path_install).unwrap_or(true);
+    let is_approved = meta
+        .and_then(|m| m.get("approved"))
+        .and_then(|v| v.as_bool())
+        .unwrap_or(true);
+
     let run_btn = if matches!(status, InstallStatus::NotInstalled) { 0 } else { 1 };
     let mode_btn = if !matches!(status, InstallStatus::NotInstalled) && supports_embed { 1 } else { 0 };
     let remove_btn = if !is_approved && matches!(status, InstallStatus::NotInstalled) { 1 } else { 0 };
     let base = match status {
-        InstallStatus::NotInstalled => 2,  // Open Repo, Install
+        InstallStatus::NotInstalled => 2,  // Install, Open Repo
         InstallStatus::Global(_) => {
             if supports_local { 4 } else { 3 }
         }
