@@ -118,19 +118,67 @@ pub fn render(
             &state.install_statuses,
         );
     } else if state.queue_visible() {
+        // A collapsed pane is a single line, so it must not claim a percentage
+        let (details_c, bottom_c) = if state.details_minimised() {
+            (Constraint::Length(1), Constraint::Fill(1))
+        } else if state.terminal_minimised() && state.queue_minimised() {
+            (Constraint::Fill(1), Constraint::Length(2))
+        } else {
+            (Constraint::Percentage(55), Constraint::Fill(1))
+        };
         let right_sections = Layout::default()
             .direction(Direction::Vertical)
-            .constraints([Constraint::Percentage(55), Constraint::Fill(1)])
+            .constraints([details_c, bottom_c])
             .split(full_right_area);
-        frame.render_widget(
-            page_label(pane_block(" Details ", right_focused, btype, accent)),
-            right_sections[0],
-        );
-        render_right_pane(frame, right_sections[0], state, registered);
 
-        // Terminal on the left of the bottom row, queue on the right
+        if state.details_minimised() {
+            render_min_bar(
+                frame,
+                right_sections[0],
+                &details_bar_label(state, registered),
+                right_focused,
+                accent,
+            );
+        } else {
+            let details_title = if right_focused {
+                " Details  [M minimise] "
+            } else {
+                " Details "
+            };
+            frame.render_widget(
+                page_label(pane_block(details_title, right_focused, btype, accent)),
+                right_sections[0],
+            );
+            render_right_pane(frame, right_sections[0], state, registered);
+        }
+
         let bottom_area = right_sections[1];
-        if bottom_area.width >= 64 {
+        let term_min = state.terminal_minimised();
+        let queue_min = state.queue_minimised();
+        let term_focused = page_focused && state.focus == AppStoreFocus::Terminal;
+        let queue_focused = page_focused && state.focus == AppStoreFocus::Queue;
+
+        if term_min || queue_min {
+            // Collapsed panes go full width and stack, terminal line above queue line
+            let rows = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([
+                    if term_min { Constraint::Length(1) } else { Constraint::Fill(1) },
+                    if queue_min { Constraint::Length(1) } else { Constraint::Fill(1) },
+                ])
+                .split(bottom_area);
+            if term_min {
+                render_min_bar(frame, rows[0], &terminal_bar_label(state), term_focused, accent);
+            } else {
+                render_terminal_panel(frame, rows[0], state, btype, accent, page_focused);
+            }
+            if queue_min {
+                render_min_bar(frame, rows[1], &queue_bar_label(state), queue_focused, accent);
+            } else {
+                render_queue_panel(frame, rows[1], state, btype, accent, page_focused);
+            }
+        } else if bottom_area.width >= 64 {
+            // Terminal on the left of the bottom row, queue on the right
             let bottom = Layout::default()
                 .direction(Direction::Horizontal)
                 .constraints([Constraint::Fill(1), Constraint::Length(QUEUE_WIDTH)])
@@ -773,6 +821,69 @@ fn finish_right_pane(
     frame.render_widget(Paragraph::new(visible_lines), right_inner);
 }
 
+/// A pane collapsed to a single line. It stays focusable so Enter/E can bring it back.
+fn render_min_bar(frame: &mut Frame, area: Rect, label: &str, focused: bool, accent: Color) {
+    if area.height == 0 || area.width == 0 {
+        return;
+    }
+    let width = area.width as usize;
+    let left = format!(" ▸ {}", label);
+    let right = if focused {
+        "Enter restore  M expand "
+    } else {
+        "M "
+    };
+    let (lw, rw) = (left.chars().count(), right.chars().count());
+    let row = if lw + rw + 1 <= width {
+        format!("{}{}{}", left, " ".repeat(width - lw - rw), right)
+    } else {
+        pad_clip(&left, width)
+    };
+    let style = if focused {
+        Style::default().fg(Color::Black).bg(accent).add_modifier(Modifier::BOLD)
+    } else {
+        Style::default().fg(Color::DarkGray)
+    };
+    frame.render_widget(
+        Paragraph::new(Line::from(Span::styled(row, style))),
+        Rect { height: 1, ..area },
+    );
+}
+
+fn details_bar_label(state: &AppStoreState, registered: &HashMap<String, Value>) -> String {
+    match state.selected_app_key() {
+        Some(key) => {
+            let name = registered
+                .get(key)
+                .and_then(|m| m.get("label"))
+                .and_then(|v| v.as_str())
+                .unwrap_or(key.as_str());
+            format!("Details — {}", name)
+        }
+        None => "Details".to_string(),
+    }
+}
+
+fn terminal_bar_label(state: &AppStoreState) -> String {
+    match state.queue.running() {
+        Some(item) => format!(
+            "Terminal Output — ▸ {}ing {}",
+            item.op.verb(),
+            item.label
+        ),
+        None => format!("Terminal Output — {} lines", state.visible_log().len()),
+    }
+}
+
+fn queue_bar_label(state: &AppStoreState) -> String {
+    let active = state.queue.active_count();
+    if active > 0 {
+        format!("Install Queue ({} active, {} total)", active, state.queue.items.len())
+    } else {
+        format!("Install Queue ({})", state.queue.items.len())
+    }
+}
+
 fn render_terminal_panel(
     frame: &mut Frame,
     area: Rect,
@@ -821,8 +932,10 @@ fn render_terminal_panel(
     }
     if !focused {
         title.push_str("[Shift+Tab to enter] ");
+    } else if state.terminal_expanded() {
+        title.push_str("[W/S scroll  Enter shrink  M minimise] ");
     } else {
-        title.push_str("[W/S scroll] ");
+        title.push_str("[W/S scroll  Enter expand  M minimise] ");
     }
 
     frame.render_widget(
@@ -918,7 +1031,7 @@ fn render_queue_panel(
     if focused {
         let paused = if state.queue.paused { "P resume" } else { "P pause" };
         footer.push(Line::from(Span::styled(
-            format!(" {}   X clear queue", paused),
+            format!(" {}   X clear queue   M minimise", paused),
             hint_style,
         )));
     } else {
