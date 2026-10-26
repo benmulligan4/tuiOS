@@ -1262,31 +1262,120 @@ pub fn spawn_install_git(repo_url: &str, output: Arc<Mutex<Vec<String>>>, done: 
 /// Install options to offer for an app, driven by its declared `install_methods`.
 /// `git` and `local` additionally require a repository URL to be usable.
 pub fn install_methods_for(meta: &Value) -> Vec<InstallLocation> {
-    let declared: Vec<&str> = meta
-        .get("install_methods")
-        .and_then(|v| v.as_array())
-        .map(|a| a.iter().filter_map(|v| v.as_str()).collect())
-        .unwrap_or_else(|| vec!["global", "local"]);
-    let has_repo = meta
-        .get("repository")
-        .and_then(|v| v.as_str())
-        .map(|s| !s.is_empty())
-        .unwrap_or(false);
-
-    let mut out = Vec::new();
-    if declared.contains(&"global") {
-        out.push(InstallLocation::Global);
-    }
-    if declared.contains(&"git") && has_repo {
-        out.push(InstallLocation::Git);
-    }
-    if declared.contains(&"local") && has_repo {
-        out.push(InstallLocation::Local);
-    }
+    let declared = declared_methods(meta);
+    let mut out: Vec<InstallLocation> = METHOD_TABLE
+        .iter()
+        .filter(|(name, _, needs_repo)| {
+            declared.iter().any(|d| d == name) && (!needs_repo || has_repository(meta))
+        })
+        .map(|(_, loc, _)| *loc)
+        .collect();
     if out.is_empty() {
         out.push(InstallLocation::Global);
     }
     out
+}
+
+/// Canonical method order, with the key used in registered-apps.json and whether
+/// the method needs a repository URL to be usable.
+const METHOD_TABLE: &[(&str, InstallLocation, bool)] = &[
+    ("global", InstallLocation::Global, false),
+    ("git", InstallLocation::Git, true),
+    ("local", InstallLocation::Local, true),
+];
+
+/// Key used for an install method in registered-apps.json.
+pub fn method_key(location: &InstallLocation) -> &'static str {
+    match location {
+        InstallLocation::Global => "global",
+        InstallLocation::Git => "git",
+        InstallLocation::Local => "local",
+    }
+}
+
+fn has_repository(meta: &Value) -> bool {
+    meta.get("repository")
+        .and_then(|v| v.as_str())
+        .map(|s| !s.is_empty())
+        .unwrap_or(false)
+}
+
+fn string_list(meta: &Value, field: &str) -> Vec<String> {
+    meta.get(field)
+        .and_then(|v| v.as_array())
+        .map(|a| a.iter().filter_map(|v| v.as_str().map(str::to_string)).collect())
+        .unwrap_or_default()
+}
+
+fn declared_methods(meta: &Value) -> Vec<String> {
+    match meta.get("install_methods") {
+        Some(_) => string_list(meta, "install_methods"),
+        None => vec!["global".to_string(), "local".to_string()],
+    }
+}
+
+/// Methods that have previously failed for this app.
+pub fn failed_install_methods(meta: &Value) -> Vec<InstallLocation> {
+    let failed = string_list(meta, "failed_install_methods");
+    METHOD_TABLE
+        .iter()
+        .filter(|(name, _, _)| failed.iter().any(|f| f == name))
+        .map(|(_, loc, _)| *loc)
+        .collect()
+}
+
+/// Everything worth offering on a retry — the still-declared methods plus any that
+/// failed before, so the user can insist on one that was dropped.
+pub fn retry_install_methods(meta: &Value) -> Vec<InstallLocation> {
+    let declared = declared_methods(meta);
+    let failed = string_list(meta, "failed_install_methods");
+    let mut out: Vec<InstallLocation> = METHOD_TABLE
+        .iter()
+        .filter(|(name, _, needs_repo)| {
+            (declared.iter().any(|d| d == name) || failed.iter().any(|f| f == name))
+                && (!needs_repo || has_repository(meta))
+        })
+        .map(|(_, loc, _)| *loc)
+        .collect();
+    if out.is_empty() {
+        out.push(InstallLocation::Global);
+    }
+    out
+}
+
+/// Record that an install method failed: drop it from `install_methods` so it is no
+/// longer offered by default, and remember it so the retry dialog can flag it.
+pub fn record_failed_install_method(app_key: &str, location: &InstallLocation) {
+    let name = method_key(location);
+    let mut registered = registry::load_registered_apps();
+    let Some(entry) = registered.get_mut(app_key) else { return };
+    let declared = declared_methods(entry);
+    let Some(obj) = entry.as_object_mut() else { return };
+
+    let removed = declared.iter().any(|m| m == name);
+    let remaining: Vec<String> = declared.into_iter().filter(|m| m != name).collect();
+
+    let mut failed: Vec<String> = obj
+        .get("failed_install_methods")
+        .and_then(|v| v.as_array())
+        .map(|a| a.iter().filter_map(|v| v.as_str().map(str::to_string)).collect())
+        .unwrap_or_default();
+    let newly_failed = !failed.iter().any(|m| m == name);
+    if newly_failed {
+        failed.push(name.to_string());
+    }
+
+    if !removed && !newly_failed {
+        return;
+    }
+
+    obj.insert("install_methods".into(), json!(remaining));
+    obj.insert("failed_install_methods".into(), json!(failed));
+    registry::save_config("registered-apps.json", &registered);
+    logging::info(&format!(
+        "App Store: '{}' install method failed for {} — removed from install_methods in registered-apps.json",
+        name, app_key
+    ));
 }
 
 /// True if the app declares a method that installs into PATH (`global` or `git`).

@@ -971,6 +971,8 @@ fn handle_main_key(
             } else if ss.install_location_dialog {
                 ss.install_location_dialog = false;
                 ss.install_dialog_note = None;
+                ss.install_dialog_failed.clear();
+                ss.retry_item_id = None;
                 ss.pending_install_key = None;
             } else if ss.browser.active {
                 // Close browser sub-views first, then browser itself
@@ -1417,6 +1419,8 @@ fn handle_appstore_key(
                 let location = ss.available_install_methods[ss.install_location_cursor];
                 ss.install_location_dialog = false;
                 ss.install_dialog_note = None;
+                ss.install_dialog_failed.clear();
+                let retry_id = ss.retry_item_id.take();
 
                 // A browser "Add & Install" pins its own key; otherwise use the selection.
                 let key = ss
@@ -1429,6 +1433,15 @@ fn handle_appstore_key(
                     let known = registered_apps.contains_key(&key)
                         || registry::load_registered_apps().contains_key(&key);
                     if known {
+                        // The failed row only goes once its replacement is queued
+                        if let Some(rid) = retry_id {
+                            if let Some(pos) =
+                                state.app_store.queue.items.iter().position(|i| i.id == rid)
+                            {
+                                state.app_store.queue.items.remove(pos);
+                                state.app_store.queue.clamp_cursor();
+                            }
+                        }
                         enqueue_job(state, registered_apps, &key, QueueOp::Install(location));
                     } else {
                         logging::error(&format!("App Store: install requested for unknown app '{}'", key));
@@ -1438,6 +1451,8 @@ fn handle_appstore_key(
             Action::Back => {
                 ss.install_location_dialog = false;
                 ss.install_dialog_note = None;
+                ss.install_dialog_failed.clear();
+                ss.retry_item_id = None;
                 ss.pending_install_key = None;
             }
             _ => {}
@@ -1774,11 +1789,14 @@ fn handle_appstore_key(
             }
         }
         AppStoreFocus::Queue => {
+            use crate::app_store::queue::QueueItemAction;
             let item_focused = ss.queue.item_focused;
             match action {
                 Action::Up => {
                     if item_focused {
-                        ss.queue.move_item(ss.queue.cursor, true);
+                        if ss.queue.option_cursor > 0 {
+                            ss.queue.option_cursor -= 1;
+                        }
                     } else if ss.queue.cursor > 0 {
                         ss.queue.cursor -= 1;
                     } else {
@@ -1789,7 +1807,10 @@ fn handle_appstore_key(
                 }
                 Action::Down => {
                     if item_focused {
-                        ss.queue.move_item(ss.queue.cursor, false);
+                        let last = ss.queue.item_actions(ss.queue.cursor).len().saturating_sub(1);
+                        if ss.queue.option_cursor < last {
+                            ss.queue.option_cursor += 1;
+                        }
                     } else if ss.queue.cursor + 1 < ss.queue.items.len() {
                         ss.queue.cursor += 1;
                     }
@@ -1808,20 +1829,50 @@ fn handle_appstore_key(
                     if !item_focused {
                         if !ss.queue.items.is_empty() {
                             ss.queue.item_focused = true;
+                            ss.queue.option_cursor = 0;
                         }
-                    } else if let Some(item) = ss.queue.selected() {
-                        // Pin the terminal to this job's log, or unpin when it is
-                        // the one already being followed.
-                        let id = item.id;
-                        let running = ss.queue.running().map(|r| r.id) == Some(id);
-                        ss.viewing_item = if running || ss.viewing_item == Some(id) {
-                            None
-                        } else {
-                            Some(id)
-                        };
-                        ss.terminal_follow = ss.viewing_item.is_none();
-                        ss.terminal_scroll = 0;
-                        ss.focus = AppStoreFocus::Terminal;
+                        return;
+                    }
+                    let index = ss.queue.cursor;
+                    let chosen = match ss.queue.item_actions(index).get(ss.queue.option_cursor) {
+                        Some(a) => *a,
+                        None => return,
+                    };
+                    match chosen {
+                        QueueItemAction::ViewLog => {
+                            if let Some(item) = ss.queue.selected() {
+                                // Pin the terminal to this job's log, or unpin when it is
+                                // the one already being followed.
+                                let id = item.id;
+                                let running = ss.queue.running().map(|r| r.id) == Some(id);
+                                ss.viewing_item = if running || ss.viewing_item == Some(id) {
+                                    None
+                                } else {
+                                    Some(id)
+                                };
+                                ss.terminal_follow = ss.viewing_item.is_none();
+                                ss.terminal_scroll = 0;
+                                ss.focus = AppStoreFocus::Terminal;
+                            }
+                        }
+                        QueueItemAction::MoveUp => {
+                            ss.queue.move_item(index, true);
+                            ss.queue.clamp_option_cursor();
+                        }
+                        QueueItemAction::MoveDown => {
+                            ss.queue.move_item(index, false);
+                            ss.queue.clamp_option_cursor();
+                        }
+                        QueueItemAction::Cancel => {
+                            let msg = match ss.queue.cancel(index) {
+                                Ok(m) | Err(m) => m,
+                            };
+                            ss.queue.clamp_cursor();
+                            state.popup = Some((msg, Instant::now()));
+                        }
+                        QueueItemAction::Retry => {
+                            start_queue_retry(state, registered_apps, index);
+                        }
                     }
                 }
                 _ => {}
@@ -1829,6 +1880,59 @@ fn handle_appstore_key(
         }
         _ => {}
     }
+}
+
+/// Retry a failed queue job. A failed install reopens the location picker so the
+/// user can choose a different source; uninstalls just go back on the queue as-is.
+fn start_queue_retry(
+    state: &mut TuiosState,
+    registered_apps: &std::collections::HashMap<String, Value>,
+    index: usize,
+) {
+    use crate::app_store::queue::{QueueOp, QueueStatus};
+
+    let (id, key, op, status) = match state.app_store.queue.items.get(index) {
+        Some(i) => (i.id, i.key.clone(), i.op, i.status),
+        None => return,
+    };
+    if status != QueueStatus::Failed {
+        state.popup = Some(("Only failed jobs can be retried".to_string(), Instant::now()));
+        return;
+    }
+
+    let location = match op {
+        QueueOp::Install(loc) => loc,
+        QueueOp::Uninstall { .. } => {
+            let msg = match state.app_store.queue.retry(index) {
+                Ok(m) | Err(m) => m,
+            };
+            state.app_store.queue.item_focused = false;
+            state.popup = Some((msg, Instant::now()));
+            return;
+        }
+    };
+
+    // The failure may have just rewritten install_methods, so prefer fresh data.
+    let meta = match registry::load_registered_apps().get(&key).or_else(|| registered_apps.get(&key)) {
+        Some(m) => m.clone(),
+        None => {
+            logging::error(&format!("App Store: cannot retry unknown app '{}'", key));
+            return;
+        }
+    };
+
+    let methods = app_store::actions::retry_install_methods(&meta);
+    let failed = app_store::actions::failed_install_methods(&meta);
+
+    let ss = &mut state.app_store;
+    ss.install_location_cursor = methods.iter().position(|m| !failed.contains(m)).unwrap_or(0);
+    ss.available_install_methods = methods;
+    ss.install_dialog_failed = failed;
+    ss.install_dialog_note = Some(format!("✗ {} failed last time", location.label()));
+    ss.pending_install_key = Some(key);
+    ss.retry_item_id = Some(id);
+    ss.queue.item_focused = false;
+    ss.install_location_dialog = true;
 }
 
 fn handle_appstore_action(
@@ -1922,6 +2026,8 @@ fn handle_appstore_action(
                         ss.available_install_methods = methods;
                         ss.install_location_cursor = 0;
                         ss.install_dialog_note = None;
+                        ss.install_dialog_failed.clear();
+                        ss.retry_item_id = None;
                         ss.install_location_dialog = true;
                     }
                 }
@@ -1970,6 +2076,8 @@ fn handle_appstore_action(
                     ss.available_install_methods = methods;
                     ss.install_location_cursor = 0;
                     ss.install_dialog_note = None;
+                    ss.install_dialog_failed.clear();
+                    ss.retry_item_id = None;
                     ss.install_location_dialog = true;
                 } else {
                     let loc = methods.first().copied().unwrap_or(InstallLocation::Global);
@@ -2260,6 +2368,12 @@ fn finish_queue_item(
             } else {
                 logging::error(&format!("App Store: install failed for {}", key));
                 state.app_store.failed_installs.insert(key.clone());
+                app_store::actions::record_failed_install_method(&key, &location);
+                *registered_apps = registry::load_registered_apps();
+                log_extra.push(format!(
+                    "Removed install method '{}' from registered-apps.json — retry to pick another source",
+                    app_store::actions::method_key(&location)
+                ));
                 note = Some(format!("Install to {} failed", op.target_label()));
             }
         }
@@ -2630,6 +2744,8 @@ fn handle_browser_action(
             ss.browser.search_query.clear();
             ss.install_location_dialog = true;
             ss.install_location_cursor = 0;
+            ss.install_dialog_failed.clear();
+            ss.retry_item_id = None;
             // Shown inside the dialog rather than as a toast, so the two do not overlap
             ss.install_dialog_note = Some(format!("✓ {} added to the App Store", app.name));
             ss.available_install_methods =
@@ -3060,37 +3176,6 @@ fn run_app() -> bool {
             };
             ss.queue.clamp_cursor();
             continue;
-        }
-
-        // ---- Intercept: per-job install queue commands (selected row only) ----
-        if state.focus == FocusTarget::Main
-            && matches!(state.active_page.as_deref(), Some("appstore"))
-            && state.app_store.focus == crate::app_store::state::AppStoreFocus::Queue
-            && state.app_store.queue.item_focused
-            && state.app_store.confirm_dialog.is_none()
-            && !state.app_store.install_location_dialog
-        {
-            use crossterm::event::KeyCode;
-            let cursor = state.app_store.queue.cursor;
-            match key_event.code {
-                KeyCode::Char('c') | KeyCode::Char('C') => {
-                    let msg = match state.app_store.queue.cancel(cursor) {
-                        Ok(m) | Err(m) => m,
-                    };
-                    state.app_store.queue.clamp_cursor();
-                    state.popup = Some((msg, Instant::now()));
-                    continue;
-                }
-                KeyCode::Char('r') | KeyCode::Char('R') => {
-                    let msg = match state.app_store.queue.retry(cursor) {
-                        Ok(m) | Err(m) => m,
-                    };
-                    state.app_store.queue.item_focused = false;
-                    state.popup = Some((msg, Instant::now()));
-                    continue;
-                }
-                _ => {}
-            }
         }
 
         // ---- Intercept: X asks before clearing the install queue ----

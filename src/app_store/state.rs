@@ -126,6 +126,10 @@ pub struct AppStoreState {
     pub install_location_cursor: usize,
     /// Context line shown inside the install dialog, e.g. after adding from the browser
     pub install_dialog_note: Option<String>,
+    /// Methods the dialog should flag red as having failed before
+    pub install_dialog_failed: Vec<InstallLocation>,
+    /// Failed queue row that is being retried; removed once a new job is queued
+    pub retry_item_id: Option<u64>,
     pub available_install_methods: Vec<InstallLocation>,
     pub computed_app_list: Vec<String>,
     pub left_visible_rows: Vec<LeftRowKind>,
@@ -184,6 +188,8 @@ impl AppStoreState {
             install_location_dialog: false,
             install_location_cursor: 0,
             install_dialog_note: None,
+            install_dialog_failed: Vec::new(),
+            retry_item_id: None,
             available_install_methods: Vec::new(),
             computed_app_list: Vec::new(),
             left_visible_rows: Vec::new(),

@@ -893,7 +893,6 @@ fn render_queue_panel(
         lines.push(Line::from(Span::styled(row, style)));
 
         if expanded {
-            let key_style = Style::default().fg(Color::Cyan);
             lines.push(Line::from(Span::styled(
                 format!("     {} — {}", item.op.destination_phrase(), item.status.label()),
                 Style::default().fg(base),
@@ -908,23 +907,23 @@ fn render_queue_panel(
                     }
                 }
             }
-            let mut opts: Vec<(&str, &str)> = vec![("Enter", "view log")];
-            if state.queue.can_move(i, true) || state.queue.can_move(i, false) {
-                opts.push(("↑ / ↓", "move in queue"));
+            for (oi, opt) in state.queue.item_actions(i).iter().enumerate() {
+                let sel = oi == state.queue.option_cursor;
+                let opt_style = if sel {
+                    Style::default().fg(Color::Black).bg(Color::Cyan)
+                } else {
+                    Style::default().fg(Color::White)
+                };
+                let prefix = if sel { "   » " } else { "     " };
+                lines.push(Line::from(Span::styled(
+                    format!("{}[ {} ]", prefix, opt.label()),
+                    opt_style,
+                )));
             }
-            if item.status == QueueStatus::Pending {
-                opts.push(("C", "cancel job"));
-            }
-            if item.status == QueueStatus::Failed {
-                opts.push(("R", "retry job"));
-            }
-            opts.push(("Q / ←", "deselect"));
-            for (k, desc) in opts {
-                lines.push(Line::from(vec![
-                    Span::styled(format!("     {:<7}", k), key_style),
-                    Span::styled(desc, Style::default().fg(Color::White)),
-                ]));
-            }
+            lines.push(Line::from(Span::styled(
+                "     Q / ← back",
+                Style::default().fg(Color::DarkGray),
+            )));
         }
     }
 
@@ -1055,7 +1054,7 @@ fn render_confirm_dialog(frame: &mut Frame, area: Rect, state: &AppStoreState) {
 }
 
 fn render_install_location_dialog(frame: &mut Frame, area: Rect, state: &AppStoreState) {
-    let width = 56u16.min(area.width);
+    let width = 66u16.min(area.width);
     let inner_width = width.saturating_sub(4) as usize;
 
     let note_lines: Vec<String> = state
@@ -1076,9 +1075,10 @@ fn render_install_location_dialog(frame: &mut Frame, area: Rect, state: &AppStor
 
     frame.render_widget(Clear, popup_rect);
 
+    let retrying = state.retry_item_id.is_some();
     let block = Block::default()
         .borders(Borders::ALL)
-        .title(" Choose Install Location ")
+        .title(if retrying { " Retry Install " } else { " Choose Install Location " })
         .style(Style::default().fg(Color::Cyan).bg(Color::Black));
     frame.render_widget(block, popup_rect);
 
@@ -1088,27 +1088,35 @@ fn render_install_location_dialog(frame: &mut Frame, area: Rect, state: &AppStor
     for note in &note_lines {
         lines.push(Line::from(Span::styled(
             format!("  {}", note),
-            Style::default().fg(Color::Green),
+            if retrying { Style::default().fg(Color::Yellow) } else { Style::default().fg(Color::Green) },
         )));
     }
     if !note_lines.is_empty() {
         lines.push(Line::from(""));
     }
     lines.push(Line::from(Span::styled(
-        "  Where would you like to install?",
+        if retrying {
+            "  Which source would you like to retry with?"
+        } else {
+            "  Where would you like to install?"
+        },
         Style::default().fg(Color::White),
     )));
     lines.push(Line::from(""));
 
     for (i, method) in state.available_install_methods.iter().enumerate() {
-        let style = if i == state.install_location_cursor {
-            Style::default().fg(Color::Black).bg(Color::Cyan)
-        } else {
-            Style::default().fg(Color::White)
+        let selected = i == state.install_location_cursor;
+        let failed = state.install_dialog_failed.contains(method);
+        let style = match (selected, failed) {
+            (true, true) => Style::default().fg(Color::Black).bg(Color::Red),
+            (true, false) => Style::default().fg(Color::Black).bg(Color::Cyan),
+            (false, true) => Style::default().fg(Color::Red),
+            (false, false) => Style::default().fg(Color::White),
         };
-        let prefix = if i == state.install_location_cursor { "  » " } else { "    " };
+        let prefix = if selected { "  » " } else { "    " };
+        let suffix = if failed { "  ✗ failed previously" } else { "" };
         lines.push(Line::from(Span::styled(
-            format!("{}{}", prefix, method.label()),
+            format!("{}{}{}", prefix, method.label(), suffix),
             style,
         )));
     }

@@ -150,12 +150,36 @@ impl QueueItem {
     }
 }
 
+/// One entry in the menu that opens under a selected queue row.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum QueueItemAction {
+    ViewLog,
+    Retry,
+    Cancel,
+    MoveUp,
+    MoveDown,
+}
+
+impl QueueItemAction {
+    pub fn label(&self) -> &'static str {
+        match self {
+            QueueItemAction::ViewLog => "View Log",
+            QueueItemAction::Retry => "Retry Job",
+            QueueItemAction::Cancel => "Cancel Job",
+            QueueItemAction::MoveUp => "Move Up",
+            QueueItemAction::MoveDown => "Move Down",
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct InstallQueue {
     pub items: Vec<QueueItem>,
     pub cursor: usize,
     /// The row at `cursor` is selected and showing its per-job options.
     pub item_focused: bool,
+    /// Position within the selected row's option menu.
+    pub option_cursor: usize,
     /// When paused the current item finishes but nothing new starts.
     pub paused: bool,
     next_id: u64,
@@ -163,7 +187,40 @@ pub struct InstallQueue {
 
 impl InstallQueue {
     pub fn new() -> Self {
-        Self { items: Vec::new(), cursor: 0, item_focused: false, paused: false, next_id: 1 }
+        Self {
+            items: Vec::new(),
+            cursor: 0,
+            item_focused: false,
+            option_cursor: 0,
+            paused: false,
+            next_id: 1,
+        }
+    }
+
+    /// Options offered for a row, in menu order.
+    pub fn item_actions(&self, index: usize) -> Vec<QueueItemAction> {
+        let Some(item) = self.items.get(index) else { return Vec::new() };
+        let mut out = vec![QueueItemAction::ViewLog];
+        if item.status == QueueStatus::Failed {
+            out.push(QueueItemAction::Retry);
+        }
+        if item.status == QueueStatus::Pending {
+            out.push(QueueItemAction::Cancel);
+        }
+        if self.can_move(index, true) {
+            out.push(QueueItemAction::MoveUp);
+        }
+        if self.can_move(index, false) {
+            out.push(QueueItemAction::MoveDown);
+        }
+        out
+    }
+
+    pub fn clamp_option_cursor(&mut self) {
+        let len = self.item_actions(self.cursor).len();
+        if self.option_cursor >= len {
+            self.option_cursor = len.saturating_sub(1);
+        }
     }
 
     /// Queue a job, or explain why it clashes with something already queued.
@@ -361,6 +418,7 @@ impl InstallQueue {
         } else if self.cursor >= self.items.len() {
             self.cursor = self.items.len() - 1;
         }
+        self.clamp_option_cursor();
     }
 
     pub fn selected(&self) -> Option<&QueueItem> {
