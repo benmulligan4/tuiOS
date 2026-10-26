@@ -694,12 +694,34 @@ pub fn add_to_config(
         "source": source,
         "repository": repo,
         "version": version,
+        "installed_at": now_secs(),
         "cmd": cmd,
     });
 
     config.insert(app_key.to_string(), entry);
     registry::save_config(config_file, &config);
     logging::info(&format!("App Store: added {} to {}", app_key, config_file));
+}
+
+/// Seconds since the Unix epoch, used to stamp installs.
+fn now_secs() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+}
+
+/// Install timestamps for every installed app, keyed by app key.
+/// Apps installed before this field existed report 0.
+pub fn load_install_times() -> HashMap<String, u64> {
+    let mut times = HashMap::new();
+    for config in [registry::load_apps(), registry::load_dashboards()] {
+        for (key, entry) in config {
+            let ts = entry.get("installed_at").and_then(|v| v.as_u64()).unwrap_or(0);
+            times.insert(key, ts);
+        }
+    }
+    times
 }
 
 /// The recorded `source` for an installed app ("global", "git", "local", or "").
@@ -826,12 +848,20 @@ pub fn sync_installed_apps(registered: &HashMap<String, Value>) -> bool {
         let label = meta.get("label").and_then(|v| v.as_str()).unwrap_or(key);
         let version = meta.get("version").and_then(|v| v.as_str()).unwrap_or("unknown");
         let repo = meta.get("repository").and_then(|v| v.as_str()).unwrap_or("");
+        // An app already in the config keeps its original install time; anything
+        // newly discovered is stamped now so "recently installed" stays meaningful.
+        let installed_at = config
+            .get(key)
+            .and_then(|e| e.get("installed_at"))
+            .and_then(|v| v.as_u64())
+            .unwrap_or_else(now_secs);
         let entry = json!({
             "label": label,
             "type": "installed",
             "source": source,
             "repository": repo,
             "version": version,
+            "installed_at": installed_at,
             "cmd": cmd,
         });
 

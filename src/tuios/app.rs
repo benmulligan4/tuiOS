@@ -1512,15 +1512,24 @@ fn handle_appstore_key(
                                     .iter().position(|m| *m == ss.sort_mode).unwrap_or(0);
                             }
                             2 => {
-                                ss.filter_show_installed = !ss.filter_show_installed;
+                                ss.group_by_category = !ss.group_by_category;
+                                ss.left_cursor = 0;
                                 ss.recompute_app_list(registered_apps);
                             }
                             3 => {
+                                ss.filter_show_installed = !ss.filter_show_installed;
+                                ss.recompute_app_list(registered_apps);
+                            }
+                            4 => {
                                 ss.filter_show_uninstalled = !ss.filter_show_uninstalled;
                                 ss.recompute_app_list(registered_apps);
                             }
-                            n if n >= 4 && n < 4 + categories.len() => {
-                                let cat_idx = n - 4;
+                            n if n >= crate::app_store::state::AppStoreState::CATEGORY_FILTER_BASE
+                                && n < crate::app_store::state::AppStoreState::CATEGORY_FILTER_BASE
+                                    + categories.len() =>
+                            {
+                                let cat_idx =
+                                    n - crate::app_store::state::AppStoreState::CATEGORY_FILTER_BASE;
                                 if let Some(cat) = categories.get(cat_idx) {
                                     if ss.filter_categories.contains(cat) {
                                         ss.filter_categories.remove(cat);

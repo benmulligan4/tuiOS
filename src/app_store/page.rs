@@ -263,21 +263,28 @@ fn render_left_pane(
             }
         }
 
-        // Show Installed (cursor 2)
-        let i_check = if state.filter_show_installed { "[*]" } else { "[ ]" };
+        // Organise by category (cursor 2)
+        let g_check = if state.group_by_category { "[*]" } else { "[ ]" };
         lines.push(Line::from(Span::styled(
-            format!("   {}  Show Installed", i_check),
+            format!("   {}  Organise by Category", g_check),
             item_style(2),
         )));
 
-        // Show Uninstalled (cursor 3)
-        let u_check = if state.filter_show_uninstalled { "[*]" } else { "[ ]" };
+        // Show Installed (cursor 3)
+        let i_check = if state.filter_show_installed { "[*]" } else { "[ ]" };
         lines.push(Line::from(Span::styled(
-            format!("   {}  Show Uninstalled", u_check),
+            format!("   {}  Show Installed", i_check),
             item_style(3),
         )));
 
-        // Category filters (cursor 4..4+N-1)
+        // Show Uninstalled (cursor 4)
+        let u_check = if state.filter_show_uninstalled { "[*]" } else { "[ ]" };
+        lines.push(Line::from(Span::styled(
+            format!("   {}  Show Uninstalled", u_check),
+            item_style(4),
+        )));
+
+        // Category filters (cursor 5..5+N-1)
         if !categories.is_empty() {
             lines.push(Line::from(Span::styled("   Categories:", label_style)));
         }
@@ -286,7 +293,7 @@ fn render_left_pane(
             let check = if is_shown { "[*]" } else { "[ ]" };
             lines.push(Line::from(Span::styled(
                 format!("    {}  {}", check, cat),
-                item_style(4 + ci),
+                item_style(AppStoreState::CATEGORY_FILTER_BASE + ci),
             )));
         }
     }

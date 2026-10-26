@@ -8,7 +8,7 @@ use serde_json::Value;
 pub enum SortMode {
     AtoZ,
     Author,
-    Category,
+    RecentlyInstalled,
 }
 
 impl SortMode {
@@ -16,14 +16,14 @@ impl SortMode {
     pub const ALL: &'static [SortMode] = &[
         SortMode::AtoZ,
         SortMode::Author,
-        SortMode::Category,
+        SortMode::RecentlyInstalled,
     ];
 
     pub fn label(&self) -> &'static str {
         match self {
             SortMode::AtoZ => "A to Z",
             SortMode::Author => "Author",
-            SortMode::Category => "Category",
+            SortMode::RecentlyInstalled => "Recently Installed",
         }
     }
 
@@ -31,8 +31,8 @@ impl SortMode {
     pub fn next(&self) -> SortMode {
         match self {
             SortMode::AtoZ => SortMode::Author,
-            SortMode::Author => SortMode::Category,
-            SortMode::Category => SortMode::AtoZ,
+            SortMode::Author => SortMode::RecentlyInstalled,
+            SortMode::RecentlyInstalled => SortMode::AtoZ,
         }
     }
 }
@@ -100,6 +100,9 @@ pub struct AppStoreState {
     pub left_scroll: usize,
     pub right_scroll: usize,
     pub sort_mode: SortMode,
+    /// Group the app list under collapsible category headers, with the active
+    /// sort applied inside each group.
+    pub group_by_category: bool,
     pub filter_panel_open: bool,
     pub filter_panel_cursor: usize,
     pub sort_dropdown_open: bool,
@@ -161,6 +164,7 @@ impl AppStoreState {
             left_scroll: 0,
             right_scroll: 0,
             sort_mode: SortMode::AtoZ,
+            group_by_category: false,
             filter_panel_open: false,
             filter_panel_cursor: 0,
             sort_dropdown_open: false,
@@ -201,11 +205,15 @@ impl AppStoreState {
         }
     }
 
+    /// Filter-panel cursor index of the first per-category checkbox. Rows 1..4 are
+    /// Sort, Organise by Category, Show Installed, Show Uninstalled.
+    pub const CATEGORY_FILTER_BASE: usize = 5;
+
     /// Get the cursor index for the refresh button (always after panel items).
     pub fn refresh_cursor_idx(&self, registered: &HashMap<String, Value>) -> usize {
         if self.filter_panel_open {
             let cats = Self::all_categories(registered);
-            4 + cats.len()
+            Self::CATEGORY_FILTER_BASE + cats.len()
         } else {
             1
         }
@@ -383,63 +391,73 @@ impl AppStoreState {
             .collect();
 
         // Sort
+        let install_times = if self.sort_mode == SortMode::RecentlyInstalled {
+            super::actions::load_install_times()
+        } else {
+            HashMap::new()
+        };
         keys.sort_by(|a, b| {
             let ma = &registered[a.as_str()];
             let mb = &registered[b.as_str()];
+            let la = ma.get("label").and_then(|v| v.as_str()).unwrap_or(a);
+            let lb = mb.get("label").and_then(|v| v.as_str()).unwrap_or(b);
+            let by_name = || la.to_lowercase().cmp(&lb.to_lowercase());
             match self.sort_mode {
-                SortMode::AtoZ => {
-                    let la = ma.get("label").and_then(|v| v.as_str()).unwrap_or(a);
-                    let lb = mb.get("label").and_then(|v| v.as_str()).unwrap_or(b);
-                    la.to_lowercase().cmp(&lb.to_lowercase())
-                }
+                SortMode::AtoZ => by_name(),
                 SortMode::Author => {
                     let aa = ma.get("author").and_then(|v| v.as_str()).unwrap_or("");
                     let ab = mb.get("author").and_then(|v| v.as_str()).unwrap_or("");
-                    aa.to_lowercase().cmp(&ab.to_lowercase())
+                    aa.to_lowercase().cmp(&ab.to_lowercase()).then_with(by_name)
                 }
-                SortMode::Category => {
-                    let ca = ma.get("category").and_then(|v| v.as_str()).unwrap_or("");
-                    let cb = mb.get("category").and_then(|v| v.as_str()).unwrap_or("");
-                    ca.to_lowercase()
-                        .cmp(&cb.to_lowercase())
-                        .then_with(|| {
-                            let la = ma.get("label").and_then(|v| v.as_str()).unwrap_or(a);
-                            let lb = mb.get("label").and_then(|v| v.as_str()).unwrap_or(b);
-                            la.to_lowercase().cmp(&lb.to_lowercase())
-                        })
+                SortMode::RecentlyInstalled => {
+                    // Newest first; never-installed apps (no stamp) fall to the bottom.
+                    let ta = install_times.get(a.as_str()).copied().unwrap_or(0);
+                    let tb = install_times.get(b.as_str()).copied().unwrap_or(0);
+                    tb.cmp(&ta).then_with(by_name)
                 }
             }
         });
 
-        self.computed_app_list = keys;
-
-        // Build visible rows with category headers when sorting by category
+        // Build visible rows, optionally grouped under category headers.
         self.left_visible_rows.clear();
-        if self.sort_mode == SortMode::Category {
-            let mut current_cat = String::new();
-            let mut has_prev = false;
-            for key in &self.computed_app_list {
-                let cat = registered.get(key.as_str())
+        if self.group_by_category {
+            let category_of = |key: &str| -> String {
+                registered
+                    .get(key)
                     .and_then(|m| m.get("category"))
                     .and_then(|v| v.as_str())
                     .unwrap_or("Other")
-                    .to_string();
-                if cat != current_cat {
-                    if has_prev && !self.collapsed_store_categories.contains(&current_cat) {
-                        self.left_visible_rows.push(LeftRowKind::Spacer);
-                    }
-                    has_prev = true;
-                    current_cat = cat.clone();
-                    self.left_visible_rows.push(LeftRowKind::CategoryHeader(cat.clone()));
+                    .to_string()
+            };
+
+            let mut categories: Vec<String> = keys
+                .iter()
+                .map(|k| category_of(k))
+                .collect::<HashSet<_>>()
+                .into_iter()
+                .collect();
+            categories.sort_by_key(|c| c.to_lowercase());
+
+            let mut ordered: Vec<String> = Vec::with_capacity(keys.len());
+            for (ci, cat) in categories.iter().enumerate() {
+                if ci > 0 {
+                    self.left_visible_rows.push(LeftRowKind::Spacer);
                 }
-                if !self.collapsed_store_categories.contains(&current_cat) {
-                    self.left_visible_rows.push(LeftRowKind::App(key.clone()));
+                self.left_visible_rows.push(LeftRowKind::CategoryHeader(cat.clone()));
+                let collapsed = self.collapsed_store_categories.contains(cat);
+                for key in keys.iter().filter(|k| category_of(k) == *cat) {
+                    ordered.push(key.clone());
+                    if !collapsed {
+                        self.left_visible_rows.push(LeftRowKind::App(key.clone()));
+                    }
                 }
             }
+            self.computed_app_list = ordered;
         } else {
-            for key in &self.computed_app_list {
+            for key in &keys {
                 self.left_visible_rows.push(LeftRowKind::App(key.clone()));
             }
+            self.computed_app_list = keys;
         }
 
         // Clamp cursor
