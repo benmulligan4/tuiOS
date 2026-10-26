@@ -613,6 +613,32 @@ impl AppStoreState {
         }
     }
 
+    /// Rebuild the list but keep the cursor on the app it was already on, so a
+    /// re-sort (e.g. "Recently Installed" after an uninstall) cannot swap the
+    /// details pane out from under the user.
+    pub fn recompute_app_list_keeping_selection(&mut self, registered: &HashMap<String, Value>) {
+        let selected = self.selected_app_key().cloned();
+        self.recompute_app_list(registered);
+        if let Some(key) = selected {
+            self.focus_app(&key);
+        }
+    }
+
+    /// Move the left cursor onto `key`. Returns false if it is no longer visible.
+    pub fn focus_app(&mut self, key: &str) -> bool {
+        match self
+            .left_visible_rows
+            .iter()
+            .position(|row| matches!(row, LeftRowKind::App(k) if k == key))
+        {
+            Some(idx) => {
+                self.left_cursor = idx;
+                true
+            }
+            None => false,
+        }
+    }
+
     /// Get the app key at the current left cursor position.
     pub fn selected_app_key(&self) -> Option<&String> {
         match self.left_visible_rows.get(self.left_cursor) {

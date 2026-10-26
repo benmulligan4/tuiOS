@@ -2529,7 +2529,7 @@ fn finish_queue_item(
     }
 
     state.app_store.install_statuses = app_store::actions::refresh_all_statuses(registered_apps);
-    state.app_store.recompute_app_list(registered_apps);
+    state.app_store.recompute_app_list_keeping_selection(registered_apps);
     state.app_store.browser.probe_cache.clear();
 
     // Clamp the action cursor — the button list changes with the install status
@@ -2880,9 +2880,7 @@ fn handle_browser_action(
             ss.browser.active = false;
             ss.browser.search_query.clear();
             ss.recompute_app_list(registered_apps);
-            if let Some(pos) = ss.computed_app_list.iter().position(|k| k == &target_key) {
-                ss.left_cursor = pos;
-            }
+            ss.focus_app(&target_key);
             ss.focus = crate::app_store::state::AppStoreFocus::RightPane;
             ss.in_right_actions = true;
             ss.right_action_cursor = 0;
@@ -3033,7 +3031,7 @@ fn run_app() -> bool {
             let changed = app_store::actions::sync_installed_apps(&registered_apps);
             registered_apps = registry::load_registered_apps();
             state.app_store.install_statuses = app_store::actions::refresh_all_statuses(&registered_apps);
-            state.app_store.recompute_app_list(&registered_apps);
+            state.app_store.recompute_app_list_keeping_selection(&registered_apps);
             state.app_store.browser.probe_cache.clear();
             if changed {
                 dashboards = registry::load_dashboards();
