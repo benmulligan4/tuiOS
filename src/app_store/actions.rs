@@ -379,13 +379,41 @@ pub fn probe_install_status(key: &str, display_name: &str) -> InstallStatus {
     }
 }
 
-/// Refresh install statuses for all registered apps.
+/// Refresh install statuses for all registered apps. Built-ins ship with tuiOS and
+/// have nothing on disk to probe, so they are left out of the map entirely.
 pub fn refresh_all_statuses(registered: &HashMap<String, Value>) -> HashMap<String, InstallStatus> {
     invalidate_install_cache();
     registered
         .iter()
+        .filter(|(_, meta)| !is_builtin(meta))
         .map(|(key, meta)| (key.clone(), get_install_status(key, meta)))
         .collect()
+}
+
+/// True for the apps and dashboards that ship with tuiOS — they can never be
+/// installed, uninstalled or removed, only enabled and configured.
+pub fn is_builtin(meta: &Value) -> bool {
+    meta.get("builtin").and_then(|v| v.as_bool()).unwrap_or(false)
+}
+
+/// Whether a built-in app/dashboard is shown in the navbar. Defaults to enabled.
+pub fn get_builtin_enabled(app_key: &str) -> bool {
+    let settings = crate::settings::persistence::load();
+    let path = format!("app_store.builtins_enabled.{}", app_key);
+    crate::settings::persistence::get_bool(&settings, &path, true)
+}
+
+/// Enable or disable a built-in app/dashboard.
+pub fn set_builtin_enabled(app_key: &str, enabled: bool) {
+    let mut settings = crate::settings::persistence::load();
+    let path = format!("app_store.builtins_enabled.{}", app_key);
+    crate::settings::persistence::set(&mut settings, &path, Value::Bool(enabled));
+    crate::settings::persistence::save(&settings);
+    logging::info(&format!(
+        "App Store: built-in {} {}",
+        app_key,
+        if enabled { "enabled" } else { "disabled" }
+    ));
 }
 
 // ── Binary-name resolution after an install ─────────────────────────────
@@ -808,6 +836,9 @@ pub fn sync_installed_apps(registered: &HashMap<String, Value>) -> bool {
     let mut registered_updates: Vec<(String, String)> = Vec::new();
 
     for (key, meta) in registered {
+        if is_builtin(meta) {
+            continue;
+        }
         let category = meta.get("category").and_then(|v| v.as_str()).unwrap_or("Other");
         let config = if category == "Dashboard" { &mut dash_config } else { &mut apps_config };
         let status = get_install_status(key, meta);
@@ -1024,6 +1055,12 @@ pub fn supports_embedded(registered_meta: Option<&serde_json::Value>) -> bool {
 /// Human-readable label for a stored window mode value.
 pub fn window_mode_label(mode: &str) -> &'static str {
     if mode == "fullscreen" { "New Window" } else { "tuiOS Container" }
+}
+
+/// Built-ins run inside tuiOS, so their "fullscreen" mode means the whole terminal
+/// rather than a separate OS window.
+pub fn builtin_window_mode_label(mode: &str) -> &'static str {
+    if mode == "fullscreen" { "Full Screen" } else { "tuiOS Container" }
 }
 
 /// Whether tuiOS should stay running while an app occupies a new window.

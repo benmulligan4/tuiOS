@@ -110,8 +110,15 @@ fn build_nav_items(
     dashboards: &std::collections::HashMap<String, Value>,
     apps_registry: &std::collections::HashMap<String, Value>,
 ) -> Vec<NavItem> {
+    // A built-in the user has disabled in the App Store stays installed but is
+    // dropped from the navbar.
+    let enabled = |name: &String| {
+        !registry::is_builtin_store_key(name) || app_store::actions::get_builtin_enabled(name)
+    };
+
     let dash_children: Vec<(String, String)> = dashboards
         .iter()
+        .filter(|(name, _)| enabled(name))
         .map(|(name, meta)| {
             let label = meta
                 .get("label")
@@ -124,6 +131,7 @@ fn build_nav_items(
 
     let app_children: Vec<(String, String)> = apps_registry
         .iter()
+        .filter(|(name, _)| enabled(name))
         .map(|(name, meta)| {
             let label = meta
                 .get("label")
@@ -163,6 +171,20 @@ fn build_nav_items(
             ]),
         },
     ]
+}
+
+/// A built-in set to full screen gives up the navbar row, until the user focuses
+/// the navbar again (Tab), so it is never unreachable.
+fn builtin_fullscreen(state: &TuiosState) -> bool {
+    if state.active_page.is_some() || state.nav_expanded || state.focus == FocusTarget::Navbar {
+        return false;
+    }
+    let key = state
+        .active_app
+        .clone()
+        .unwrap_or_else(|| state.active_dashboard.clone());
+    registry::is_builtin_store_key(&key)
+        && app_store::actions::get_window_mode(&key, None) == "fullscreen"
 }
 
 // ---------------------------------------------------------------------------
@@ -1674,24 +1696,7 @@ fn handle_appstore_key(
                     .cloned()
                     .unwrap_or(InstallStatus::NotInstalled);
                 let app_meta = ss.selected_app_key().and_then(|k| registered_apps.get(k));
-                let supports_embed = app_meta
-                    .map(|m| app_store::actions::supports_embedded(Some(m)))
-                    .unwrap_or(true);
-                let supports_local = app_meta
-                    .map(app_store::actions::supports_downloads_install)
-                    .unwrap_or(false);
-                let supports_global = app_meta
-                    .map(app_store::actions::supports_path_install)
-                    .unwrap_or(true);
-                let is_approved = app_meta
-                    .and_then(|m| m.get("approved"))
-                    .and_then(|v| v.as_bool())
-                    .unwrap_or(true);
-                let count = app_store::page::action_count(
-                    &status, supports_embed,
-                    supports_local, supports_global,
-                    is_approved,
-                );
+                let count = app_store::page::action_count(&status, app_meta);
                 match action {
                     Action::Up => {
                         // The top action is the ceiling; scroll the details instead
@@ -1955,6 +1960,34 @@ fn handle_appstore_action(
     let status = ss.install_statuses.get(&key).cloned().unwrap_or(InstallStatus::NotInstalled);
     let is_installed = !matches!(status, InstallStatus::NotInstalled);
 
+    // Built-ins: Run(0), Enable toggle(1), Window Mode(2)
+    if app_store::actions::is_builtin(meta) {
+        match ss.right_action_cursor {
+            0 => {
+                let prefix = if registry::is_builtin_dashboard(&key) { "dashboard" } else { "app" };
+                state.pending_nav_action = Some(format!("{}:{}", prefix, key));
+            }
+            1 => {
+                let enabled = !app_store::actions::get_builtin_enabled(&key);
+                app_store::actions::set_builtin_enabled(&key, enabled);
+                state.needs_nav_rebuild = true;
+                state.popup = Some((
+                    format!("{} {}", key, if enabled { "enabled" } else { "disabled" }),
+                    Instant::now(),
+                ));
+            }
+            2 => {
+                let current = app_store::actions::get_window_mode(&key, Some(meta));
+                let new_mode = if current == "fullscreen" { "embedded" } else { "fullscreen" };
+                app_store::actions::set_window_mode(&key, new_mode);
+                let label = app_store::actions::builtin_window_mode_label(new_mode);
+                state.popup = Some((format!("Window mode set to {}", label), Instant::now()));
+            }
+            _ => {}
+        }
+        return;
+    }
+
     // For installed apps, index 0 = Run, then the rest shift by 1
     if is_installed && ss.right_action_cursor == 0 {
         if ss.ui_locked() {
@@ -2130,13 +2163,7 @@ fn handle_appstore_action(
     // Remove from App Store (for non-approved, not-installed apps — last button)
     let is_approved = meta.get("approved").and_then(|v| v.as_bool()).unwrap_or(true);
     if !is_approved && matches!(status, InstallStatus::NotInstalled) {
-        let supports_embed = app_store::actions::supports_embedded(Some(meta));
-        let remove_cursor = app_store::page::action_count(
-            &status, supports_embed,
-            app_store::actions::supports_downloads_install(meta),
-            app_store::actions::supports_path_install(meta),
-            is_approved,
-        ) - 1;
+        let remove_cursor = app_store::page::action_count(&status, Some(meta)) - 1;
         if ss.right_action_cursor == remove_cursor {
             let mut reg = registered_apps.clone();
             if crate::app_store::awesome_ratatui_manager::remove_from_registered(&key, &mut reg) {
@@ -2435,22 +2462,7 @@ fn finish_queue_item(
         .app_store
         .selected_app_key()
         .and_then(|k| registered_apps.get(k));
-    let new_count = app_store::page::action_count(
-        &new_status,
-        new_meta
-            .map(|m| app_store::actions::supports_embedded(Some(m)))
-            .unwrap_or(true),
-        new_meta
-            .map(app_store::actions::supports_downloads_install)
-            .unwrap_or(false),
-        new_meta
-            .map(app_store::actions::supports_path_install)
-            .unwrap_or(true),
-        new_meta
-            .and_then(|m| m.get("approved"))
-            .and_then(|v| v.as_bool())
-            .unwrap_or(true),
-    );
+    let new_count = app_store::page::action_count(&new_status, new_meta);
     if state.app_store.right_action_cursor >= new_count {
         state.app_store.right_action_cursor = new_count.saturating_sub(1);
     }
@@ -2941,7 +2953,10 @@ fn run_app() -> bool {
                     )
                 };
                 // Row order: navbar and main swap depending on navbar_position; status bar is always last
-                let mut constraints: Vec<Constraint> = if navbar_bottom {
+                let fullscreen = builtin_fullscreen(&state);
+                let mut constraints: Vec<Constraint> = if fullscreen {
+                    vec![Constraint::Fill(1)]
+                } else if navbar_bottom {
                     vec![Constraint::Fill(1), Constraint::Length(1)]
                 } else {
                     vec![Constraint::Length(1), Constraint::Fill(1)]
@@ -2953,21 +2968,25 @@ fn run_app() -> bool {
                     .direction(Direction::Vertical)
                     .constraints(constraints)
                     .split(frame.area());
-                let (nav_row, main_row) = if navbar_bottom {
-                    (rows[1], rows[0])
+                let (nav_row, main_row) = if fullscreen {
+                    (None, rows[0])
+                } else if navbar_bottom {
+                    (Some(rows[1]), rows[0])
                 } else {
-                    (rows[0], rows[1])
+                    (Some(rows[0]), rows[1])
                 };
 
                 // 1. Draw main container
                 render_main(frame, main_row, &mut state, &mut active_internal_app, &mut active_installed_dash, &mut active_installed_app, &registered_apps);
 
                 // 2. Draw navbar label row
-                render_navbar(frame, nav_row, &nav_items, &state);
+                if let Some(nav_row) = nav_row {
+                    render_navbar(frame, nav_row, &nav_items, &state);
+                }
 
                 // 3. Draw status bar if enabled
                 if status_bar_on {
-                    render_status_bar(frame, rows[2]);
+                    render_status_bar(frame, rows[rows.len() - 1]);
                 }
 
                 // 4. Draw dropdown LAST (overlays main container)
@@ -3620,6 +3639,32 @@ fn run_app() -> bool {
             if state.active_app.is_none() && active_internal_app.is_some() {
                 active_internal_app = None;
             }
+        }
+
+        // The App Store asked for a built-in to run; go through the normal nav path
+        if let Some(data) = state.pending_nav_action.take() {
+            match execute_action(
+                &data,
+                &mut state,
+                &apps_registry,
+                &dashboards,
+                &registered_apps,
+                &mut active_internal_app,
+                &mut active_installed_dash,
+                &mut active_installed_app,
+            ) {
+                NavResult::Quit => break,
+                NavResult::Restart => {
+                    should_restart = true;
+                    break;
+                }
+                NavResult::ActivateInternalApp | NavResult::None => {}
+            }
+        }
+
+        if state.needs_nav_rebuild {
+            state.needs_nav_rebuild = false;
+            nav_items = build_nav_items(&dashboards, &apps_registry);
         }
 
         // An app was asked to run outside the tuiOS container

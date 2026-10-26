@@ -4,6 +4,12 @@ use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}};
 use serde_json::Value;
 
+/// True for the two categories reserved for apps/dashboards that ship with tuiOS.
+pub fn is_builtin_category(category: &str) -> bool {
+    category == crate::tuios::registry::BUILTIN_APP_CATEGORY
+        || category == crate::tuios::registry::BUILTIN_DASHBOARD_CATEGORY
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SortMode {
     AtoZ,
@@ -168,7 +174,7 @@ impl AppStoreState {
             left_scroll: 0,
             right_scroll: 0,
             sort_mode: SortMode::AtoZ,
-            group_by_category: false,
+            group_by_category: true,
             filter_panel_open: false,
             filter_panel_cursor: 0,
             sort_dropdown_open: false,
@@ -372,13 +378,14 @@ impl AppStoreState {
                     }
                 }
 
-                // Installed / uninstalled filter
-                let is_installed = matches!(
-                    self.install_statuses.get(key.as_str()),
-                    Some(InstallStatus::Global(_))
-                        | Some(InstallStatus::Local(_))
-                        | Some(InstallStatus::Both(_, _))
-                );
+                // Installed / uninstalled filter — built-ins always count as installed
+                let is_installed = super::actions::is_builtin(meta)
+                    || matches!(
+                        self.install_statuses.get(key.as_str()),
+                        Some(InstallStatus::Global(_))
+                            | Some(InstallStatus::Local(_))
+                            | Some(InstallStatus::Both(_, _))
+                    );
                 if is_installed && !self.filter_show_installed {
                     return false;
                 }
@@ -449,7 +456,8 @@ impl AppStoreState {
                 .collect::<HashSet<_>>()
                 .into_iter()
                 .collect();
-            categories.sort_by_key(|c| c.to_lowercase());
+            // The two native categories sit above the third-party ones
+            categories.sort_by_key(|c| (!is_builtin_category(c), c.to_lowercase()));
 
             let mut ordered: Vec<String> = Vec::with_capacity(keys.len());
             for (ci, cat) in categories.iter().enumerate() {
