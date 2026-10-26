@@ -1621,7 +1621,7 @@ fn handle_appstore_key(
                     ss.focus = AppStoreFocus::FilterPanel;
                     ss.filter_panel_cursor = 0;
                 }
-                Action::Enter => {
+                Action::Enter | Action::Right => {
                     open_awesome_ratatui_browser(ss);
                 }
                 Action::Back => {
