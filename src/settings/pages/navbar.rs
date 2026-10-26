@@ -145,7 +145,7 @@ fn hint(row: Row) -> &'static str {
         Row::CustomOrder => "Pick a category up with Enter, then move it with ↑ ↓.",
         Row::AppSort => "How apps are ordered, both inside a category and in a flat list.",
         Row::Counts => "Show how many apps each category holds, e.g. Games (4).",
-        Row::Wrap => "Moving past the last menu row jumps back to the first.",
+        Row::Wrap => "Moving down past the last menu row jumps back to the first.",
     }
 }
 

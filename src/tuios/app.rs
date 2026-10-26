@@ -1027,8 +1027,13 @@ fn handle_navbar_key(
             let current = rows.get(state.dropdown_cursor).cloned();
             match action {
                 Action::Up => {
-                    state.dropdown_cursor =
-                        step_cursor(state.dropdown_cursor, rows.len(), false, opts.wrap);
+                    // Up off the top row is the way back out to the navbar
+                    if state.dropdown_cursor == 0 {
+                        close_nav_menus(state);
+                    } else {
+                        state.dropdown_cursor =
+                            step_cursor(state.dropdown_cursor, rows.len(), false, opts.wrap);
+                    }
                 }
                 Action::Down => {
                     state.dropdown_cursor =
