@@ -38,10 +38,7 @@ pub fn handle_action(action: Action, state: &mut TuiosState, sessions: &mut Sess
             net_key(action, state);
             Vec::new()
         }
-        Tab::Startup => {
-            startup_key(action, state);
-            Vec::new()
-        }
+        Tab::Startup => startup_key(action, state),
     }
 }
 
@@ -317,7 +314,7 @@ fn net_key(action: Action, state: &mut TuiosState) {
     }
 }
 
-fn startup_key(action: Action, state: &mut TuiosState) {
+fn startup_key(action: Action, state: &mut TuiosState) -> Vec<SessionEvent> {
     let tm = &mut state.task_manager;
     let len = tm.startup_rows.len();
     match action {
@@ -330,7 +327,7 @@ fn startup_key(action: Action, state: &mut TuiosState) {
         }
         Action::Down => tm.startup_cursor = (tm.startup_cursor + 1).min(len.saturating_sub(1)),
         Action::Enter => {
-            let Some(row) = tm.startup_rows.get(tm.startup_cursor) else { return };
+            let Some(row) = tm.startup_rows.get(tm.startup_cursor) else { return Vec::new() };
             let mut settings = persistence::load();
             let mut list = config::startup_apps(&settings);
             let on = if let Some(i) = list.iter().position(|a| *a == row.action) {
@@ -348,9 +345,25 @@ fn startup_key(action: Action, state: &mut TuiosState) {
                 if on { "now" } else { "no longer" }
             ));
         }
+        Action::Left | Action::Right => {
+            let Some(row) = tm.startup_rows.get(tm.startup_cursor) else { return Vec::new() };
+            if row.builtin {
+                return toast(format!("{} is built in, so it always runs inside tuiOS", row.label));
+            }
+            let mut settings = persistence::load();
+            let window = !row.in_window(&settings);
+            config::set_startup_in_window(&mut settings, &row.action, window);
+            persistence::save(&settings);
+            logging::settings(&format!(
+                "{} will start in {} at startup",
+                row.label,
+                if window { "a new window" } else { "the tuiOS container" }
+            ));
+        }
         Action::Back => tm.focus = Focus::Tabs,
         _ => {}
     }
+    Vec::new()
 }
 
 // ── Letter shortcuts ─────────────────────────────────────────────────────────

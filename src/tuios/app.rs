@@ -4331,7 +4331,9 @@ fn launch_startup_apps(
             logging::warn(&format!("Startup: no runnable binary for {}", key));
             continue;
         }
-        let wants_window = app_store::actions::get_window_mode(key, registered_apps.get(key)) == "fullscreen";
+        let wants_window = task_manager::config::startup_in_window(&settings, &action).unwrap_or_else(|| {
+            app_store::actions::get_window_mode(key, registered_apps.get(key)) == "fullscreen"
+        });
         let started = if wants_window && app_store::actions::can_open_new_window() {
             sessions.launch_external(key, &label, kind, &cmd)
         } else {

@@ -132,7 +132,7 @@ fn render_footer(frame: &mut Frame, area: Rect, tm: &TaskManagerState, line: boo
                 "↑↓ interface · g graph: {} · +/- window: {} · r public IP · [ ] tabs",
                 style_name, window
             ),
-            (Tab::Startup, _) => "↑↓ select · Enter toggle launch at startup · [ ] tabs".to_string(),
+            (Tab::Startup, _) => "↑↓ select · Enter on/off · ←→ container / new window · [ ] tabs".to_string(),
         }
     };
     frame.render_widget(
@@ -599,19 +599,23 @@ fn render_startup(frame: &mut Frame, area: Rect, tm: &TaskManagerState, look: &L
     let inner = block.inner(area);
     frame.render_widget(block, area);
 
-    let mut lines = vec![
-        Line::from(Span::styled(
-            " Ticked apps start in the background when tuiOS boots; find them in the Apps tab.",
-            Style::default().fg(Color::DarkGray),
-        )),
-        Line::from(""),
-    ];
+    let mut lines = vec![Line::from(Span::styled(
+        " Ticked apps start in the background when tuiOS boots; find them in the Apps tab.",
+        Style::default().fg(Color::DarkGray),
+    ))];
+    if !tm.windows_ok {
+        lines.push(Line::from(Span::styled(
+            " No desktop here, so New Window apps start in the container instead.",
+            Style::default().fg(Color::Yellow),
+        )));
+    }
+    lines.push(Line::from(""));
     if tm.startup_rows.is_empty() {
         lines.push(Line::from(Span::styled(" Nothing installed yet.", Style::default().fg(Color::DarkGray))));
     }
-    let visible = inner.height.saturating_sub(2) as usize;
+    let visible = (inner.height as usize).saturating_sub(lines.len());
     let scroll = tm.startup_cursor.saturating_sub(visible.saturating_sub(1));
-    let name_w = (inner.width as usize).saturating_sub(34).max(10);
+    let name_w = (inner.width as usize).saturating_sub(38).max(10);
     for (i, row) in tm.startup_rows.iter().enumerate().skip(scroll).take(visible) {
         let on = enabled.contains(&row.action);
         let selected = i == tm.startup_cursor;
@@ -624,9 +628,17 @@ fn render_startup(frame: &mut Frame, area: Rect, tm: &TaskManagerState, look: &L
         } else {
             Style::default().fg(Color::DarkGray)
         };
+        let mode = if row.builtin {
+            "Built-in"
+        } else if row.in_window(&settings) {
+            "New Window"
+        } else {
+            "Container"
+        };
+        let mode = if selected && focused && !row.builtin { format!("◄ {} ►", mode) } else { format!("  {}", mode) };
         lines.push(Line::from(vec![
             Span::styled(format!(" {} ", tick), tick_style),
-            Span::styled(format!("{} {:<11}{:<12}", fit(&row.label, name_w), row.kind, row.mode), style),
+            Span::styled(format!("{} {:<11}{:<16}", fit(&row.label, name_w), row.kind, mode), style),
         ]));
     }
     frame.render_widget(Paragraph::new(lines), inner);

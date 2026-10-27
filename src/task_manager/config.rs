@@ -38,6 +38,7 @@ pub const KEY_ALERT_TEMP: &str = "task_manager.alert_temp";
 pub const KEY_ALERT_SUSTAIN: &str = "task_manager.alert_sustain";
 pub const KEY_PI_POWER: &str = "task_manager.pi_power_alerts";
 pub const KEY_STARTUP: &str = "task_manager.startup_apps";
+pub const KEY_STARTUP_MODES: &str = "task_manager.startup_modes";
 
 pub const KEY_SWITCHER: &str = "button_mapping.switcher_key";
 pub const KEY_TASK_MANAGER: &str = "button_mapping.task_manager_key";
@@ -64,7 +65,8 @@ pub fn default_settings() -> Value {
         "alert_temp": "85 °C",
         "alert_sustain": "10 s",
         "pi_power_alerts": true,
-        "startup_apps": []
+        "startup_apps": [],
+        "startup_modes": {}
     })
 }
 
@@ -155,6 +157,19 @@ pub fn set_startup_apps(s: &mut Value, actions: &[String]) {
     persistence::set(s, KEY_STARTUP, Value::Array(list));
 }
 
+/// Where a startup app opens (true = new window), if chosen on the Startup tab.
+pub fn startup_in_window(s: &Value, action: &str) -> Option<bool> {
+    persistence::get(s, KEY_STARTUP_MODES)?.get(action)?.as_str().map(|m| m == "window")
+}
+
+pub fn set_startup_in_window(s: &mut Value, action: &str, window: bool) {
+    let mut modes = persistence::get(s, KEY_STARTUP_MODES)
+        .and_then(|v| v.as_object().cloned())
+        .unwrap_or_default();
+    modes.insert(action.to_string(), Value::String(if window { "window" } else { "container" }.into()));
+    persistence::set(s, KEY_STARTUP_MODES, Value::Object(modes));
+}
+
 pub fn switcher_key(s: &Value) -> String {
     persistence::get_str(s, KEY_SWITCHER, DEFAULT_SWITCHER_KEY)
 }
@@ -185,5 +200,15 @@ mod tests {
         assert_eq!(c.background_scan, Some(Duration::from_secs(5)));
         let off = serde_json::json!({ "task_manager": { "background_scan": "Off" } });
         assert_eq!(from_settings(&off).background_scan, None);
+    }
+
+    #[test]
+    fn startup_window_choice_round_trips() {
+        let mut s = serde_json::json!({ "task_manager": default_settings() });
+        assert_eq!(startup_in_window(&s, "app:btop"), None);
+        set_startup_in_window(&mut s, "app:btop", true);
+        set_startup_in_window(&mut s, "dashboard:clock", false);
+        assert_eq!(startup_in_window(&s, "app:btop"), Some(true));
+        assert_eq!(startup_in_window(&s, "dashboard:clock"), Some(false));
     }
 }

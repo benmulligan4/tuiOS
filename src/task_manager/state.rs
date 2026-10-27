@@ -228,7 +228,16 @@ pub struct StartupRow {
     pub action: String,
     pub label: String,
     pub kind: &'static str,
-    pub mode: &'static str,
+    /// Built-ins are drawn by tuiOS itself, so they cannot have a window of their own.
+    pub builtin: bool,
+    /// The app's own window mode (App Store / Settings), used until the Startup tab overrides it.
+    pub default_window: bool,
+}
+
+impl StartupRow {
+    pub fn in_window(&self, settings: &Value) -> bool {
+        !self.builtin && super::config::startup_in_window(settings, &self.action).unwrap_or(self.default_window)
+    }
 }
 
 /// Graph time windows, in seconds.
@@ -260,6 +269,8 @@ pub struct TaskManagerState {
     pub net_cursor: usize,
     pub startup_cursor: usize,
     pub startup_rows: Vec<StartupRow>,
+    /// A new terminal window can be opened here (false on a Pi with no desktop).
+    pub windows_ok: bool,
     pub confirm: Option<Confirm>,
     pub confirm_cursor: usize,
     /// Session whose output fills the page ("View Output").
@@ -287,6 +298,7 @@ impl TaskManagerState {
             net_cursor: 0,
             startup_cursor: 0,
             startup_rows: Vec::new(),
+            windows_ok: true,
             confirm: None,
             confirm_cursor: 0,
             viewer: None,
@@ -305,6 +317,8 @@ impl TaskManagerState {
         }
         self.startup_rows = startup_rows(apps, dashboards);
         self.startup_cursor = self.startup_cursor.min(self.startup_rows.len().saturating_sub(1));
+        // Probes for terminal emulators on Linux, so check once per opening, not per frame
+        self.windows_ok = crate::app_store::actions::can_open_new_window();
     }
 
     pub fn window_secs(&self) -> u64 {
@@ -334,25 +348,24 @@ fn startup_rows(apps: &HashMap<String, Value>, dashboards: &HashMap<String, Valu
         {
             continue;
         }
-        let mode = if builtin {
-            "Built-in"
-        } else if in_window(key) {
-            "New Window"
-        } else {
-            "Container"
-        };
-        rows.push(StartupRow { action: format!("app:{}", key), label: label_of(key, meta), kind: "App", mode });
+        rows.push(StartupRow {
+            action: format!("app:{}", key),
+            label: label_of(key, meta),
+            kind: "App",
+            builtin,
+            default_window: !builtin && in_window(key),
+        });
     }
     for (key, meta) in dashboards {
         if meta.get("type").and_then(|v| v.as_str()) != Some("installed") {
             continue;
         }
-        let mode = if in_window(key) { "New Window" } else { "Container" };
         rows.push(StartupRow {
             action: format!("dashboard:{}", key),
             label: label_of(key, meta),
             kind: "Dashboard",
-            mode,
+            builtin: false,
+            default_window: in_window(key),
         });
     }
     rows.sort_by(|a, b| a.kind.cmp(b.kind).then_with(|| a.label.to_lowercase().cmp(&b.label.to_lowercase())));
