@@ -1,4 +1,4 @@
-/// Navigation bar settings — opened from the Appearance category.
+/// Navigation bar settings — its own category in Settings.
 
 use ratatui::{
     layout::Rect,
@@ -22,6 +22,7 @@ pub const APP_SORTS: &[&str] = &["A → Z", "Z → A", "Recently Installed"];
 #[derive(Clone, Copy, PartialEq)]
 enum Row {
     Position,
+    TaskBar,
     Organise,
     MenuStyle,
     CategorySort,
@@ -39,7 +40,7 @@ impl Row {
 }
 
 fn rows(settings: &Value) -> Vec<Row> {
-    let mut rows = vec![Row::Position, Row::Organise];
+    let mut rows = vec![Row::Position, Row::TaskBar, Row::Organise];
     if group_by_category(settings) {
         rows.extend([Row::MenuStyle, Row::CategorySort]);
         if category_sort(settings) == "Custom" {
@@ -117,6 +118,7 @@ fn fixed(stored: String, options: &[&str]) -> String {
 fn label_value(row: Row, s: &Value) -> (&'static str, String) {
     match row {
         Row::Position => ("Position", position(s)),
+        Row::TaskBar => ("Task Manager Bar", "Open ›".into()),
         Row::Organise => ("Organise Apps by Category", enabled(group_by_category(s))),
         Row::MenuStyle => (
             "Category Menu",
@@ -137,6 +139,7 @@ fn enabled(on: bool) -> String {
 fn hint(row: Row) -> &'static str {
     match row {
         Row::Position => "Draw the navigation bar along the top or the bottom of the screen.",
+        Row::TaskBar => "Running apps beside the navbar, CPU / RAM stats, widths and colours.",
         Row::Organise => "Group the Apps dropdown under App Store category headings.",
         Row::MenuStyle => {
             "Submenu: categories open a second panel to the right (Enter/e opens, q/← goes back)."
@@ -198,6 +201,11 @@ pub fn is_edit_mode_item(cursor: usize) -> bool {
 /// True when the cursor is on the row that opens the custom order editor.
 pub fn is_custom_order(cursor: usize) -> bool {
     row_at(&persistence::load(), cursor) == Some(Row::CustomOrder)
+}
+
+/// True when the cursor is on the row that opens the Task Manager bar settings.
+pub fn is_task_bar(cursor: usize) -> bool {
+    row_at(&persistence::load(), cursor) == Some(Row::TaskBar)
 }
 
 pub fn item_count() -> usize {

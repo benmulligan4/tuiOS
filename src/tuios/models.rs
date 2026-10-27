@@ -5,6 +5,7 @@ use std::time::Instant;
 
 use crate::app_store::state::AppStoreState;
 use crate::settings::state::SettingsState;
+use crate::task_manager::bar::TaskBarState;
 use crate::task_manager::state::TaskManagerState;
 use crate::task_manager::switcher::SwitcherState;
 
@@ -104,6 +105,8 @@ pub struct TuiosState {
     pub exit_now: Option<bool>,
     /// Session to bring back when the open page is closed.
     pub page_return: Option<u64>,
+    /// Task Manager bar beside the navbar.
+    pub task_bar: TaskBarState,
 }
 
 impl TuiosState {
@@ -134,6 +137,7 @@ impl TuiosState {
             exit_confirm: None,
             exit_now: None,
             page_return: None,
+            task_bar: TaskBarState::default(),
         }
     }
 }

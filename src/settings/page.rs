@@ -13,7 +13,7 @@ use ratatui::{
 
 use super::pages::{
     about, appearance, audio, backup, boot, button_mapping, category_order, display, git, hotkeys, navbar,
-    power, task_manager, utilities, wifi_bluetooth,
+    power, task_bar, task_manager, utilities, wifi_bluetooth,
 };
 use super::state::{SettingsCategory, SettingsState, SubPage};
 
@@ -127,8 +127,8 @@ pub fn render(frame: &mut Frame, area: Rect, border_style: Style, ss: &mut Setti
         boot::render(frame, content_area, cursor, scroll, editing);
         return;
     }
-    if let Some(SubPage::NavBar) = ss.subpage {
-        navbar::render(frame, content_area, cursor, scroll, editing);
+    if let Some(sub @ (SubPage::TaskBar | SubPage::TaskBarStats | SubPage::TaskBarColours)) = ss.subpage {
+        task_bar::render(frame, content_area, cursor, editing, sub);
         return;
     }
     if let Some(SubPage::CategoryOrder) = ss.subpage {
@@ -151,6 +151,7 @@ pub fn render(frame: &mut Frame, area: Rect, border_style: Style, ss: &mut Setti
         SettingsCategory::Audio => audio::render(frame, content_area, cursor, scroll),
         SettingsCategory::Display => display::render(frame, content_area, cursor, scroll, editing),
         SettingsCategory::Appearance => appearance::render(frame, content_area, cursor, scroll, editing),
+        SettingsCategory::NavigationBar => navbar::render(frame, content_area, cursor, scroll, editing),
         SettingsCategory::ButtonMapping => {
             button_mapping::render(frame, content_area, cursor, scroll, ss.awaiting_key)
         }
@@ -169,8 +170,8 @@ pub fn is_edit_mode_item(ss: &SettingsState) -> bool {
     if let Some(SubPage::BootAnimation) = ss.subpage {
         return boot::is_edit_mode_item(cursor);
     }
-    if let Some(SubPage::NavBar) = ss.subpage {
-        return navbar::is_edit_mode_item(cursor);
+    if let Some(sub @ (SubPage::TaskBar | SubPage::TaskBarStats | SubPage::TaskBarColours)) = ss.subpage {
+        return task_bar::is_edit_mode_item(cursor, sub);
     }
     if let Some(SubPage::CategoryOrder) = ss.subpage {
         return category_order::is_edit_mode_item(cursor);
@@ -180,6 +181,7 @@ pub fn is_edit_mode_item(ss: &SettingsState) -> bool {
     }
     match ss.selected_category() {
         SettingsCategory::Appearance => appearance::is_edit_mode_item(cursor),
+        SettingsCategory::NavigationBar => navbar::is_edit_mode_item(cursor),
         SettingsCategory::Display => display::is_edit_mode_item(cursor),
         SettingsCategory::Hotkeys => hotkeys::is_edit_mode_item(cursor),
         SettingsCategory::TaskManager => task_manager::is_edit_mode_item(cursor, false),
@@ -200,8 +202,9 @@ pub fn handle_setting_cycle(ss: &mut SettingsState, forward: bool) -> bool {
         boot::handle_cycle(cursor, forward);
         return false;
     }
-    if let Some(SubPage::NavBar) = ss.subpage {
-        return navbar::handle_cycle(cursor, forward);
+    if let Some(sub @ (SubPage::TaskBar | SubPage::TaskBarStats | SubPage::TaskBarColours)) = ss.subpage {
+        task_bar::handle_cycle(cursor, forward, sub);
+        return false;
     }
     if let Some(SubPage::CategoryOrder) = ss.subpage {
         ss.right_cursor = category_order::handle_cycle(cursor, forward);
@@ -213,6 +216,7 @@ pub fn handle_setting_cycle(ss: &mut SettingsState, forward: bool) -> bool {
     }
     match ss.selected_category() {
         SettingsCategory::Appearance => appearance::handle_cycle(cursor, forward),
+        SettingsCategory::NavigationBar => return navbar::handle_cycle(cursor, forward),
         SettingsCategory::Display => display::handle_cycle(cursor, forward),
         SettingsCategory::Hotkeys => hotkeys::handle_cycle(cursor, forward),
         SettingsCategory::TaskManager => task_manager::handle_cycle(cursor, forward, false),
@@ -226,8 +230,8 @@ pub fn current_item_count(ss: &SettingsState) -> usize {
     if let Some(SubPage::BootAnimation) = ss.subpage {
         return boot::item_count();
     }
-    if let Some(SubPage::NavBar) = ss.subpage {
-        return navbar::item_count();
+    if let Some(sub @ (SubPage::TaskBar | SubPage::TaskBarStats | SubPage::TaskBarColours)) = ss.subpage {
+        return task_bar::item_count(sub);
     }
     if let Some(SubPage::CategoryOrder) = ss.subpage {
         return category_order::item_count();
@@ -244,6 +248,7 @@ pub fn current_item_count(ss: &SettingsState) -> usize {
         SettingsCategory::Audio => audio::item_count(),
         SettingsCategory::Display => display::item_count(),
         SettingsCategory::Appearance => appearance::item_count(),
+        SettingsCategory::NavigationBar => navbar::item_count(),
         SettingsCategory::ButtonMapping => button_mapping::item_count(),
         SettingsCategory::Hotkeys => hotkeys::item_count(),
         SettingsCategory::Git => git::item_count(),
@@ -266,6 +271,12 @@ pub enum SettingsAction {
     Reload(String),
 }
 
+fn open_subpage(ss: &mut SettingsState, sub: SubPage) {
+    ss.subpage = Some(sub);
+    ss.right_cursor = 0;
+    ss.editing_setting = false;
+}
+
 /// Handle Enter press in the right pane (binary toggles and actions only).
 pub fn handle_right_pane_enter(ss: &mut SettingsState) -> SettingsAction {
     let cursor = ss.right_cursor;
@@ -281,33 +292,36 @@ pub fn handle_right_pane_enter(ss: &mut SettingsState) -> SettingsAction {
         backup::handle_list_enter(ss);
         return SettingsAction::None;
     }
-    if let Some(SubPage::NavBar) = ss.subpage {
-        if navbar::is_custom_order(cursor) {
-            ss.subpage = Some(SubPage::CategoryOrder);
-            ss.right_cursor = 0;
-            ss.editing_setting = false;
-            return SettingsAction::None;
+    if let Some(sub @ (SubPage::TaskBar | SubPage::TaskBarStats | SubPage::TaskBarColours)) = ss.subpage {
+        match task_bar::opens(cursor, sub) {
+            Some(next) => open_subpage(ss, next),
+            None => task_bar::handle_enter(cursor, sub),
         }
-        let rebuild = navbar::handle_enter(cursor);
-        // Toggling grouping adds or removes the rows below it
-        ss.right_cursor = cursor.min(navbar::item_count().saturating_sub(1));
-        return if rebuild { SettingsAction::RebuildNav } else { SettingsAction::None };
+        return SettingsAction::None;
     }
     match ss.selected_category() {
         SettingsCategory::Display => { display::handle_enter(cursor); SettingsAction::None }
         SettingsCategory::Appearance => {
             if appearance::is_boot_settings(cursor) {
-                ss.subpage = Some(SubPage::BootAnimation);
-                ss.right_cursor = 0;
-                ss.editing_setting = false;
-            } else if appearance::is_navbar_settings(cursor) {
-                ss.subpage = Some(SubPage::NavBar);
-                ss.right_cursor = 0;
-                ss.editing_setting = false;
+                open_subpage(ss, SubPage::BootAnimation);
             } else {
                 appearance::handle_enter(cursor);
             }
             SettingsAction::None
+        }
+        SettingsCategory::NavigationBar => {
+            if navbar::is_custom_order(cursor) {
+                open_subpage(ss, SubPage::CategoryOrder);
+                return SettingsAction::None;
+            }
+            if navbar::is_task_bar(cursor) {
+                open_subpage(ss, SubPage::TaskBar);
+                return SettingsAction::None;
+            }
+            let rebuild = navbar::handle_enter(cursor);
+            // Toggling grouping adds or removes the rows below it
+            ss.right_cursor = cursor.min(navbar::item_count().saturating_sub(1));
+            if rebuild { SettingsAction::RebuildNav } else { SettingsAction::None }
         }
         SettingsCategory::ButtonMapping => { button_mapping::handle_enter(ss); SettingsAction::None }
         SettingsCategory::Hotkeys => { hotkeys::handle_enter(cursor); SettingsAction::None }

@@ -7,6 +7,7 @@ pub enum SettingsCategory {
     Audio,
     Display,
     Appearance,
+    NavigationBar,
     ButtonMapping,
     Hotkeys,
     Git,
@@ -23,6 +24,7 @@ impl SettingsCategory {
         SettingsCategory::Audio,
         SettingsCategory::Display,
         SettingsCategory::Appearance,
+        SettingsCategory::NavigationBar,
         SettingsCategory::ButtonMapping,
         SettingsCategory::Hotkeys,
         SettingsCategory::Git,
@@ -39,6 +41,7 @@ impl SettingsCategory {
             SettingsCategory::Audio => "Audio",
             SettingsCategory::Display => "Display",
             SettingsCategory::Appearance => "Appearance",
+            SettingsCategory::NavigationBar => "Navigation Bar",
             SettingsCategory::ButtonMapping => "Button Mapping",
             SettingsCategory::Hotkeys => "Hotkeys",
             SettingsCategory::Git => "Scripts & Git",
@@ -71,8 +74,10 @@ impl SettingsCategory {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SubPage {
     BootAnimation,
-    NavBar,
     CategoryOrder,
+    TaskBar,
+    TaskBarStats,
+    TaskBarColours,
     ResourceAlerts,
     Backups,
 }
@@ -81,8 +86,10 @@ impl SubPage {
     pub fn label(&self) -> &'static str {
         match self {
             SubPage::BootAnimation => "Boot Up Animation",
-            SubPage::NavBar => "Navigation Bar",
             SubPage::CategoryOrder => "Custom Category Order",
+            SubPage::TaskBar => "Task Manager Bar",
+            SubPage::TaskBarStats => "Extra Stats",
+            SubPage::TaskBarColours => "Status Colours",
             SubPage::ResourceAlerts => "Resource Alerts",
             SubPage::Backups => "Import Settings",
         }
@@ -91,8 +98,8 @@ impl SubPage {
     /// The page Back returns to, or None to leave the sub-page stack entirely.
     pub fn parent(&self) -> Option<SubPage> {
         match self {
-            SubPage::BootAnimation | SubPage::NavBar | SubPage::ResourceAlerts | SubPage::Backups => None,
-            SubPage::CategoryOrder => Some(SubPage::NavBar),
+            SubPage::TaskBarStats | SubPage::TaskBarColours => Some(SubPage::TaskBar),
+            _ => None,
         }
     }
 }

@@ -356,6 +356,31 @@ fn nav_width(label: &str) -> u16 {
     (label.chars().count() + 4) as u16
 }
 
+/// Columns the navbar's items and clock need (Auto width for the Task Manager bar).
+fn navbar_needed_width(nav_items: &[NavItem]) -> u16 {
+    let items: u16 = nav_items.iter().map(|i| nav_width(&i.label)).sum();
+    let s = crate::settings::persistence::load();
+    let clock = if crate::settings::persistence::get_bool(&s, "appearance.clock_enabled", false) {
+        let secs = crate::settings::persistence::get_bool(&s, "appearance.clock_show_seconds", false);
+        let h24 = crate::settings::persistence::get_bool(&s, "appearance.clock_format_24h", true);
+        5 + if secs { 3 } else { 0 } + if h24 { 0 } else { 3 } + 2
+    } else {
+        0
+    };
+    items + clock + 1
+}
+
+/// The space a menu dropped from `anchor` may use: the rest of the screen towards the
+/// main container (below the anchor, or above it when the header is at the bottom).
+fn menu_space(anchor: Rect, main: Rect, upward: bool) -> Rect {
+    if upward {
+        Rect { x: main.x, y: main.y, width: main.width, height: anchor.y.saturating_sub(main.y) }
+    } else {
+        let top = anchor.bottom();
+        Rect { x: main.x, y: top, width: main.width, height: main.bottom().saturating_sub(top) }
+    }
+}
+
 fn render_navbar(frame: &mut Frame, area: Rect, nav_items: &[NavItem], state: &TuiosState) {
     let focused = state.focus == FocusTarget::Navbar;
     let labels: Vec<String> = nav_items.iter().map(|i| i.label.clone()).collect();
@@ -821,24 +846,6 @@ fn render_no_dashboard(frame: &mut Frame, area: Rect, border_style: Style) {
     );
 }
 
-fn render_status_bar(frame: &mut Frame, area: Rect) {
-    let (cpu, used_mb, total_mb) = {
-        let m = crate::task_manager::metrics::read();
-        (m.cpu_now(), m.mem_now() / 1024 / 1024, m.mem_total / 1024 / 1024)
-    };
-    let now = chrono::Local::now().format("%H:%M:%S").to_string();
-
-    let s = crate::settings::persistence::load();
-    let accent_name = crate::settings::persistence::get_str(&s, "appearance.accent_color", "Cyan");
-    let accent = crate::settings::pages::appearance::color_from_name(&accent_name);
-
-    let text = format!("  {}   CPU: {:.0}%   RAM: {}/{} MB  ", now, cpu, used_mb, total_mb);
-    frame.render_widget(
-        Paragraph::new(text).style(Style::default().fg(accent)),
-        area,
-    );
-}
-
 // ---------------------------------------------------------------------------
 // Navbar key handling
 // ---------------------------------------------------------------------------
@@ -863,6 +870,16 @@ fn handle_navbar_key(
 
     if action == Action::Quit {
         return NavResult::Quit;
+    }
+
+    if state.task_bar.focused {
+        match task_manager::bar::handle_action(action, state, sessions) {
+            task_manager::bar::Outcome::None => {}
+            task_manager::bar::Outcome::Events(events) => apply_session_events(state, sessions, events),
+            task_manager::bar::Outcome::LeaveLeft => state.nav_cursor = nav_items.len().saturating_sub(1),
+            task_manager::bar::Outcome::LeaveRight => state.nav_cursor = 0,
+        }
+        return NavResult::None;
     }
 
     if action == Action::Back {
@@ -973,6 +990,10 @@ fn handle_navbar_key(
     // --- Dropdown is closed (top-level navigation) ---
     match action {
         Action::Left => {
+            // Off the first item: the Task Manager bar's last tile, else wrap round
+            if state.nav_cursor == 0 && task_manager::bar::focus_from_navbar(state, sessions, false) {
+                return NavResult::None;
+            }
             if state.nav_cursor == 0 {
                 state.nav_cursor = nav_items.len() - 1;
             } else {
@@ -980,6 +1001,9 @@ fn handle_navbar_key(
             }
         }
         Action::Right => {
+            if state.nav_cursor + 1 == nav_items.len() && task_manager::bar::focus_from_navbar(state, sessions, true) {
+                return NavResult::None;
+            }
             state.nav_cursor = (state.nav_cursor + 1) % nav_items.len();
         }
         Action::Enter | Action::Down => {
@@ -3419,6 +3443,12 @@ fn run_app() -> bool {
         }
         last_page = state.active_page.clone();
 
+        // The Task Manager bar only holds focus while the navbar row does
+        if state.focus != FocusTarget::Navbar {
+            state.task_bar.focused = false;
+            state.task_bar.menu = None;
+        }
+
         // An import confirmed in Settings › Backup & Restore. Done here because queueing
         // the missing apps needs the freshly saved App Store list before the queue runs.
         if let Some((plan, queue_apps)) = state.settings.backup.pending.take() {
@@ -3519,54 +3549,71 @@ fn run_app() -> bool {
         // Draw UI
         terminal
             .draw(|frame| {
-                let (status_bar_on, navbar_bottom) = {
+                let (navbar_bottom, border_type) = {
                     let s = crate::settings::persistence::load();
                     (
-                        crate::settings::persistence::get_bool(&s, "appearance.status_bar_enabled", false),
                         crate::settings::persistence::get_str(&s, "appearance.navbar_position", "Top") == "Bottom",
+                        crate::settings::pages::appearance::border_type_from_name(
+                            &crate::settings::persistence::get_str(&s, "appearance.border_style", "Rounded"),
+                        ),
                     )
                 };
-                // Row order: navbar and main swap depending on navbar_position; status bar is always last
+                let bar_cfg = task_manager::bar_config::load();
+                // Header: the navbar, plus (when the Task Manager bar is on) the stats line
+                // and the bar beside them. It sits at the top or bottom with the navbar.
                 let fullscreen = builtin_fullscreen(&state);
-                let mut constraints: Vec<Constraint> = if fullscreen {
-                    vec![Constraint::Fill(1)]
-                } else if navbar_bottom {
-                    vec![Constraint::Fill(1), Constraint::Length(1)]
+                let area = frame.area();
+                let header_h = if fullscreen {
+                    0
+                } else if bar_cfg.enabled {
+                    task_manager::bar::HEIGHT
                 } else {
-                    vec![Constraint::Length(1), Constraint::Fill(1)]
-                };
-                if status_bar_on {
-                    constraints.push(Constraint::Length(1));
+                    1
                 }
-                let rows = Layout::default()
-                    .direction(Direction::Vertical)
-                    .constraints(constraints)
-                    .split(frame.area());
-                let (nav_row, main_row) = if fullscreen {
-                    (None, rows[0])
-                } else if navbar_bottom {
-                    (Some(rows[1]), rows[0])
+                .min(area.height);
+                let (header, main_row) = if navbar_bottom {
+                    (
+                        Rect { y: area.bottom() - header_h, height: header_h, ..area },
+                        Rect { height: area.height - header_h, ..area },
+                    )
                 } else {
-                    (Some(rows[0]), rows[1])
+                    (Rect { height: header_h, ..area }, Rect { y: area.y + header_h, height: area.height - header_h, ..area })
                 };
+                let layout = if fullscreen {
+                    None
+                } else if bar_cfg.enabled {
+                    Some(task_manager::bar::split_header(header, &bar_cfg, navbar_needed_width(&nav_items)))
+                } else {
+                    Some(task_manager::bar::HeaderLayout { nav: header, stats: None, bar: None })
+                };
+                state.task_bar.visible = false;
 
                 // 1. Draw main container
                 render_main(frame, main_row, &mut state, &mut sessions, &registered_apps);
                 let running = RunningInfo::of(&sessions);
 
-                // 2. Draw navbar label row
-                if let Some(nav_row) = nav_row {
-                    render_navbar(frame, nav_row, &nav_items, &state);
+                // 2. Draw the header: navbar, stats line, Task Manager bar
+                let mut tile_rect = None;
+                if let Some(l) = &layout {
+                    render_navbar(frame, l.nav, &nav_items, &state);
+                    if let Some(stats) = l.stats {
+                        task_manager::bar::render_stats(frame, stats, &bar_cfg);
+                    }
+                    if let Some(bar) = l.bar {
+                        tile_rect = task_manager::bar::render_bar(frame, bar, &mut state, &sessions, &bar_cfg, border_type);
+                    }
                 }
 
-                // 3. Draw status bar if enabled
-                if status_bar_on {
-                    render_status_bar(frame, rows[rows.len() - 1]);
-                }
-
-                // 4. Draw dropdown LAST (overlays main container)
-                if state.nav_expanded {
-                    render_dropdown(frame, main_row, &nav_items, &state, navbar_bottom, &running);
+                // 3. Draw dropdowns LAST (they overlay the main container)
+                if let Some(l) = &layout {
+                    if state.nav_expanded {
+                        let space = menu_space(l.nav, main_row, navbar_bottom);
+                        render_dropdown(frame, space, &nav_items, &state, navbar_bottom, &running);
+                    }
+                    if let Some(tile) = tile_rect {
+                        let space = menu_space(tile, main_row, navbar_bottom);
+                        task_manager::bar::render_menu(frame, space, tile, navbar_bottom, &state, &sessions, &bar_cfg);
+                    }
                 }
 
                 // App switcher and the shutdown confirmation sit above everything else

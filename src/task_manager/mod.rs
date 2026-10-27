@@ -1,5 +1,7 @@
 /// Task Manager — background sessions, live system graphs and network details.
 
+pub mod bar;
+pub mod bar_config;
 pub mod config;
 pub mod gpu;
 #[cfg(windows)]
