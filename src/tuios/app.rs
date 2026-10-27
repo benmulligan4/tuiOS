@@ -57,6 +57,8 @@ pub struct NavItem {
 /// action string is the number of apps filed under them.
 const NAV_HEADER_PREFIX: char = '#';
 
+const FAVOURITES_HEADING: &str = "★ Favourites";
+
 fn is_nav_header(action: &str) -> bool {
     action.starts_with(NAV_HEADER_PREFIX)
 }
@@ -261,9 +263,32 @@ fn build_nav_items(
 
     let opts = nav_options();
     sort_app_children(&mut app_children, &opts.app_sort);
+
+    let favourite_keys = app_store::actions::favourites();
+    let favourites: Vec<(String, String)> = app_children
+        .iter()
+        .filter(|(_, action)| favourite_keys.contains(action_key(action)))
+        .cloned()
+        .collect();
+
     if opts.group {
         app_children =
             group_children_by_category(app_children, &registry::load_registered_apps(), &opts);
+    } else if !favourites.is_empty() {
+        // Without a heading of their own the apps would be filed under Favourites
+        let count = app_children.len();
+        app_children.insert(0, ("All Apps".to_string(), format!("{}{}", NAV_HEADER_PREFIX, count)));
+    }
+
+    // Pinned above every category regardless of the category order
+    if !favourites.is_empty() {
+        let mut pinned = vec![(
+            FAVOURITES_HEADING.to_string(),
+            format!("{}{}", NAV_HEADER_PREFIX, favourites.len()),
+        )];
+        pinned.extend(favourites);
+        pinned.append(&mut app_children);
+        app_children = pinned;
     }
 
     vec![
@@ -2344,6 +2369,19 @@ fn handle_appstore_action(
     let status = ss.install_statuses.get(&key).cloned().unwrap_or(InstallStatus::NotInstalled);
     let is_installed = !matches!(status, InstallStatus::NotInstalled);
 
+    // Favourite toggle is always the last button
+    let can_favourite = app_store::actions::can_favourite(meta);
+    let total_actions = app_store::page::action_count(&status, Some(meta));
+    if can_favourite && ss.right_action_cursor + 1 == total_actions {
+        let now = app_store::actions::toggle_favourite(&key);
+        state.needs_nav_rebuild = true;
+        state.popup = Some((
+            format!("{} {} Favourites", key, if now { "added to" } else { "removed from" }),
+            Instant::now(),
+        ));
+        return;
+    }
+
     // Built-ins: Run(0), Enable toggle(1), Window Mode(2)
     if app_store::actions::is_builtin(meta) {
         match ss.right_action_cursor {
@@ -2541,7 +2579,7 @@ fn handle_appstore_action(
     // Remove from App Store (for non-approved, not-installed apps — last button)
     let is_approved = meta.get("approved").and_then(|v| v.as_bool()).unwrap_or(true);
     if !is_approved && matches!(status, InstallStatus::NotInstalled) {
-        let remove_cursor = app_store::page::action_count(&status, Some(meta)) - 1;
+        let remove_cursor = total_actions - 1 - usize::from(can_favourite);
         if ss.right_action_cursor == remove_cursor {
             let mut reg = registered_apps.clone();
             if crate::app_store::awesome_ratatui_manager::remove_from_registered(&key, &mut reg) {

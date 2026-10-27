@@ -516,10 +516,17 @@ fn render_right_pane(
     let is_approved = meta.get("approved").and_then(|v| v.as_bool()).unwrap_or(true);
     let is_builtin = super::actions::is_builtin(meta);
 
+    let can_favourite = super::actions::can_favourite(meta);
+    let is_favourite = can_favourite && super::actions::is_favourite(&selected_key);
+
     let mut lines: Vec<Line> = Vec::new();
 
     // Title
-    lines.push(Line::from(Span::styled(label, title_style)));
+    let mut title = vec![Span::styled(label, title_style)];
+    if is_favourite {
+        title.push(Span::styled("  ★ Favourite", Style::default().fg(Color::Yellow)));
+    }
+    lines.push(Line::from(title));
 
     // Approved badge or experimental warning
     if is_builtin {
@@ -623,7 +630,6 @@ fn render_right_pane(
 
     // Action buttons
     lines.push(Line::from(Span::styled("  Actions:", label_style)));
-    lines.push(Line::from(""));
 
     let in_actions = state.focus == AppStoreFocus::RightPane && state.in_right_actions;
     let mut action_idx: usize = 0;
@@ -642,6 +648,14 @@ fn render_right_pane(
             action_idx += 1;
         }};
     }
+
+    // Always the LAST action, so every other button keeps its index
+    let favourite_text = if is_favourite {
+        "  [ ★ Remove from Favourites ]"
+    } else {
+        "  [ ☆ Add to Favourites ]"
+    };
+    let favourite_style = Style::default().fg(Color::Yellow);
 
     let supports_local = super::actions::supports_downloads_install(meta);
     let supports_global = super::actions::supports_path_install(meta);
@@ -669,6 +683,10 @@ fn render_right_pane(
             format!("  [ Window Mode: {} — press to switch ]", mode_label),
             Style::default().fg(Color::Yellow)
         );
+
+        if can_favourite {
+            push_action!(favourite_text, favourite_style);
+        }
 
         lines.push(Line::from(""));
         lines.push(Line::from(Span::styled(
@@ -789,6 +807,11 @@ fn render_right_pane(
     if !is_approved && !is_installed {
         lines.push(Line::from(""));
         push_action!("  [ Remove from App Store ]", Style::default().fg(Color::Red));
+    }
+
+    if can_favourite {
+        lines.push(Line::from(""));
+        push_action!(favourite_text, favourite_style);
     }
     let _ = action_idx;
 
@@ -1351,9 +1374,10 @@ pub fn wrap_text(text: &str, max_width: usize) -> Vec<String> {
 
 /// Get the number of action buttons for the current app's install status.
 pub fn action_count(status: &InstallStatus, meta: Option<&Value>) -> usize {
+    let favourite_btn = if meta.map(super::actions::can_favourite).unwrap_or(false) { 1 } else { 0 };
     // Built-ins always show Run, the enable toggle and the window mode
     if meta.map(super::actions::is_builtin).unwrap_or(false) {
-        return 3;
+        return 3 + favourite_btn;
     }
     let supports_embed = super::actions::supports_embedded(meta);
     let supports_local = meta.map(super::actions::supports_downloads_install).unwrap_or(false);
@@ -1376,5 +1400,5 @@ pub fn action_count(status: &InstallStatus, meta: Option<&Value>) -> usize {
         }
         InstallStatus::Both(_, _) => 5,
     };
-    run_btn + base + mode_btn + remove_btn
+    run_btn + base + mode_btn + remove_btn + favourite_btn
 }
