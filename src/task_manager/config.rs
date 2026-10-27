@@ -10,6 +10,7 @@ use serde_json::Value;
 use crate::settings::persistence;
 
 pub const INTERVALS: &[&str] = &["0.5 s", "1 s", "2 s", "5 s"];
+pub const BACKGROUND_SCANS: &[&str] = &["Off", "5 s", "10 s", "30 s", "60 s"];
 pub const HISTORIES: &[&str] = &["5 min", "15 min", "30 min", "60 min"];
 pub const GRAPH_STYLES: &[&str] = &["Line", "Sparkline"];
 pub const KILL_TIMEOUTS: &[&str] = &["1 s", "3 s", "5 s", "10 s"];
@@ -20,6 +21,8 @@ pub const TEMP_THRESHOLDS: &[&str] = &["70 °C", "75 °C", "80 °C", "85 °C", "
 pub const SUSTAIN_TIMES: &[&str] = &["5 s", "10 s", "30 s", "60 s"];
 
 pub const KEY_INTERVAL: &str = "task_manager.sample_interval";
+pub const KEY_BACKGROUND_SCAN: &str = "task_manager.background_scan";
+pub const KEY_NVML: &str = "task_manager.nvidia_stats";
 pub const KEY_HISTORY: &str = "task_manager.history_length";
 pub const KEY_GRAPH_STYLE: &str = "task_manager.graph_style";
 pub const KEY_KILL_TIMEOUT: &str = "task_manager.kill_timeout";
@@ -45,6 +48,8 @@ pub const DEFAULT_TASK_MANAGER_KEY: &str = "Shift+F12";
 pub fn default_settings() -> Value {
     serde_json::json!({
         "sample_interval": "1 s",
+        "background_scan": "5 s",
+        "nvidia_stats": true,
         "history_length": "15 min",
         "graph_style": "Line",
         "kill_timeout": "3 s",
@@ -66,6 +71,9 @@ pub fn default_settings() -> Value {
 #[derive(Debug, Clone)]
 pub struct TmConfig {
     pub interval: Duration,
+    /// How often apps' usage is measured while the Task Manager is closed; None = never.
+    pub background_scan: Option<Duration>,
+    pub nvml: bool,
     pub history_secs: u64,
     pub graph_line: bool,
     pub kill_timeout: Duration,
@@ -109,6 +117,9 @@ pub fn from_settings(s: &Value) -> TmConfig {
     let history_mins = leading_number(&choice(s, KEY_HISTORY, HISTORIES, "15 min")).unwrap_or(15.0);
     TmConfig {
         interval: secs(&choice(s, KEY_INTERVAL, INTERVALS, "1 s"), 1.0),
+        background_scan: leading_number(&choice(s, KEY_BACKGROUND_SCAN, BACKGROUND_SCANS, "5 s"))
+            .map(Duration::from_secs_f64),
+        nvml: persistence::get_bool(s, KEY_NVML, true),
         history_secs: (history_mins * 60.0) as u64,
         graph_line: choice(s, KEY_GRAPH_STYLE, GRAPH_STYLES, "Line") == "Line",
         kill_timeout: secs(&choice(s, KEY_KILL_TIMEOUT, KILL_TIMEOUTS, "3 s"), 3.0),
@@ -171,5 +182,8 @@ mod tests {
         assert_eq!(c.interval, Duration::from_secs(1));
         assert_eq!(c.scrollback, 0);
         assert_eq!(c.history_secs, 900);
+        assert_eq!(c.background_scan, Some(Duration::from_secs(5)));
+        let off = serde_json::json!({ "task_manager": { "background_scan": "Off" } });
+        assert_eq!(from_settings(&off).background_scan, None);
     }
 }

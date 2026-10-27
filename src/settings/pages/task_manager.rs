@@ -19,6 +19,9 @@ use super::cycle_option;
 #[derive(Clone, Copy, PartialEq)]
 enum Row {
     Interval,
+    BackgroundScan,
+    #[cfg(any(windows, all(target_os = "linux", target_arch = "x86_64")))]
+    Nvml,
     History,
     GraphStyle,
     KillTimeout,
@@ -38,6 +41,9 @@ enum Row {
 
 const MAIN_ROWS: &[Row] = &[
     Row::Interval,
+    Row::BackgroundScan,
+    #[cfg(any(windows, all(target_os = "linux", target_arch = "x86_64")))]
+    Row::Nvml,
     Row::History,
     Row::GraphStyle,
     Row::KillTimeout,
@@ -71,6 +77,17 @@ fn spec(row: Row) -> (&'static str, Kind, &'static str) {
             "Sample Interval",
             Cycle { key: tm::KEY_INTERVAL, options: tm::INTERVALS, default: "1 s" },
             "How often CPU, memory, GPU and network are measured. Faster costs more CPU.",
+        ),
+        Row::BackgroundScan => (
+            "Background App Stats",
+            Cycle { key: tm::KEY_BACKGROUND_SCAN, options: tm::BACKGROUND_SCANS, default: "5 s" },
+            "How often apps' CPU / memory are measured while the Task Manager is closed. Off = lightest.",
+        ),
+        #[cfg(any(windows, all(target_os = "linux", target_arch = "x86_64")))]
+        Row::Nvml => (
+            "NVIDIA GPU Stats",
+            Toggle { key: tm::KEY_NVML, default: true },
+            "Read NVIDIA cards via the driver's NVML library. Turn off if this PC has no NVIDIA card.",
         ),
         Row::History => (
             "History Length",

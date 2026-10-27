@@ -178,45 +178,52 @@ fn run(program: &str, args: &[&str]) -> Option<String> {
     Some(text)
 }
 
+#[cfg(windows)]
 fn query_wifi() -> Wifi {
-    if cfg!(windows) {
-        match run("netsh", &["wlan", "show", "interfaces"]) {
-            Some(text) => parse_netsh(&text),
-            None => Wifi::Unavailable("netsh not available".into()),
-        }
-    } else if cfg!(target_os = "macos") {
-        let airport = "/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport";
-        if let Some(w) = run(airport, &["-I"]).and_then(|t| parse_airport(&t)) {
-            return w;
-        }
-        match run("system_profiler", &["SPAirPortDataType"]) {
-            Some(text) => parse_system_profiler(&text),
-            None => Wifi::Unavailable("Not reported".into()),
-        }
-    } else {
-        if let Some(text) = run("nmcli", &["-t", "-f", "ACTIVE,SSID,SIGNAL", "dev", "wifi", "list", "--rescan", "no"]) {
-            if let Some(w) = parse_nmcli(&text) {
-                return w;
-            }
-        }
-        let ssid = run("iwgetid", &["-r"]).map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
-        let quality = std::fs::read_to_string("/proc/net/wireless").ok().and_then(|t| parse_proc_wireless(&t));
-        match (ssid, quality) {
-            (Some(ssid), q) => Wifi::Connected {
-                ssid: clean_text(&ssid),
-                signal: q.map(|(pct, _)| pct),
-                rssi: q.and_then(|(_, rssi)| rssi),
-            },
-            (None, Some(_)) => Wifi::Disconnected,
-            (None, None) => Wifi::Unavailable("No Wi-Fi adapter".into()),
-        }
+    match run("netsh", &["wlan", "show", "interfaces"]) {
+        Some(text) => parse_netsh(&text),
+        None => Wifi::Unavailable("netsh not available".into()),
     }
 }
 
+#[cfg(target_os = "macos")]
+fn query_wifi() -> Wifi {
+    let airport = "/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport";
+    if let Some(w) = run(airport, &["-I"]).and_then(|t| parse_airport(&t)) {
+        return w;
+    }
+    match run("system_profiler", &["SPAirPortDataType"]) {
+        Some(text) => parse_system_profiler(&text),
+        None => Wifi::Unavailable("Not reported".into()),
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn query_wifi() -> Wifi {
+    if let Some(text) = run("nmcli", &["-t", "-f", "ACTIVE,SSID,SIGNAL", "dev", "wifi", "list", "--rescan", "no"]) {
+        if let Some(w) = parse_nmcli(&text) {
+            return w;
+        }
+    }
+    let ssid = run("iwgetid", &["-r"]).map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
+    let quality = std::fs::read_to_string("/proc/net/wireless").ok().and_then(|t| parse_proc_wireless(&t));
+    match (ssid, quality) {
+        (Some(ssid), q) => Wifi::Connected {
+            ssid: clean_text(&ssid),
+            signal: q.map(|(pct, _)| pct),
+            rssi: q.and_then(|(_, rssi)| rssi),
+        },
+        (None, Some(_)) => Wifi::Disconnected,
+        (None, None) => Wifi::Unavailable("No Wi-Fi adapter".into()),
+    }
+}
+
+#[cfg(any(target_os = "macos", test))]
 fn rssi_to_pct(rssi: i32) -> u8 {
     (2 * (rssi + 100)).clamp(0, 100) as u8
 }
 
+#[cfg(any(windows, test))]
 pub fn parse_netsh(text: &str) -> Wifi {
     if text.to_lowercase().contains("location permission") {
         return Wifi::Unavailable("Needs Windows location permission".into());
@@ -245,6 +252,7 @@ pub fn parse_netsh(text: &str) -> Wifi {
 }
 
 /// Split a terse nmcli row on the colons that are not escaped as `\:`.
+#[cfg(any(target_os = "linux", test))]
 fn split_terse(line: &str) -> Vec<String> {
     let mut out = vec![String::new()];
     let mut chars = line.chars();
@@ -262,6 +270,7 @@ fn split_terse(line: &str) -> Vec<String> {
     out
 }
 
+#[cfg(any(target_os = "linux", test))]
 pub fn parse_nmcli(text: &str) -> Option<Wifi> {
     if text.trim().is_empty() || text.trim_start().starts_with("Error") {
         return None;
@@ -280,6 +289,7 @@ pub fn parse_nmcli(text: &str) -> Option<Wifi> {
 }
 
 /// `/proc/net/wireless` → (link quality %, signal dBm) for the first interface.
+#[cfg(any(target_os = "linux", test))]
 pub fn parse_proc_wireless(text: &str) -> Option<(u8, Option<i32>)> {
     let line = text.lines().nth(2)?;
     let (_, rest) = line.split_once(':')?;
@@ -289,6 +299,7 @@ pub fn parse_proc_wireless(text: &str) -> Option<(u8, Option<i32>)> {
     Some(((quality / 70.0 * 100.0).clamp(0.0, 100.0) as u8, rssi))
 }
 
+#[cfg(target_os = "macos")]
 pub fn parse_airport(text: &str) -> Option<Wifi> {
     let mut ssid = None;
     let mut rssi = None;
@@ -305,6 +316,7 @@ pub fn parse_airport(text: &str) -> Option<Wifi> {
     Some(Wifi::Connected { ssid: clean_text(&ssid), signal: rssi.map(rssi_to_pct), rssi })
 }
 
+#[cfg(any(target_os = "macos", test))]
 pub fn parse_system_profiler(text: &str) -> Wifi {
     let mut lines = text.lines().map(str::trim);
     if !lines.any(|l| l == "Current Network Information:") {

@@ -1,11 +1,15 @@
-/// GPU probes. sysinfo has no GPU support, so every platform gets its own source:
-/// NVML for NVIDIA (Windows + Linux), Windows performance counters for every other
-/// vendor, sysfs for AMD / Intel on Linux, vcgencmd + V3D job stats on a Raspberry Pi
-/// and `ioreg` on macOS. Whatever a source cannot report stays `None` (shown as N/A).
+/// GPU probes. sysinfo has no GPU support, so every platform gets its own source, and
+/// each one is only compiled for its platform: NVML for NVIDIA (Windows + x86-64 Linux),
+/// Windows performance counters for every other vendor, sysfs for AMD / Intel on Linux,
+/// vcgencmd + V3D job stats on a Raspberry Pi and `ioreg` on macOS. Whatever a source
+/// cannot report stays `None` (shown as N/A).
 
 use std::collections::HashMap;
+#[cfg(target_os = "linux")]
 use std::fs;
+#[cfg(target_os = "linux")]
 use std::path::{Path, PathBuf};
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::process::Command;
 
 #[derive(Debug, Clone, Default)]
@@ -21,21 +25,135 @@ pub struct GpuReading {
     pub clock_mhz: Option<u32>,
 }
 
-#[cfg_attr(not(windows), allow(dead_code))]
+#[cfg(windows)]
 const NVIDIA_VENDOR: u32 = 0x10DE;
 
 pub struct GpuProbe {
+    #[cfg(any(windows, all(target_os = "linux", target_arch = "x86_64")))]
     nvml: Option<nvml_wrapper::Nvml>,
     #[cfg(windows)]
     windows: Option<super::gpu_windows::PdhGpu>,
+    #[cfg(target_os = "linux")]
+    linux: LinuxGpu,
+    #[cfg(target_os = "macos")]
+    mac: MacGpu,
+}
+
+impl GpuProbe {
+    /// Work out which sources exist on this machine. Slow-ish (loads NVML, walks
+    /// sysfs, enumerates DXGI adapters) so it runs on the sampler thread.
+    pub fn detect(use_nvml: bool) -> Self {
+        #[cfg(any(windows, all(target_os = "linux", target_arch = "x86_64")))]
+        let nvml = if use_nvml { init_nvml() } else { None };
+        #[cfg(not(any(windows, all(target_os = "linux", target_arch = "x86_64"))))]
+        let _ = use_nvml;
+        Self {
+            #[cfg(windows)]
+            windows: super::gpu_windows::PdhGpu::new(nvml.as_ref().map(|_| NVIDIA_VENDOR)),
+            #[cfg(any(windows, all(target_os = "linux", target_arch = "x86_64")))]
+            nvml,
+            #[cfg(target_os = "linux")]
+            linux: LinuxGpu::detect(),
+            #[cfg(target_os = "macos")]
+            mac: MacGpu::default(),
+        }
+    }
+
+    pub fn sample(&mut self) -> Vec<GpuReading> {
+        let mut out = Vec::new();
+        #[cfg(any(windows, all(target_os = "linux", target_arch = "x86_64")))]
+        if let Some(nvml) = &self.nvml {
+            out.extend(sample_nvml(nvml));
+        }
+        #[cfg(windows)]
+        if let Some(win) = self.windows.as_mut() {
+            out.extend(win.sample());
+        }
+        #[cfg(target_os = "linux")]
+        self.linux.sample(&mut out);
+        #[cfg(target_os = "macos")]
+        self.mac.sample(&mut out);
+        out
+    }
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+fn run(program: &str, args: &[&str]) -> Option<String> {
+    let output = Command::new(program).args(args).output().ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    Some(String::from_utf8_lossy(&output.stdout).to_string())
+}
+
+#[cfg(target_os = "linux")]
+fn read_trim(path: impl AsRef<Path>) -> Option<String> {
+    fs::read_to_string(path).ok().map(|s| s.trim().to_string())
+}
+
+#[cfg(target_os = "linux")]
+fn read_u64(path: impl AsRef<Path>) -> Option<u64> {
+    read_trim(path)?.parse().ok()
+}
+
+pub fn is_raspberry_pi() -> bool {
+    #[cfg(target_os = "linux")]
+    return read_trim("/proc/device-tree/model").map_or(false, |m| m.contains("Raspberry Pi"));
+    #[cfg(not(target_os = "linux"))]
+    false
+}
+
+// ── NVML ─────────────────────────────────────────────────────────────────────
+
+#[cfg(any(windows, all(target_os = "linux", target_arch = "x86_64")))]
+fn init_nvml() -> Option<nvml_wrapper::Nvml> {
+    if let Ok(nvml) = nvml_wrapper::Nvml::init() {
+        return Some(nvml);
+    }
+    // Older Windows drivers kept the library beside nvidia-smi instead of in System32
+    #[cfg(windows)]
+    {
+        let path = std::ffi::OsStr::new(r"C:\Program Files\NVIDIA Corporation\NVSMI\nvml.dll");
+        if let Ok(nvml) = nvml_wrapper::Nvml::builder().lib_path(path).init() {
+            return Some(nvml);
+        }
+    }
+    None
+}
+
+#[cfg(any(windows, all(target_os = "linux", target_arch = "x86_64")))]
+fn sample_nvml(nvml: &nvml_wrapper::Nvml) -> Vec<GpuReading> {
+    use nvml_wrapper::enum_wrappers::device::{Clock, TemperatureSensor};
+    let count = nvml.device_count().unwrap_or(0);
+    let mut out = Vec::new();
+    for i in 0..count {
+        let Ok(device) = nvml.device_by_index(i) else { continue };
+        let memory = device.memory_info().ok();
+        out.push(GpuReading {
+            key: format!("nvml:{}", i),
+            name: device.name().unwrap_or_else(|_| format!("NVIDIA GPU {}", i)),
+            backend: "NVML",
+            util: device.utilization_rates().ok().map(|u| u.gpu as f32),
+            vram_used: memory.as_ref().map(|m| m.used),
+            vram_total: memory.as_ref().map(|m| m.total),
+            temp: device.temperature(TemperatureSensor::Gpu).ok().map(|t| t as f32),
+            clock_mhz: device.clock_info(Clock::Graphics).ok(),
+        });
+    }
+    out
+}
+
+// ── Linux DRM (AMD / Intel / Raspberry Pi V3D) ──────────────────────────────
+
+#[cfg(target_os = "linux")]
+struct LinuxGpu {
     drm: Vec<DrmCard>,
     pi: bool,
-    apple: bool,
     tick: u64,
-    apple_cache: Vec<GpuReading>,
     pi_cache: PiGpu,
 }
 
+#[cfg(target_os = "linux")]
 #[derive(Default, Clone, Copy)]
 struct PiGpu {
     temp: Option<f32>,
@@ -43,41 +161,16 @@ struct PiGpu {
     mem: Option<u64>,
 }
 
-impl GpuProbe {
-    /// Work out which sources exist on this machine. Slow-ish (loads NVML, walks
-    /// sysfs, enumerates DXGI adapters) so it runs once on the sampler thread.
-    pub fn detect() -> Self {
-        let nvml = init_nvml();
-        let pi = is_raspberry_pi();
-        let drm = if cfg!(target_os = "linux") { detect_drm() } else { Vec::new() };
-        Self {
-            #[cfg(windows)]
-            windows: super::gpu_windows::PdhGpu::new(nvml.as_ref().map(|_| NVIDIA_VENDOR)),
-            nvml,
-            drm,
-            pi,
-            apple: cfg!(target_os = "macos"),
-            tick: 0,
-            apple_cache: Vec::new(),
-            pi_cache: PiGpu::default(),
-        }
+#[cfg(target_os = "linux")]
+impl LinuxGpu {
+    fn detect() -> Self {
+        Self { drm: detect_drm(), pi: is_raspberry_pi(), tick: 0, pi_cache: PiGpu::default() }
     }
 
-    pub fn sample(&mut self) -> Vec<GpuReading> {
+    fn sample(&mut self, out: &mut Vec<GpuReading>) {
         self.tick += 1;
-        let mut out = Vec::new();
-
-        if let Some(nvml) = &self.nvml {
-            out.extend(sample_nvml(nvml));
-        }
-
-        #[cfg(windows)]
-        if let Some(win) = self.windows.as_mut() {
-            out.extend(win.sample());
-        }
-
         // vcgencmd is a process spawn, so the Pi's slow-moving values refresh every 5th tick
-        if self.pi && (self.tick % 5 == 1) {
+        if self.pi && self.tick % 5 == 1 {
             self.pi_cache = sample_vcgencmd();
         }
 
@@ -103,83 +196,10 @@ impl GpuProbe {
                 ..Default::default()
             });
         }
-
-        if self.apple {
-            // ioreg is a process spawn too; every other tick keeps it cheap
-            if self.tick % 2 == 1 || self.apple_cache.is_empty() {
-                if let Some(text) = run("ioreg", &["-r", "-d", "1", "-w", "0", "-c", "IOAccelerator"]) {
-                    self.apple_cache = parse_ioreg(&text);
-                }
-            }
-            out.extend(self.apple_cache.iter().cloned());
-        }
-
-        out
     }
 }
 
-fn run(program: &str, args: &[&str]) -> Option<String> {
-    let output = Command::new(program).args(args).output().ok()?;
-    if !output.status.success() {
-        return None;
-    }
-    Some(String::from_utf8_lossy(&output.stdout).to_string())
-}
-
-fn read_trim(path: impl AsRef<Path>) -> Option<String> {
-    fs::read_to_string(path).ok().map(|s| s.trim().to_string())
-}
-
-fn read_u64(path: impl AsRef<Path>) -> Option<u64> {
-    read_trim(path)?.parse().ok()
-}
-
-pub fn is_raspberry_pi() -> bool {
-    cfg!(target_os = "linux")
-        && read_trim("/proc/device-tree/model")
-            .map(|m| m.contains("Raspberry Pi"))
-            .unwrap_or(false)
-}
-
-// ── NVML ─────────────────────────────────────────────────────────────────────
-
-fn init_nvml() -> Option<nvml_wrapper::Nvml> {
-    if let Ok(nvml) = nvml_wrapper::Nvml::init() {
-        return Some(nvml);
-    }
-    // Older Windows drivers kept the library beside nvidia-smi instead of in System32
-    if cfg!(windows) {
-        let path = std::ffi::OsStr::new(r"C:\Program Files\NVIDIA Corporation\NVSMI\nvml.dll");
-        if let Ok(nvml) = nvml_wrapper::Nvml::builder().lib_path(path).init() {
-            return Some(nvml);
-        }
-    }
-    None
-}
-
-fn sample_nvml(nvml: &nvml_wrapper::Nvml) -> Vec<GpuReading> {
-    use nvml_wrapper::enum_wrappers::device::{Clock, TemperatureSensor};
-    let count = nvml.device_count().unwrap_or(0);
-    let mut out = Vec::new();
-    for i in 0..count {
-        let Ok(device) = nvml.device_by_index(i) else { continue };
-        let memory = device.memory_info().ok();
-        out.push(GpuReading {
-            key: format!("nvml:{}", i),
-            name: device.name().unwrap_or_else(|_| format!("NVIDIA GPU {}", i)),
-            backend: "NVML",
-            util: device.utilization_rates().ok().map(|u| u.gpu as f32),
-            vram_used: memory.as_ref().map(|m| m.used),
-            vram_total: memory.as_ref().map(|m| m.total),
-            temp: device.temperature(TemperatureSensor::Gpu).ok().map(|t| t as f32),
-            clock_mhz: device.clock_info(Clock::Graphics).ok(),
-        });
-    }
-    out
-}
-
-// ── Linux DRM (AMD / Intel / Raspberry Pi V3D) ──────────────────────────────
-
+#[cfg(target_os = "linux")]
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum DrmKind {
     Amd,
@@ -187,6 +207,7 @@ enum DrmKind {
     V3d,
 }
 
+#[cfg(target_os = "linux")]
 struct DrmCard {
     key: String,
     card: PathBuf,
@@ -197,6 +218,7 @@ struct DrmCard {
     v3d_prev: Option<HashMap<String, (u64, u64)>>,
 }
 
+#[cfg(target_os = "linux")]
 fn detect_drm() -> Vec<DrmCard> {
     let Ok(entries) = fs::read_dir("/sys/class/drm") else { return Vec::new() };
     let mut names: Vec<String> = entries
@@ -246,6 +268,7 @@ fn detect_drm() -> Vec<DrmCard> {
     cards
 }
 
+#[cfg(target_os = "linux")]
 impl DrmCard {
     fn sample(&mut self) -> GpuReading {
         let mut r = GpuReading {
@@ -288,6 +311,7 @@ impl DrmCard {
 }
 
 /// The active line of `pp_dpm_sclk`, e.g. "1: 1800Mhz *" → 1800.
+#[cfg(any(target_os = "linux", test))]
 pub fn parse_dpm_clock(text: &str) -> Option<u32> {
     let line = text.lines().find(|l| l.trim_end().ends_with('*'))?;
     let value = line.split(':').nth(1)?.trim();
@@ -300,6 +324,7 @@ pub fn parse_dpm_clock(text: &str) -> Option<u32> {
 }
 
 /// `gpu_stats` rows: queue, timestamp (ns), jobs, runtime (ns).
+#[cfg(any(target_os = "linux", test))]
 pub fn parse_v3d_stats(text: &str) -> HashMap<String, (u64, u64)> {
     let mut out = HashMap::new();
     for line in text.lines().skip(1) {
@@ -315,6 +340,7 @@ pub fn parse_v3d_stats(text: &str) -> HashMap<String, (u64, u64)> {
 }
 
 /// Busiest queue's share of the elapsed time between two `gpu_stats` reads.
+#[cfg(any(target_os = "linux", test))]
 pub fn v3d_utilisation(
     prev: &HashMap<String, (u64, u64)>,
     now: &HashMap<String, (u64, u64)>,
@@ -332,6 +358,7 @@ pub fn v3d_utilisation(
     best
 }
 
+#[cfg(target_os = "linux")]
 fn sample_vcgencmd() -> PiGpu {
     let temp = run("vcgencmd", &["measure_temp"]).and_then(|t| parse_vc_temp(&t));
     let clock = run("vcgencmd", &["measure_clock", "v3d"])
@@ -342,18 +369,21 @@ fn sample_vcgencmd() -> PiGpu {
 }
 
 /// "temp=48.3'C" → 48.3
+#[cfg(any(target_os = "linux", test))]
 pub fn parse_vc_temp(text: &str) -> Option<f32> {
     let value = text.trim().strip_prefix("temp=")?;
     value.trim_end_matches("'C").parse().ok()
 }
 
 /// "frequency(46)=500000000" → 500 MHz; 0 means the block is off.
+#[cfg(any(target_os = "linux", test))]
 pub fn parse_vc_clock(text: &str) -> Option<u32> {
     let hz: u64 = text.trim().split('=').nth(1)?.parse().ok()?;
     (hz > 0).then(|| (hz / 1_000_000) as u32)
 }
 
 /// "gpu=76M" → bytes
+#[cfg(any(target_os = "linux", test))]
 pub fn parse_vc_mem(text: &str) -> Option<u64> {
     let value = text.trim().strip_prefix("gpu=")?;
     let mb: u64 = value.trim_end_matches('M').parse().ok()?;
@@ -361,19 +391,45 @@ pub fn parse_vc_mem(text: &str) -> Option<u64> {
 }
 
 /// Raw `vcgencmd get_throttled` flags, e.g. "throttled=0x50005".
+#[cfg(any(target_os = "linux", test))]
 pub fn parse_throttled(text: &str) -> Option<u32> {
     let hex = text.trim().strip_prefix("throttled=0x")?;
     u32::from_str_radix(hex, 16).ok()
 }
 
 pub fn read_pi_throttled() -> Option<u32> {
-    run("vcgencmd", &["get_throttled"]).and_then(|t| parse_throttled(&t))
+    #[cfg(target_os = "linux")]
+    return run("vcgencmd", &["get_throttled"]).and_then(|t| parse_throttled(&t));
+    #[cfg(not(target_os = "linux"))]
+    None
 }
 
 // ── macOS ────────────────────────────────────────────────────────────────────
 
+#[cfg(target_os = "macos")]
+#[derive(Default)]
+struct MacGpu {
+    tick: u64,
+    cache: Vec<GpuReading>,
+}
+
+#[cfg(target_os = "macos")]
+impl MacGpu {
+    fn sample(&mut self, out: &mut Vec<GpuReading>) {
+        self.tick += 1;
+        // ioreg is a process spawn; every other tick keeps it cheap
+        if self.tick % 2 == 1 || self.cache.is_empty() {
+            if let Some(text) = run("ioreg", &["-r", "-d", "1", "-w", "0", "-c", "IOAccelerator"]) {
+                self.cache = parse_ioreg(&text);
+            }
+        }
+        out.extend(self.cache.iter().cloned());
+    }
+}
+
 /// Parse `ioreg -r -d 1 -w 0 -c IOAccelerator`. Apple Silicon reports unified memory,
 /// so "In use system memory" is the GPU's share and there is no separate total.
+#[cfg(any(target_os = "macos", test))]
 pub fn parse_ioreg(text: &str) -> Vec<GpuReading> {
     fn finish(reading: Option<GpuReading>, class: &str, out: &mut Vec<GpuReading>) {
         if let Some(mut r) = reading {
@@ -421,6 +477,7 @@ pub fn parse_ioreg(text: &str) -> Vec<GpuReading> {
 }
 
 /// `"key" = "value"` or `"key" = <"value">` on one ioreg line.
+#[cfg(any(target_os = "macos", test))]
 fn ioreg_value(line: &str, key: &str) -> Option<String> {
     let rest = line.strip_prefix(&format!("\"{}\" = ", key))?;
     let rest = rest.trim_start_matches('<');
@@ -430,6 +487,7 @@ fn ioreg_value(line: &str, key: &str) -> Option<String> {
 }
 
 /// Numeric entries of an inline ioreg dictionary: `{"A"=1,"B"=2}`.
+#[cfg(any(target_os = "macos", test))]
 fn parse_ioreg_dict(line: &str) -> HashMap<String, f64> {
     let mut out = HashMap::new();
     let Some(start) = line.find('{') else { return out };
@@ -447,7 +505,7 @@ fn parse_ioreg_dict(line: &str) -> HashMap<String, f64> {
 // Plain string handling, kept here so it is unit-tested on every platform.
 
 /// "pid_1_luid_0x00000000_0x0000D1B4_phys_0_eng_0_engtype_3D" → "0x00000000_0x0000d1b4".
-#[cfg_attr(not(windows), allow(dead_code))]
+#[cfg(any(windows, test))]
 pub fn pdh_luid(instance: &str) -> Option<String> {
     let start = instance.find("luid_")? + "luid_".len();
     let rest = &instance[start..];
@@ -455,7 +513,7 @@ pub fn pdh_luid(instance: &str) -> Option<String> {
     Some(rest[..end].to_ascii_lowercase())
 }
 
-#[cfg_attr(not(windows), allow(dead_code))]
+#[cfg(any(windows, test))]
 pub fn pdh_engtype(instance: &str) -> Option<&str> {
     let start = instance.find("engtype_")? + "engtype_".len();
     Some(&instance[start..])
@@ -463,7 +521,7 @@ pub fn pdh_engtype(instance: &str) -> Option<&str> {
 
 /// Adapter utilisation the way Windows Task Manager reports it: per adapter, the
 /// busiest engine type, where each engine type sums every process using it.
-#[cfg_attr(not(windows), allow(dead_code))]
+#[cfg(any(windows, test))]
 pub fn adapter_utilisation(samples: &[(String, f64)]) -> HashMap<String, f32> {
     let mut per_engine: HashMap<(String, String), f64> = HashMap::new();
     for (instance, value) in samples {

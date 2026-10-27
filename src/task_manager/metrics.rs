@@ -295,7 +295,7 @@ struct Watch {
     /// (pid, include its child processes)
     pids: Vec<(u32, bool)>,
     discover: bool,
-    /// The Task Manager is open: measure processes every tick instead of every 5th.
+    /// The Task Manager is open: measure processes every tick.
     detailed: bool,
 }
 
@@ -329,7 +329,8 @@ pub fn read() -> RwLockReadGuard<'static, Metrics> {
 
 /// PIDs whose usage the Task Manager shows. `discover` keeps a full process index
 /// so a freshly opened terminal window's app can be found by name; `detailed` (the
-/// Task Manager is on screen) samples them every tick rather than every fifth.
+/// Task Manager is on screen) samples them every tick rather than on the background
+/// scan interval from Settings.
 pub fn watch(pids: Vec<(u32, bool)>, discover: bool, detailed: bool) {
     if let Ok(mut w) = WATCH.lock() {
         w.pids = pids;
@@ -482,7 +483,7 @@ fn run() {
     let mut networks = Networks::new_with_refreshed_list();
     let mut components = Components::new_with_refreshed_list();
     let mut disks = Disks::new_with_refreshed_list();
-    let mut probe = GpuProbe::detect();
+    let mut probe = GpuProbe::detect(cfg.nvml);
     let pi = gpu::is_raspberry_pi();
     let self_pid = sysinfo::get_current_pid().map(|p| p.as_u32()).unwrap_or(0);
     let mut alerts = AlertState::default();
@@ -501,6 +502,7 @@ fn run() {
 
     let mut tick: u64 = 0;
     let mut last = Instant::now();
+    let mut last_scan: Option<Instant> = None;
     loop {
         // CPU usage needs two refreshes at least 200 ms apart; the interval covers that
         thread::sleep(cfg.interval);
@@ -514,6 +516,9 @@ fn run() {
             let fresh = config::load();
             interval_changed = fresh.interval != cfg.interval;
             history_changed = fresh.history_secs != cfg.history_secs;
+            if fresh.nvml != cfg.nvml {
+                probe = GpuProbe::detect(fresh.nvml);
+            }
             cfg = fresh;
         }
 
@@ -544,8 +549,13 @@ fn run() {
         let mut index: Vec<ProcEntry> = Vec::new();
         let mut process_count = None;
         // A full process scan is the most expensive part of a tick (noticeable on a Pi)
-        let scan = watch.discover || (!watch.pids.is_empty() && (watch.detailed || tick % 5 == 0));
+        let background_due = cfg.background_scan.map_or(false, |every| {
+            // Half a tick of slack so sleep jitter does not push a scan a whole tick late
+            last_scan.map_or(true, |t| t.elapsed() + cfg.interval / 2 >= every)
+        });
+        let scan = watch.discover || (!watch.pids.is_empty() && (watch.detailed || background_due));
         if scan {
+            last_scan = Some(Instant::now());
             sys.refresh_processes_specifics(
                 ProcessesToUpdate::All,
                 true,
