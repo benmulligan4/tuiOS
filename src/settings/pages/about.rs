@@ -39,7 +39,11 @@ pub fn render(frame: &mut Frame, area: Rect, _cursor: usize, _scroll: usize) {
         .unwrap_or_else(|| "unknown".into());
 
     let settings = persistence::load();
-    let default_dash = persistence::get_str(&settings, "default_dashboard", "Dashboard-1");
+    let default_dash = persistence::get_str(
+        &settings,
+        "default_dashboard",
+        crate::dashboards::dashboard_1::KEY,
+    );
     let accent = persistence::get_str(&settings, "appearance.accent_color", "Cyan");
     let dash_count = persistence::load_dashboard_names().len();
     let app_count = persistence::load_app_names().len();

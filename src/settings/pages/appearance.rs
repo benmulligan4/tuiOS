@@ -146,7 +146,10 @@ fn label_value(row: Row, s: &Value) -> (&'static str, String) {
             "Show Seconds",
             if persistence::get_bool(s, "appearance.clock_show_seconds", false) { "Yes".into() } else { "No".into() },
         ),
-        Row::Dashboard => ("Default Dashboard", persistence::get_str(s, "default_dashboard", "Dashboard-1")),
+        Row::Dashboard => (
+            "Default Dashboard",
+            persistence::get_str(s, "default_dashboard", crate::dashboards::dashboard_1::KEY),
+        ),
         Row::Border => ("Border Style", persistence::get_str(s, "appearance.border_style", "Rounded")),
         Row::StatusBar => ("Status Bar", enabled(persistence::get_bool(s, "appearance.status_bar_enabled", false))),
         Row::NewWindow => (
@@ -224,7 +227,11 @@ pub fn handle_cycle(cursor: usize, forward: bool) {
         Row::Dashboard => {
             let dash_names = persistence::load_dashboard_names();
             if !dash_names.is_empty() {
-                let current = persistence::get_str(&settings, "default_dashboard", "Dashboard-1");
+                let current = persistence::get_str(
+                    &settings,
+                    "default_dashboard",
+                    crate::dashboards::dashboard_1::KEY,
+                );
                 let idx = dash_names.iter().position(|d| d == &current).unwrap_or(0);
                 let len = dash_names.len();
                 let next_idx = if forward { (idx + 1) % len } else { (idx + len - 1) % len };

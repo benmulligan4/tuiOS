@@ -227,8 +227,14 @@ pub fn handle_enter(cursor: usize, ss: &mut SettingsState) {
         8 => {
             // Restore defaults
             let defaults = serde_json::json!({
-                "default_dashboard": "Dashboard-1",
+                "default_dashboard": crate::dashboards::dashboard_1::KEY,
                 "theme": "default",
+                "dashboard": {
+                    "online_panels": true,
+                    "weather_location": crate::dashboards::dashboard_1::online::DEFAULT_LOCATION,
+                    "weather_units": "Celsius",
+                    "clock_ghost_segments": true
+                },
                 "appearance": {
                     "accent_color": "Cyan",
                     "clock_enabled": false,

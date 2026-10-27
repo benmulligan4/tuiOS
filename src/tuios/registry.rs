@@ -36,8 +36,13 @@ const BUILTIN_APPS: &[(&str, &str, &str)] = &[
 ];
 
 const BUILTIN_DASHBOARDS: &[(&str, &str, &str)] = &[
-    ("Dashboard-1", "Dashboard 1 — Clock & Date", "dashboards::dashboard_1"),
-    ("Dashboard-2", "Dashboard 2 — System Stats", "dashboards::dashboard_2"),
+    (
+        crate::dashboards::dashboard_1::KEY,
+        crate::dashboards::dashboard_1::LABEL,
+        "dashboards::dashboard_1",
+    ),
+    ("Dashboard-2", "Dashboard 2 — Clock & Date", "dashboards::dashboard_2"),
+    ("Dashboard-3", "Dashboard 3 — System Stats", "dashboards::dashboard_3"),
 ];
 
 /// App Store categories reserved for the apps and dashboards that ship with tuiOS.
@@ -49,8 +54,12 @@ const BUILTIN_DESCRIPTIONS: &[(&str, &str)] = &[
     ("CharacterSet", "Browse and copy Unicode characters, box-drawing glyphs and symbols."),
     ("FileExplorer", "Navigate the filesystem, preview files and open them in the text editor."),
     ("TextEditor", "A lightweight editor for quick edits without leaving tuiOS."),
-    ("Dashboard-1", "The default home screen — large clock, date and system greeting."),
-    ("Dashboard-2", "Live CPU, memory, disk and network statistics at a glance."),
+    (
+        crate::dashboards::dashboard_1::KEY,
+        crate::dashboards::dashboard_1::DESCRIPTION,
+    ),
+    ("Dashboard-2", "A large clock, the date and a system greeting."),
+    ("Dashboard-3", "Live CPU, memory and disk statistics at a glance."),
 ];
 
 pub fn is_builtin_store_key(key: &str) -> bool {

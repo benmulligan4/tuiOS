@@ -4,6 +4,7 @@ pub mod audio;
 pub mod boot;
 pub mod button_mapping;
 pub mod category_order;
+pub mod dashboard;
 pub mod display;
 pub mod git;
 pub mod hotkeys;

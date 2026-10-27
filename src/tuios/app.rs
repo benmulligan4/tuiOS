@@ -29,7 +29,7 @@ use crate::applications::character_set::{AppAction, CharacterSetApp};
 use crate::applications::file_explorer::{FileExplorerAction, FileExplorerApp};
 use crate::applications::notes::{NotesApp, NotesKeyResult};
 use crate::applications::text_editor::{TextEditorAction, TextEditorApp};
-use crate::dashboards::{dashboard_1, dashboard_2};
+use crate::dashboards::{dashboard_1, dashboard_2, dashboard_3};
 use crate::dashboards::installed_runner::InstalledDashboard;
 use crate::settings;
 use crate::settings::state::SettingsCategory;
@@ -892,18 +892,19 @@ fn render_main(
             dash.render(frame, area, border_style);
         } else {
             // Dashboard changed away from installed one
-            match state.active_dashboard.as_str() {
-                "Dashboard-1" => dashboard_1::render(frame, area, border_style),
-                "Dashboard-2" => dashboard_2::render(frame, area, border_style),
-                _ => render_no_dashboard(frame, area, border_style),
-            }
+            render_builtin_dashboard(frame, area, &state.active_dashboard, border_style);
         }
     } else {
-        match state.active_dashboard.as_str() {
-            "Dashboard-1" => dashboard_1::render(frame, area, border_style),
-            "Dashboard-2" => dashboard_2::render(frame, area, border_style),
-            _ => render_no_dashboard(frame, area, border_style),
-        }
+        render_builtin_dashboard(frame, area, &state.active_dashboard, border_style);
+    }
+}
+
+fn render_builtin_dashboard(frame: &mut Frame, area: Rect, name: &str, border_style: Style) {
+    match name {
+        dashboard_1::KEY => dashboard_1::render(frame, area, border_style),
+        "Dashboard-2" => dashboard_2::render(frame, area, border_style),
+        "Dashboard-3" => dashboard_3::render(frame, area, border_style),
+        _ => render_no_dashboard(frame, area, border_style),
     }
 }
 
@@ -1389,6 +1390,16 @@ fn handle_main_key(
         return MainResult::Quit;
     }
 
+    // The built-in detailed dashboard drives its own pages/panels while it is
+    // the only thing on screen. It only claims keys it actually uses.
+    if state.active_page.is_none()
+        && state.active_app.is_none()
+        && state.active_dashboard == dashboard_1::KEY
+        && dashboard_1::handle_action(action)
+    {
+        return MainResult::None;
+    }
+
     // Tab focus toggle is now handled at the raw event level
     // using the configured toggle key. Don't handle Action::Tab here.
 
@@ -1429,7 +1440,7 @@ fn handle_main_key(
         } else if active_installed_dash.is_some() {
             // Close the installed dashboard and go back to default
             *active_installed_dash = None;
-            state.active_dashboard = "Dashboard-1".to_string();
+            state.active_dashboard = dashboard_1::KEY.to_string();
             return MainResult::None;
         } else {
             return MainResult::None;
@@ -3284,7 +3295,7 @@ fn run_app() -> bool {
     let default_dashboard = settings_map
         .get("default_dashboard")
         .and_then(|v| v.as_str())
-        .unwrap_or("Dashboard-1")
+        .unwrap_or(dashboard_1::KEY)
         .to_string();
 
     let mut state = TuiosState::new(default_dashboard.clone());

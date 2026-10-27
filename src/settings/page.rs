@@ -12,8 +12,8 @@ use ratatui::{
 };
 
 use super::pages::{
-    about, appearance, audio, boot, button_mapping, category_order, display, git, hotkeys, navbar,
-    power, utilities, wifi_bluetooth,
+    about, appearance, audio, boot, button_mapping, category_order, dashboard, display, git,
+    hotkeys, navbar, power, utilities, wifi_bluetooth,
 };
 use super::state::{SettingsCategory, SettingsState, SubPage};
 
@@ -143,6 +143,7 @@ pub fn render(frame: &mut Frame, area: Rect, border_style: Style, ss: &mut Setti
         SettingsCategory::Audio => audio::render(frame, content_area, cursor, scroll),
         SettingsCategory::Display => display::render(frame, content_area, cursor, scroll, editing),
         SettingsCategory::Appearance => appearance::render(frame, content_area, cursor, scroll, editing),
+        SettingsCategory::Dashboard => dashboard::render(frame, content_area, cursor, scroll, editing),
         SettingsCategory::ButtonMapping => {
             button_mapping::render(frame, content_area, cursor, scroll, ss.awaiting_key)
         }
@@ -167,6 +168,7 @@ pub fn is_edit_mode_item(ss: &SettingsState) -> bool {
     }
     match ss.selected_category() {
         SettingsCategory::Appearance => appearance::is_edit_mode_item(cursor),
+        SettingsCategory::Dashboard => dashboard::is_edit_mode_item(cursor),
         SettingsCategory::Display => display::is_edit_mode_item(cursor),
         SettingsCategory::Hotkeys => hotkeys::is_edit_mode_item(cursor),
         _ => false,
@@ -195,6 +197,7 @@ pub fn handle_setting_cycle(ss: &mut SettingsState, forward: bool) -> bool {
     }
     match ss.selected_category() {
         SettingsCategory::Appearance => appearance::handle_cycle(cursor, forward),
+        SettingsCategory::Dashboard => dashboard::handle_cycle(cursor, forward),
         SettingsCategory::Display => display::handle_cycle(cursor, forward),
         SettingsCategory::Hotkeys => hotkeys::handle_cycle(cursor, forward),
         _ => {}
@@ -219,6 +222,7 @@ pub fn current_item_count(ss: &SettingsState) -> usize {
         SettingsCategory::Audio => audio::item_count(),
         SettingsCategory::Display => display::item_count(),
         SettingsCategory::Appearance => appearance::item_count(),
+        SettingsCategory::Dashboard => dashboard::item_count(),
         SettingsCategory::ButtonMapping => button_mapping::item_count(),
         SettingsCategory::Hotkeys => hotkeys::item_count(),
         SettingsCategory::Git => git::item_count(),
@@ -273,6 +277,7 @@ pub fn handle_right_pane_enter(ss: &mut SettingsState) -> SettingsAction {
             SettingsAction::None
         }
         SettingsCategory::ButtonMapping => { button_mapping::handle_enter(ss); SettingsAction::None }
+        SettingsCategory::Dashboard => { dashboard::handle_enter(cursor); SettingsAction::None }
         SettingsCategory::Hotkeys => { hotkeys::handle_enter(cursor); SettingsAction::None }
         SettingsCategory::Git => { git::handle_enter(cursor, ss); SettingsAction::None }
         SettingsCategory::Utilities => {

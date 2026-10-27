@@ -21,8 +21,14 @@ fn settings_path() -> PathBuf {
     let _ = fs::create_dir_all(&config_dir);
     let path = config_dir.join("settings.json");
     let defaults = serde_json::json!({
-        "default_dashboard": "Dashboard-1",
+        "default_dashboard": crate::dashboards::dashboard_1::KEY,
         "theme": "default",
+        "dashboard": {
+            "online_panels": true,
+            "weather_location": crate::dashboards::dashboard_1::online::DEFAULT_LOCATION,
+            "weather_units": "Celsius",
+            "clock_ghost_segments": true
+        },
         "appearance": {
             "accent_color": "Cyan",
             "clock_enabled": false,
