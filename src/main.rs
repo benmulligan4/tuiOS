@@ -8,6 +8,7 @@ mod dashboards;
 mod applications;
 mod utilities;
 mod app_store;
+mod task_manager;
 
 fn main() {
     tuios::app::main();

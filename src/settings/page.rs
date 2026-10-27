@@ -13,7 +13,7 @@ use ratatui::{
 
 use super::pages::{
     about, appearance, audio, boot, button_mapping, category_order, display, git, hotkeys, navbar,
-    power, utilities, wifi_bluetooth,
+    power, task_manager, utilities, wifi_bluetooth,
 };
 use super::state::{SettingsCategory, SettingsState, SubPage};
 
@@ -135,6 +135,10 @@ pub fn render(frame: &mut Frame, area: Rect, border_style: Style, ss: &mut Setti
         category_order::render(frame, content_area, cursor, scroll, editing);
         return;
     }
+    if let Some(SubPage::ResourceAlerts) = ss.subpage {
+        task_manager::render(frame, content_area, cursor, editing, true);
+        return;
+    }
     match cat {
         SettingsCategory::About => about::render(frame, content_area, cursor, scroll),
         SettingsCategory::WifiBluetooth => {
@@ -149,6 +153,7 @@ pub fn render(frame: &mut Frame, area: Rect, border_style: Style, ss: &mut Setti
         SettingsCategory::Hotkeys => hotkeys::render(frame, content_area, cursor, scroll, editing),
         SettingsCategory::Git => git::render(frame, content_area, cursor, scroll, &ss.terminal_output, ss.terminal_focused, ss.terminal_scroll),
         SettingsCategory::Utilities => utilities::render(frame, content_area, cursor, scroll),
+        SettingsCategory::TaskManager => task_manager::render(frame, content_area, cursor, editing, false),
         SettingsCategory::Power => power::render(frame, content_area, cursor, scroll),
     }
 }
@@ -165,10 +170,14 @@ pub fn is_edit_mode_item(ss: &SettingsState) -> bool {
     if let Some(SubPage::CategoryOrder) = ss.subpage {
         return category_order::is_edit_mode_item(cursor);
     }
+    if let Some(SubPage::ResourceAlerts) = ss.subpage {
+        return task_manager::is_edit_mode_item(cursor, true);
+    }
     match ss.selected_category() {
         SettingsCategory::Appearance => appearance::is_edit_mode_item(cursor),
         SettingsCategory::Display => display::is_edit_mode_item(cursor),
         SettingsCategory::Hotkeys => hotkeys::is_edit_mode_item(cursor),
+        SettingsCategory::TaskManager => task_manager::is_edit_mode_item(cursor, false),
         _ => false,
     }
 }
@@ -193,10 +202,15 @@ pub fn handle_setting_cycle(ss: &mut SettingsState, forward: bool) -> bool {
         ss.right_cursor = category_order::handle_cycle(cursor, forward);
         return true;
     }
+    if let Some(SubPage::ResourceAlerts) = ss.subpage {
+        task_manager::handle_cycle(cursor, forward, true);
+        return false;
+    }
     match ss.selected_category() {
         SettingsCategory::Appearance => appearance::handle_cycle(cursor, forward),
         SettingsCategory::Display => display::handle_cycle(cursor, forward),
         SettingsCategory::Hotkeys => hotkeys::handle_cycle(cursor, forward),
+        SettingsCategory::TaskManager => task_manager::handle_cycle(cursor, forward, false),
         _ => {}
     }
     false
@@ -213,6 +227,9 @@ pub fn current_item_count(ss: &SettingsState) -> usize {
     if let Some(SubPage::CategoryOrder) = ss.subpage {
         return category_order::item_count();
     }
+    if let Some(SubPage::ResourceAlerts) = ss.subpage {
+        return task_manager::item_count(true);
+    }
     match ss.selected_category() {
         SettingsCategory::About => about::item_count(),
         SettingsCategory::WifiBluetooth => wifi_bluetooth::item_count(),
@@ -223,6 +240,7 @@ pub fn current_item_count(ss: &SettingsState) -> usize {
         SettingsCategory::Hotkeys => hotkeys::item_count(),
         SettingsCategory::Git => git::item_count(),
         SettingsCategory::Utilities => utilities::item_count(),
+        SettingsCategory::TaskManager => task_manager::item_count(false),
         SettingsCategory::Power => power::item_count(),
     }
 }
@@ -242,6 +260,10 @@ pub fn handle_right_pane_enter(ss: &mut SettingsState) -> SettingsAction {
     let cursor = ss.right_cursor;
     if let Some(SubPage::BootAnimation) = ss.subpage {
         boot::handle_enter(cursor);
+        return SettingsAction::None;
+    }
+    if let Some(SubPage::ResourceAlerts) = ss.subpage {
+        task_manager::handle_enter(cursor, true);
         return SettingsAction::None;
     }
     if let Some(SubPage::NavBar) = ss.subpage {
@@ -281,6 +303,16 @@ pub fn handle_right_pane_enter(ss: &mut SettingsState) -> SettingsAction {
             } else {
                 SettingsAction::None
             }
+        }
+        SettingsCategory::TaskManager => {
+            if task_manager::is_alerts_page(cursor) {
+                ss.subpage = Some(SubPage::ResourceAlerts);
+                ss.right_cursor = 0;
+                ss.editing_setting = false;
+            } else {
+                task_manager::handle_enter(cursor, false);
+            }
+            SettingsAction::None
         }
         SettingsCategory::Power => power::handle_enter(cursor),
         _ => SettingsAction::None,

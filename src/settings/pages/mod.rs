@@ -9,6 +9,7 @@ pub mod git;
 pub mod hotkeys;
 pub mod navbar;
 pub mod power;
+pub mod task_manager;
 pub mod utilities;
 pub mod wifi_bluetooth;
 

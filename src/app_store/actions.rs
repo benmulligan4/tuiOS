@@ -1181,28 +1181,6 @@ pub fn spawn_in_new_window(cmd: &[String]) -> bool {
     c.spawn().is_ok()
 }
 
-/// Decide how to launch an app that is not running in the tuiOS container.
-///
-/// Returns true when the app was handed to a separate OS window and tuiOS should
-/// keep running. Returns false when the caller should give up its own terminal
-/// to the app instead — either because the user asked for that, or because no
-/// windowing system is available.
-pub fn launch_detached(cmd: &[String]) -> bool {
-    if !keep_tuios_open() {
-        return false;
-    }
-    if !can_open_new_window() {
-        logging::info("New window unavailable (no display server) — using the current terminal");
-        return false;
-    }
-    if spawn_in_new_window(cmd) {
-        true
-    } else {
-        logging::error("Failed to open a new terminal window — using the current terminal");
-        false
-    }
-}
-
 // --- Thread-spawning variants for non-blocking UI ---
 
 pub fn push_output(buf: &Arc<Mutex<Vec<String>>>, line: String) {

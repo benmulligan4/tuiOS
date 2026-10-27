@@ -10,7 +10,6 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph},
     Frame,
 };
-use sysinfo::System;
 
 fn bar(used: f64, total: f64, width: usize) -> String {
     let pct = if total == 0.0 { 0.0 } else { used / total };
@@ -43,32 +42,20 @@ fn fmt_bytes(n: u64) -> String {
 }
 
 pub fn render(frame: &mut Frame, area: Rect, border_style: Style) {
-    let mut sys = System::new();
-    sys.refresh_cpu_usage();
-    sys.refresh_memory();
-
-    let cpu_pct = sys.global_cpu_usage() as f64;
-    let mem_used = sys.used_memory();
-    let mem_total = sys.total_memory();
+    let (cpu_pct, mem_used, mem_total, disk_used, disk_total) = {
+        let m = crate::task_manager::metrics::read();
+        (m.cpu_now() as f64, m.mem_now(), m.mem_total, m.disk_used, m.disk_total)
+    };
     let mem_pct = if mem_total > 0 {
         (mem_used as f64 / mem_total as f64) * 100.0
     } else {
         0.0
     };
-
-    // Disk usage
-    let disks = sysinfo::Disks::new_with_refreshed_list();
-    let (disk_used, disk_total, disk_pct) = disks
-        .iter()
-        .find(|d| d.mount_point() == std::path::Path::new("/"))
-        .map(|d| {
-            let total = d.total_space();
-            let available = d.available_space();
-            let used = total - available;
-            let pct = if total > 0 { (used as f64 / total as f64) * 100.0 } else { 0.0 };
-            (used, total, pct)
-        })
-        .unwrap_or((0, 0, 0.0));
+    let disk_pct = if disk_total > 0 {
+        (disk_used as f64 / disk_total as f64) * 100.0
+    } else {
+        0.0
+    };
 
     // Single border with title on top-right
     let block = Block::default()

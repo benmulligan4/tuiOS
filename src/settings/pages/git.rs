@@ -259,11 +259,14 @@ pub fn handle_enter(cursor: usize, ss: &mut SettingsState) {
                 },
                 "hotkeys": {},
                 "button_mapping": {
-                    "focus_toggle_key": "Tab"
+                    "focus_toggle_key": "Tab",
+                    "switcher_key": crate::task_manager::config::DEFAULT_SWITCHER_KEY,
+                    "task_manager_key": crate::task_manager::config::DEFAULT_TASK_MANAGER_KEY
                 },
                 "utilities": {
                     "onscreen_keyboard_enabled": true
-                }
+                },
+                "task_manager": crate::task_manager::config::default_settings()
             });
             crate::settings::persistence::save(&defaults);
             ss.terminal_output.push("Settings restored to defaults.".into());

@@ -1,45 +1,58 @@
-/// Installed dashboard runner — spawns third-party TUI apps in a PTY and
+/// Installed app / dashboard runner — spawns third-party TUI apps in a PTY and
 /// renders their output inside the tuiOS main container.
 ///
 /// Uses `portable-pty` to create a pseudo-terminal sized to the container area,
 /// and `vt100` to parse the terminal output into cells we can render with ratatui.
+/// The child handle is kept so the Task Manager can see the PID, notice when the
+/// app exits, and stop it.
 
 use std::io::{Read, Write};
 use std::sync::{Arc, Mutex};
 use std::thread;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use portable_pty::{native_pty_system, CommandBuilder, MasterPty, PtySize};
+use portable_pty::{native_pty_system, Child, CommandBuilder, MasterPty, PtySize};
 use ratatui::{
+    buffer::Buffer,
     layout::{Alignment, Margin, Rect},
     style::{Color, Modifier, Style},
-    text::{Line, Span},
-    widgets::{Block, Borders, Paragraph},
+    widgets::{Block, Borders},
     Frame,
 };
 use vt100::Parser;
 
 use super::super::tuios::models::Action;
 
-/// Manages a running installed dashboard subprocess.
+/// Manages a running installed app or dashboard subprocess.
 pub struct InstalledDashboard {
-    pub name: String,
     label: String,
     writer: Box<dyn Write + Send>,
     master: Box<dyn MasterPty + Send>,
+    child: Box<dyn Child + Send + Sync>,
     parser: Arc<Mutex<Parser>>,
     /// Last known size so we can detect resizes
     last_cols: u16,
     last_rows: u16,
+    /// Lines scrolled back from the live screen (0 = live).
+    scroll: usize,
+    exit_code: Option<u32>,
     _reader_handle: thread::JoinHandle<()>,
 }
 
 impl InstalledDashboard {
-    /// Spawn the dashboard command in a PTY sized to `cols` x `rows`.
-    pub fn start(name: &str, label: &str, cmd: &[String], cols: u16, rows: u16) -> Option<Self> {
+    /// Spawn the command in a PTY sized to `cols` x `rows`, keeping `scrollback`
+    /// lines of history that scroll off the top.
+    pub fn start(
+        label: &str,
+        cmd: &[String],
+        cols: u16,
+        rows: u16,
+        scrollback: usize,
+    ) -> Option<Self> {
         if cmd.is_empty() {
             return None;
         }
+        let (cols, rows) = (cols.max(10), rows.max(3));
 
         let pty_system = native_pty_system();
         let pair = pty_system
@@ -61,10 +74,10 @@ impl InstalledDashboard {
         command.env("COLUMNS", cols.to_string());
         command.env("LINES", rows.to_string());
 
-        let _child = pair.slave.spawn_command(command).ok()?;
+        let child = pair.slave.spawn_command(command).ok()?;
         drop(pair.slave); // Close slave side in parent
 
-        let parser = Arc::new(Mutex::new(Parser::new(rows, cols, 0)));
+        let parser = Arc::new(Mutex::new(Parser::new(rows, cols, scrollback)));
         let parser_clone = Arc::clone(&parser);
 
         let mut reader = pair.master.try_clone_reader().ok()?;
@@ -87,15 +100,49 @@ impl InstalledDashboard {
         });
 
         Some(Self {
-            name: name.to_string(),
             label: label.to_string(),
             writer,
             master: pair.master,
+            child,
             parser,
             last_cols: cols,
             last_rows: rows,
+            scroll: 0,
+            exit_code: None,
             _reader_handle: reader_handle,
         })
+    }
+
+    pub fn pid(&self) -> Option<u32> {
+        self.child.process_id()
+    }
+
+    /// (cols, rows) of the virtual terminal.
+    pub fn size(&self) -> (u16, u16) {
+        (self.last_cols, self.last_rows)
+    }
+
+    /// Exit code once the process has ended; stays set afterwards.
+    pub fn poll_exit(&mut self) -> Option<u32> {
+        if self.exit_code.is_none() {
+            if let Ok(Some(status)) = self.child.try_wait() {
+                self.exit_code = Some(status.exit_code());
+            }
+        }
+        self.exit_code
+    }
+
+    /// Ask the app to quit the way a user would (Ctrl+C).
+    pub fn interrupt(&mut self) {
+        let _ = self.writer.write_all(b"\x03");
+        let _ = self.writer.flush();
+    }
+
+    /// Force the process to stop.
+    pub fn kill(&mut self) {
+        if self.exit_code.is_none() {
+            let _ = self.child.kill();
+        }
     }
 
     /// Resize the PTY if the container area changed.
@@ -115,11 +162,49 @@ impl InstalledDashboard {
         }
     }
 
+    // ── Scrollback ───────────────────────────────────────────────────────
+
+    /// (lines scrolled back, lines of history available)
+    pub fn scroll_info(&self) -> (usize, usize) {
+        let Ok(mut p) = self.parser.lock() else { return (0, 0) };
+        // set_scrollback clamps to the history length, which is how we read it
+        p.set_scrollback(usize::MAX);
+        let max = p.screen().scrollback();
+        p.set_scrollback(self.scroll.min(max));
+        (self.scroll.min(max), max)
+    }
+
+    pub fn scroll_by(&mut self, delta: isize) {
+        let (current, max) = self.scroll_info();
+        self.scroll = (current as isize + delta).clamp(0, max as isize) as usize;
+        if let Ok(mut p) = self.parser.lock() {
+            p.set_scrollback(self.scroll);
+        }
+    }
+
+    pub fn scroll_to_live(&mut self) {
+        self.scroll = 0;
+        if let Ok(mut p) = self.parser.lock() {
+            p.set_scrollback(0);
+        }
+    }
+
+    pub fn is_scrolled(&self) -> bool {
+        self.scroll > 0
+    }
+
+    // ── Drawing ──────────────────────────────────────────────────────────
+
     /// Render the PTY screen contents into the given ratatui area.
     pub fn render(&mut self, frame: &mut Frame, area: Rect, border_style: Style) {
+        let mut title = format!(" {} ", self.label);
+        if self.scroll > 0 {
+            let (offset, max) = self.scroll_info();
+            title = format!(" {} — scrollback {}/{} · Shift+PgDn returns ", self.label, offset, max);
+        }
         let block = Block::default()
             .borders(Borders::ALL)
-            .title(format!(" {} ", self.label))
+            .title(title)
             .title_alignment(Alignment::Right)
             .style(border_style);
         frame.render_widget(block, area);
@@ -129,71 +214,63 @@ impl InstalledDashboard {
             vertical: 1,
         });
 
-        // Resize PTY to match inner area
-        self.resize_if_needed(inner.width, inner.height);
+        // An exited app keeps its last screen at its last size
+        if self.exit_code.is_none() {
+            self.resize_if_needed(inner.width, inner.height);
+        }
+        self.draw_screen(frame.buffer_mut(), inner);
+    }
 
-        // Read the virtual terminal screen
-        let screen = if let Ok(p) = self.parser.lock() {
-            p.screen().clone()
-        } else {
-            return;
-        };
-
-        // Convert vt100 screen rows to ratatui Lines, clipping to inner area
-        let mut lines: Vec<Line> = Vec::with_capacity(inner.height as usize);
-
-        for row in 0..inner.height {
-            let mut spans: Vec<Span> = Vec::new();
+    /// Copy the virtual screen 1:1 into `area` of `buf`, clipping at its edges.
+    pub fn draw_screen(&self, buf: &mut Buffer, area: Rect) {
+        let Ok(parser) = self.parser.lock() else { return };
+        let screen = parser.screen();
+        for row in 0..area.height {
             let mut col = 0u16;
-
-            while col < inner.width {
-                let cell = screen.cell(row, col);
-                if let Some(cell) = cell {
-                    let ch = cell.contents();
-                    let ch_display = if ch.is_empty() { " " } else { &ch };
-
-                    // Truncate: if the character would overflow, skip it
-                    let char_width = unicode_display_width(ch_display) as u16;
-                    if col + char_width > inner.width {
-                        break;
-                    }
-
-                    let fg = convert_vt100_color(cell.fgcolor());
-                    let bg = convert_vt100_color(cell.bgcolor());
-
-                    let mut style = Style::default();
-                    if fg != Color::Reset {
-                        style = style.fg(fg);
-                    }
-                    if bg != Color::Reset {
-                        style = style.bg(bg);
-                    }
-                    if cell.bold() {
-                        style = style.add_modifier(Modifier::BOLD);
-                    }
-                    if cell.italic() {
-                        style = style.add_modifier(Modifier::ITALIC);
-                    }
-                    if cell.underline() {
-                        style = style.add_modifier(Modifier::UNDERLINED);
-                    }
-                    if cell.inverse() {
-                        style = style.add_modifier(Modifier::REVERSED);
-                    }
-
-                    spans.push(Span::styled(ch_display.to_string(), style));
-                    col += char_width.max(1);
+            while col < area.width {
+                let (x, y) = (area.x + col, area.y + row);
+                let Some(cell) = screen.cell(row, col) else {
+                    col += 1;
+                    continue;
+                };
+                if cell.is_wide_continuation() {
+                    col += 1;
+                    continue;
+                }
+                let wide = cell.is_wide();
+                // A wide glyph that would straddle the right edge is dropped
+                if wide && col + 1 >= area.width {
+                    break;
+                }
+                let contents = cell.contents();
+                let symbol: String = if contents.is_empty() {
+                    " ".into()
                 } else {
-                    spans.push(Span::raw(" "));
+                    // Control characters would reach the real terminal as escapes
+                    contents.chars().map(|c| if c.is_control() { ' ' } else { c }).collect()
+                };
+                let style = cell_style(cell);
+                if let Some(target) = buf.cell_mut((x, y)) {
+                    target.set_symbol(&symbol).set_style(style);
+                }
+                if wide {
+                    if let Some(next) = buf.cell_mut((x + 1, y)) {
+                        next.set_symbol("").set_style(style);
+                    }
+                    col += 2;
+                } else {
                     col += 1;
                 }
             }
-
-            lines.push(Line::from(spans));
         }
+    }
 
-        let paragraph = Paragraph::new(lines);
-        frame.render_widget(paragraph, inner);
+    /// The whole virtual screen as an off-screen buffer (used for previews).
+    pub fn screen_buffer(&self) -> Buffer {
+        let area = Rect::new(0, 0, self.last_cols, self.last_rows);
+        let mut buf = Buffer::empty(area);
+        self.draw_screen(&mut buf, area);
+        buf
     }
 
     /// Forward a key action to the PTY.
@@ -276,9 +353,34 @@ impl InstalledDashboard {
 
 impl Drop for InstalledDashboard {
     fn drop(&mut self) {
-        // Closing master will signal EOF to the child
-        // The reader thread will exit when it gets EOF
+        // Closing the master hangs the child up; make sure it really is gone
+        self.kill();
     }
+}
+
+fn cell_style(cell: &vt100::Cell) -> Style {
+    let mut style = Style::default();
+    let fg = convert_vt100_color(cell.fgcolor());
+    let bg = convert_vt100_color(cell.bgcolor());
+    if fg != Color::Reset {
+        style = style.fg(fg);
+    }
+    if bg != Color::Reset {
+        style = style.bg(bg);
+    }
+    if cell.bold() {
+        style = style.add_modifier(Modifier::BOLD);
+    }
+    if cell.italic() {
+        style = style.add_modifier(Modifier::ITALIC);
+    }
+    if cell.underline() {
+        style = style.add_modifier(Modifier::UNDERLINED);
+    }
+    if cell.inverse() {
+        style = style.add_modifier(Modifier::REVERSED);
+    }
+    style
 }
 
 /// Convert a vt100 Color to a ratatui Color.
@@ -288,9 +390,4 @@ fn convert_vt100_color(color: vt100::Color) -> Color {
         vt100::Color::Idx(i) => Color::Indexed(i),
         vt100::Color::Rgb(r, g, b) => Color::Rgb(r, g, b),
     }
-}
-
-/// Calculate display width of a string (approximate; counts chars).
-fn unicode_display_width(s: &str) -> usize {
-    s.chars().count()
 }

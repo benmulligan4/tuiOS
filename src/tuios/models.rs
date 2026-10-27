@@ -5,6 +5,8 @@ use std::time::Instant;
 
 use crate::app_store::state::AppStoreState;
 use crate::settings::state::SettingsState;
+use crate::task_manager::state::TaskManagerState;
+use crate::task_manager::switcher::SwitcherState;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Action {
@@ -42,6 +44,16 @@ pub struct RunningApp {
     pub log_path: String,
 }
 
+/// "Apps are still running — quit them?" before a shutdown or restart.
+#[derive(Debug, Clone)]
+pub struct ExitConfirm {
+    pub restart: bool,
+    /// Labels of the apps that would be closed.
+    pub apps: Vec<String>,
+    /// 0 = Cancel, 1 = Quit All.
+    pub cursor: usize,
+}
+
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct TuiosState {
@@ -52,8 +64,6 @@ pub struct TuiosState {
     /// name of an active internal app, or None
     pub active_app: Option<String>,
     pub running_apps: Vec<RunningApp>,
-    /// index highlighted in the System page process list
-    pub system_cursor: usize,
     /// Custom navbar state
     pub nav_cursor: usize,
     pub nav_expanded: bool,
@@ -84,6 +94,16 @@ pub struct TuiosState {
     /// Category whose submenu is open beside the Apps dropdown.
     pub nav_submenu: Option<String>,
     pub submenu_cursor: usize,
+    /// Task Manager page UI state.
+    pub task_manager: TaskManagerState,
+    /// Quick app switcher overlay, when open.
+    pub switcher: Option<SwitcherState>,
+    /// Shutdown / restart waiting on the user to confirm closing running apps.
+    pub exit_confirm: Option<ExitConfirm>,
+    /// Confirmed exit (true = restart) for the main loop to act on.
+    pub exit_now: Option<bool>,
+    /// Session to bring back when the open page is closed.
+    pub page_return: Option<u64>,
 }
 
 impl TuiosState {
@@ -94,7 +114,6 @@ impl TuiosState {
             active_page: None,
             active_app: None,
             running_apps: Vec::new(),
-            system_cursor: 0,
             nav_cursor: 0,
             nav_expanded: false,
             dropdown_cursor: 0,
@@ -110,6 +129,11 @@ impl TuiosState {
             nav_collapsed: std::collections::HashSet::new(),
             nav_submenu: None,
             submenu_cursor: 0,
+            task_manager: TaskManagerState::new(),
+            switcher: None,
+            exit_confirm: None,
+            exit_now: None,
+            page_return: None,
         }
     }
 }

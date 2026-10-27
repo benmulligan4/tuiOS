@@ -19,3 +19,8 @@ ratatui-explorer = { version = "0.2.1", features = ["crossterm"] }
 ureq = "2"
 ratatui-splash-screen = { version = "0.1.5", default-features = false, features = ["png"] }
 image = { version = "0.25", default-features = false, features = ["png"] }
+# Loads the NVIDIA driver library at runtime; absent drivers just mean no NVIDIA stats
+nvml-wrapper = "0.13"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"

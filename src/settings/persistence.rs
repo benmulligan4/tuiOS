@@ -63,11 +63,14 @@ fn settings_path() -> PathBuf {
             "key_9": null
         },
         "button_mapping": {
-            "focus_toggle_key": "Tab"
+            "focus_toggle_key": "Tab",
+            "switcher_key": crate::task_manager::config::DEFAULT_SWITCHER_KEY,
+            "task_manager_key": crate::task_manager::config::DEFAULT_TASK_MANAGER_KEY
         },
         "utilities": {
             "onscreen_keyboard_enabled": true
-        }
+        },
+        "task_manager": crate::task_manager::config::default_settings()
     });
     if let Ok(content) = serde_json::to_string_pretty(&defaults) {
         let _ = fs::write(&path, &content);
