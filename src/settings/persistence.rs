@@ -76,7 +76,7 @@ pub fn default_settings() -> Value {
             "task_manager_key": crate::task_manager::config::DEFAULT_TASK_MANAGER_KEY
         },
         "utilities": {
-            "onscreen_keyboard_enabled": true
+            "onscreen_keyboard_enabled": false
         },
         "task_manager": crate::task_manager::config::default_settings()
     })

@@ -12,7 +12,7 @@ use crate::settings::persistence;
 
 pub fn render(frame: &mut Frame, area: Rect, cursor: usize, _scroll: usize) {
     let settings = persistence::load();
-    let osk_enabled = persistence::get_bool(&settings, "utilities.onscreen_keyboard_enabled", true);
+    let osk_enabled = persistence::get_bool(&settings, "utilities.onscreen_keyboard_enabled", false);
 
     let value_style = Style::default().fg(Color::White);
 
@@ -49,7 +49,7 @@ pub fn handle_enter(cursor: usize) -> bool {
     match cursor {
         0 => {
             let mut settings = persistence::load();
-            let current = persistence::get_bool(&settings, "utilities.onscreen_keyboard_enabled", true);
+            let current = persistence::get_bool(&settings, "utilities.onscreen_keyboard_enabled", false);
             persistence::set(&mut settings, "utilities.onscreen_keyboard_enabled", serde_json::Value::Bool(!current));
             persistence::save(&settings);
             crate::utilities::logging::settings(&format!("On-Screen Keyboard {}", if !current { "enabled" } else { "disabled" }));

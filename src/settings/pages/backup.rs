@@ -396,7 +396,7 @@ pub fn handle_enter(ss: &mut SettingsState) -> Option<String> {
     match ROWS.get(ss.right_cursor)? {
         Row::Export => {
             let settings = persistence::load();
-            if persistence::get_bool(&settings, "utilities.onscreen_keyboard_enabled", true) {
+            if persistence::get_bool(&settings, "utilities.onscreen_keyboard_enabled", false) {
                 ss.backup.osk.show();
             } else {
                 ss.backup.osk.hide();
