@@ -20,7 +20,15 @@ fn settings_path() -> PathBuf {
         .join("config");
     let _ = fs::create_dir_all(&config_dir);
     let path = config_dir.join("settings.json");
-    let defaults = serde_json::json!({
+    if let Ok(content) = serde_json::to_string_pretty(&default_settings()) {
+        let _ = fs::write(&path, &content);
+    }
+    path
+}
+
+/// A fresh settings.json (first run and Restore Defaults).
+pub fn default_settings() -> Value {
+    serde_json::json!({
         "default_dashboard": "Dashboard-1",
         "theme": "default",
         "appearance": {
@@ -71,11 +79,7 @@ fn settings_path() -> PathBuf {
             "onscreen_keyboard_enabled": true
         },
         "task_manager": crate::task_manager::config::default_settings()
-    });
-    if let Ok(content) = serde_json::to_string_pretty(&defaults) {
-        let _ = fs::write(&path, &content);
-    }
-    path
+    })
 }
 
 /// Load the full settings.json as a serde_json::Value.

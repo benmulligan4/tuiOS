@@ -1,6 +1,7 @@
 pub mod about;
 pub mod appearance;
 pub mod audio;
+pub mod backup;
 pub mod boot;
 pub mod button_mapping;
 pub mod category_order;

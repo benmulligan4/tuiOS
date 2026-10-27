@@ -1442,6 +1442,14 @@ fn handle_main_key(
 
         // Key capture mode is now handled at the raw event level
 
+        // Backup & Restore dialogs (export label, import preview, confirmations)
+        if ss.in_right_pane && ss.backup.dialog.is_some() {
+            if let Some(msg) = settings::pages::backup::handle_dialog(action, ss) {
+                state.popup = Some((msg, Instant::now()));
+            }
+            return MainResult::None;
+        }
+
         if ss.in_right_pane {
             // ---- Edit mode: Left/Right cycles the current multi-option setting ----
             if ss.editing_setting {
@@ -1511,6 +1519,10 @@ fn handle_main_key(
                                 state.popup = Some((msg, Instant::now()));
                             }
                             settings::page::SettingsAction::RebuildNav => {
+                                state.needs_nav_rebuild = true;
+                            }
+                            settings::page::SettingsAction::Reload(msg) => {
+                                state.popup = Some((msg, Instant::now()));
                                 state.needs_nav_rebuild = true;
                             }
                             settings::page::SettingsAction::None => {}
@@ -3369,6 +3381,37 @@ fn run_app() -> bool {
         }
         last_page = state.active_page.clone();
 
+        // An import confirmed in Settings › Backup & Restore. Done here because queueing
+        // the missing apps needs the freshly saved App Store list before the queue runs.
+        if let Some((plan, queue_apps)) = state.settings.backup.pending.take() {
+            match settings::backup::apply(&plan, queue_apps) {
+                Ok(done) => {
+                    let mut queued = 0;
+                    if !done.jobs.is_empty() {
+                        registered_apps = registry::load_registered_apps();
+                        for (key, label, location) in &done.jobs {
+                            let op = app_store::queue::QueueOp::Install(*location);
+                            match state.app_store.queue.enqueue(key, label, op) {
+                                Ok(_) => queued += 1,
+                                Err(e) => logging::warn(&format!("Import: could not queue {}: {}", key, e)),
+                            }
+                        }
+                        state.app_store.queue.clamp_cursor();
+                        state.pending_nav_action = Some("page:appstore".to_string());
+                    }
+                    state.settings.backup.refresh();
+                    state.needs_nav_rebuild = true;
+                    let mut msg = format!("Imported {} setting{}", done.settings, if done.settings == 1 { "" } else { "s" });
+                    if queued > 0 {
+                        msg.push_str(&format!(" and queued {} app{} to install", queued, if queued == 1 { "" } else { "s" }));
+                    }
+                    msg.push_str(". Your previous settings were saved as an automatic backup.");
+                    state.popup = Some((msg, Instant::now()));
+                }
+                Err(e) => state.popup = Some((e, Instant::now())),
+            }
+        }
+
         if state.needs_nav_rebuild {
             state.needs_nav_rebuild = false;
             state.nav_submenu = None;
@@ -3676,6 +3719,19 @@ fn run_app() -> bool {
             let key_name = super::keybind::binding_name(&key_event).unwrap_or_else(|| "Tab".to_string());
             crate::settings::pages::button_mapping::capture_key(&mut state.settings, &key_name);
             continue;
+        }
+
+        // ---- Intercept: Backup & Restore dialogs (Esc, typing an export label) ----
+        if state.focus == FocusTarget::Main
+            && matches!(state.active_page.as_deref(), Some("settings"))
+            && state.settings.backup.dialog.is_some()
+        {
+            if let Some(popup) = settings::pages::backup::handle_raw(key_event, &mut state.settings) {
+                if let Some(msg) = popup {
+                    state.popup = Some((msg, Instant::now()));
+                }
+                continue;
+            }
         }
 
         // ---- Global hotkeys: app switcher and Task Manager ----

@@ -1,4 +1,4 @@
-/// Scripts & Git settings — run scripts, pull, rebuild, restore defaults.
+/// Scripts & Git settings — run scripts, pull, rebuild, VNC.
 
 use ratatui::{
     layout::{Constraint, Direction, Layout, Margin, Rect},
@@ -38,7 +38,6 @@ pub fn render(
         "Check VNC Viewer Status".to_string(),
         "Enable VNC Viewer".to_string(),
         "Disable VNC Viewer".to_string(),
-        "Restore tuiOS Settings to Default".to_string(),
     ];
 
     let value_style = Style::default().fg(Color::White);
@@ -140,7 +139,7 @@ pub fn render(
     frame.render_widget(Paragraph::new(term_lines), term_inner);
 }
 
-pub fn item_count() -> usize { 9 }
+pub fn item_count() -> usize { 8 }
 
 pub fn handle_enter(cursor: usize, ss: &mut SettingsState) {
     let script_dir = std::env::current_dir().unwrap_or_default().join("x");
@@ -223,54 +222,6 @@ pub fn handle_enter(cursor: usize, ss: &mut SettingsState) {
             } else {
                 ss.terminal_output.push("VNC is only available on Raspberry Pi.".into());
             }
-        }
-        8 => {
-            // Restore defaults
-            let defaults = serde_json::json!({
-                "default_dashboard": "Dashboard-1",
-                "theme": "default",
-                "appearance": {
-                    "accent_color": "Cyan",
-                    "clock_enabled": false,
-                    "clock_format_24h": true,
-                    "clock_show_seconds": false,
-                    "border_style": "Rounded",
-                    "status_bar_enabled": false,
-                    "new_window_keeps_tuios_open": false,
-                    "navbar_position": "Top",
-                    "group_apps_by_category": true,
-                    "app_category_submenu": true,
-                    "nav_category_sort": "A → Z",
-                    "nav_category_order": [],
-                    "nav_app_sort": "A → Z",
-                    "nav_show_counts": true,
-                    "nav_wrap_around": true,
-                    "intro_animation_enabled": true,
-                    "boot_animation_style": "Modern",
-                    "boot_animation_colour": "Default",
-                    "boot_logo": "Static",
-                    "boot_reveal": "Center",
-                    "boot_duration": "Default",
-                    "boot_splash_effect": true,
-                    "boot_preview": true
-                },
-                "display": {
-                    "fullscreen": false
-                },
-                "hotkeys": {},
-                "button_mapping": {
-                    "focus_toggle_key": "Tab",
-                    "switcher_key": crate::task_manager::config::DEFAULT_SWITCHER_KEY,
-                    "task_manager_key": crate::task_manager::config::DEFAULT_TASK_MANAGER_KEY
-                },
-                "utilities": {
-                    "onscreen_keyboard_enabled": true
-                },
-                "task_manager": crate::task_manager::config::default_settings()
-            });
-            crate::settings::persistence::save(&defaults);
-            ss.terminal_output.push("Settings restored to defaults.".into());
-            crate::utilities::logging::settings("Settings restored to defaults");
         }
         _ => {}
     }
