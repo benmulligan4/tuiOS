@@ -416,6 +416,50 @@ pub fn set_builtin_enabled(app_key: &str, enabled: bool) {
     ));
 }
 
+// ── Favourites (`app_store.favourites` in settings.json) ─────────────────
+
+/// Favourites live in the Apps dropdown, so dashboards cannot be favourited.
+pub fn can_favourite(meta: &Value) -> bool {
+    let category = meta.get("category").and_then(|v| v.as_str()).unwrap_or("");
+    category != "Dashboard" && category != registry::BUILTIN_DASHBOARD_CATEGORY
+}
+
+pub fn favourites() -> HashSet<String> {
+    let settings = crate::settings::persistence::load();
+    crate::settings::persistence::get(&settings, "app_store.favourites")
+        .and_then(|v| v.as_array().cloned())
+        .unwrap_or_default()
+        .iter()
+        .filter_map(|v| v.as_str().map(str::to_string))
+        .collect()
+}
+
+pub fn is_favourite(app_key: &str) -> bool {
+    favourites().contains(app_key)
+}
+
+/// Add or remove an app from the favourites, returning the new state.
+pub fn toggle_favourite(app_key: &str) -> bool {
+    let mut settings = crate::settings::persistence::load();
+    let mut list: Vec<Value> = crate::settings::persistence::get(&settings, "app_store.favourites")
+        .and_then(|v| v.as_array().cloned())
+        .unwrap_or_default();
+    let before = list.len();
+    list.retain(|v| v.as_str() != Some(app_key));
+    let now_favourite = list.len() == before;
+    if now_favourite {
+        list.push(Value::String(app_key.to_string()));
+    }
+    crate::settings::persistence::set(&mut settings, "app_store.favourites", Value::Array(list));
+    crate::settings::persistence::save(&settings);
+    logging::info(&format!(
+        "App Store: {} {} favourites",
+        app_key,
+        if now_favourite { "added to" } else { "removed from" }
+    ));
+    now_favourite
+}
+
 // ── Binary-name resolution after an install ─────────────────────────────
 
 /// File stems currently present in the cargo bin directory.
