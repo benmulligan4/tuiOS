@@ -190,7 +190,7 @@ impl NotesApp {
     pub fn start(&mut self) {
         let settings = crate::settings::persistence::load();
         self.osk_enabled =
-            crate::settings::persistence::get_bool(&settings, "utilities.onscreen_keyboard_enabled", true);
+            crate::settings::persistence::get_bool(&settings, "utilities.onscreen_keyboard_enabled", false);
         self.refresh_visible(None);
         if let Some(err) = self.store.load_error.take() {
             self.set_status(err);

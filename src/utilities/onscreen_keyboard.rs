@@ -135,6 +135,7 @@ fn shift_char(c: char) -> char {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct OnScreenKeyboard {
     rows: Vec<Vec<OskKey>>,
     /// Currently selected row.

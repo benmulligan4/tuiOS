@@ -12,7 +12,7 @@ use ratatui::{
 };
 
 use super::pages::{
-    about, appearance, audio, boot, button_mapping, category_order, display, git, hotkeys, navbar,
+    about, appearance, audio, backup, boot, button_mapping, category_order, display, git, hotkeys, navbar,
     power, task_manager, utilities, wifi_bluetooth,
 };
 use super::state::{SettingsCategory, SettingsState, SubPage};
@@ -139,6 +139,10 @@ pub fn render(frame: &mut Frame, area: Rect, border_style: Style, ss: &mut Setti
         task_manager::render(frame, content_area, cursor, editing, true);
         return;
     }
+    if let Some(SubPage::Backups) = ss.subpage {
+        backup::render_list(frame, content_area, cursor, &ss.backup);
+        return;
+    }
     match cat {
         SettingsCategory::About => about::render(frame, content_area, cursor, scroll),
         SettingsCategory::WifiBluetooth => {
@@ -154,6 +158,7 @@ pub fn render(frame: &mut Frame, area: Rect, border_style: Style, ss: &mut Setti
         SettingsCategory::Git => git::render(frame, content_area, cursor, scroll, &ss.terminal_output, ss.terminal_focused, ss.terminal_scroll),
         SettingsCategory::Utilities => utilities::render(frame, content_area, cursor, scroll),
         SettingsCategory::TaskManager => task_manager::render(frame, content_area, cursor, editing, false),
+        SettingsCategory::BackupRestore => backup::render(frame, content_area, cursor, &ss.backup),
         SettingsCategory::Power => power::render(frame, content_area, cursor, scroll),
     }
 }
@@ -230,6 +235,9 @@ pub fn current_item_count(ss: &SettingsState) -> usize {
     if let Some(SubPage::ResourceAlerts) = ss.subpage {
         return task_manager::item_count(true);
     }
+    if let Some(SubPage::Backups) = ss.subpage {
+        return backup::list_count(&ss.backup);
+    }
     match ss.selected_category() {
         SettingsCategory::About => about::item_count(),
         SettingsCategory::WifiBluetooth => wifi_bluetooth::item_count(),
@@ -241,6 +249,7 @@ pub fn current_item_count(ss: &SettingsState) -> usize {
         SettingsCategory::Git => git::item_count(),
         SettingsCategory::Utilities => utilities::item_count(),
         SettingsCategory::TaskManager => task_manager::item_count(false),
+        SettingsCategory::BackupRestore => backup::item_count(),
         SettingsCategory::Power => power::item_count(),
     }
 }
@@ -253,6 +262,8 @@ pub enum SettingsAction {
     ShowPopup(String),
     /// The navbar dropdowns need rebuilding.
     RebuildNav,
+    /// Settings were replaced wholesale: show the message and rebuild the navbar.
+    Reload(String),
 }
 
 /// Handle Enter press in the right pane (binary toggles and actions only).
@@ -264,6 +275,10 @@ pub fn handle_right_pane_enter(ss: &mut SettingsState) -> SettingsAction {
     }
     if let Some(SubPage::ResourceAlerts) = ss.subpage {
         task_manager::handle_enter(cursor, true);
+        return SettingsAction::None;
+    }
+    if let Some(SubPage::Backups) = ss.subpage {
+        backup::handle_list_enter(ss);
         return SettingsAction::None;
     }
     if let Some(SubPage::NavBar) = ss.subpage {
@@ -315,6 +330,10 @@ pub fn handle_right_pane_enter(ss: &mut SettingsState) -> SettingsAction {
             SettingsAction::None
         }
         SettingsCategory::Power => power::handle_enter(cursor),
+        SettingsCategory::BackupRestore => match backup::handle_enter(ss) {
+            Some(msg) => SettingsAction::Reload(msg),
+            None => SettingsAction::None,
+        },
         _ => SettingsAction::None,
     }
 }

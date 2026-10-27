@@ -12,6 +12,7 @@ pub enum SettingsCategory {
     Git,
     Utilities,
     TaskManager,
+    BackupRestore,
     Power,
 }
 
@@ -27,6 +28,7 @@ impl SettingsCategory {
         SettingsCategory::Git,
         SettingsCategory::Utilities,
         SettingsCategory::TaskManager,
+        SettingsCategory::BackupRestore,
         SettingsCategory::Power,
     ];
 
@@ -42,6 +44,7 @@ impl SettingsCategory {
             SettingsCategory::Git => "Scripts & Git",
             SettingsCategory::Utilities => "Utilities",
             SettingsCategory::TaskManager => "Task Manager",
+            SettingsCategory::BackupRestore => "Backup & Restore",
             SettingsCategory::Power => "Power",
         }
     }
@@ -71,6 +74,7 @@ pub enum SubPage {
     NavBar,
     CategoryOrder,
     ResourceAlerts,
+    Backups,
 }
 
 impl SubPage {
@@ -80,13 +84,14 @@ impl SubPage {
             SubPage::NavBar => "Navigation Bar",
             SubPage::CategoryOrder => "Custom Category Order",
             SubPage::ResourceAlerts => "Resource Alerts",
+            SubPage::Backups => "Import Settings",
         }
     }
 
     /// The page Back returns to, or None to leave the sub-page stack entirely.
     pub fn parent(&self) -> Option<SubPage> {
         match self {
-            SubPage::BootAnimation | SubPage::NavBar | SubPage::ResourceAlerts => None,
+            SubPage::BootAnimation | SubPage::NavBar | SubPage::ResourceAlerts | SubPage::Backups => None,
             SubPage::CategoryOrder => Some(SubPage::NavBar),
         }
     }
@@ -115,6 +120,8 @@ pub struct SettingsState {
     pub editing_setting: bool,
     /// Sub-page opened from within the selected category.
     pub subpage: Option<SubPage>,
+    /// Backup & Restore: backup list, open dialog, confirmed import.
+    pub backup: super::pages::backup::BackupUi,
 }
 
 impl SettingsState {
@@ -130,6 +137,7 @@ impl SettingsState {
             terminal_scroll: 0,
             editing_setting: false,
             subpage: None,
+            backup: super::pages::backup::BackupUi::new(),
         }
     }
 
@@ -147,5 +155,6 @@ impl SettingsState {
         self.terminal_scroll = 0;
         self.editing_setting = false;
         self.subpage = None;
+        self.backup.dialog = None;
     }
 }

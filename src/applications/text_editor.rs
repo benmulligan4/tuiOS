@@ -198,7 +198,7 @@ impl TextEditorApp {
                     // Check if OSK is enabled in settings
                     let settings = crate::settings::persistence::load();
                     let osk_enabled = crate::settings::persistence::get_bool(
-                        &settings, "utilities.onscreen_keyboard_enabled", true
+                        &settings, "utilities.onscreen_keyboard_enabled", false
                     );
                     if osk_enabled {
                         self.osk.show();
