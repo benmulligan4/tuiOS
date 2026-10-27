@@ -63,7 +63,7 @@ pub fn group_by_category(settings: &Value) -> bool {
 }
 
 pub fn category_submenu(settings: &Value) -> bool {
-    persistence::get_bool(settings, "appearance.app_category_submenu", false)
+    persistence::get_bool(settings, "appearance.app_category_submenu", true)
 }
 
 pub fn show_counts(settings: &Value) -> bool {

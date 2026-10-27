@@ -239,7 +239,7 @@ pub fn handle_enter(cursor: usize, ss: &mut SettingsState) {
                     "new_window_keeps_tuios_open": false,
                     "navbar_position": "Top",
                     "group_apps_by_category": true,
-                    "app_category_submenu": false,
+                    "app_category_submenu": true,
                     "nav_category_sort": "A → Z",
                     "nav_category_order": [],
                     "nav_app_sort": "A → Z",
