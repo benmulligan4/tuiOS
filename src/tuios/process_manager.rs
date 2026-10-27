@@ -109,6 +109,7 @@ pub fn launch(name: &str, cmd: &[String]) -> Option<RunningApp> {
 }
 
 /// Terminate a running subprocess by name.
+#[allow(dead_code)]
 pub fn stop(name: &str) {
     let mut processes = match PROCESSES.lock() {
         Ok(p) => p,
@@ -168,6 +169,7 @@ pub fn log_tail(name: &str, n: usize) -> Vec<String> {
 }
 
 /// Return a snapshot list of all tracked apps with refreshed status.
+#[allow(dead_code)]
 pub fn list_running() -> Vec<RunningApp> {
     let mut processes = match PROCESSES.lock() {
         Ok(p) => p,

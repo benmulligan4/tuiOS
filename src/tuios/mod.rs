@@ -1,6 +1,9 @@
 pub mod app;
 pub mod boot_animation;
 pub mod input_handler;
+pub mod keybind;
 pub mod models;
+pub mod proc_control;
 pub mod process_manager;
 pub mod registry;
+pub mod sessions;

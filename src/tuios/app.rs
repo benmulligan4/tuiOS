@@ -21,79 +21,19 @@ use serde_json::Value;
 
 use super::boot_animation;
 use super::input_handler::{action_to_key_name, map_key};
-use super::models::{Action, AppStatus, FocusTarget, TuiosState};
+use super::models::{Action, FocusTarget, TuiosState};
 use super::process_manager;
 use super::registry;
+use super::sessions::{InternalApp, Kind as SessionKind, SessionEvent, SessionId, Sessions};
 
-use crate::applications::character_set::{AppAction, CharacterSetApp};
-use crate::applications::file_explorer::{FileExplorerAction, FileExplorerApp};
-use crate::applications::notes::{NotesApp, NotesKeyResult};
-use crate::applications::text_editor::{TextEditorAction, TextEditorApp};
+use crate::applications::notes::NotesKeyResult;
 use crate::dashboards::{dashboard_1, dashboard_2};
-use crate::dashboards::installed_runner::InstalledDashboard;
 use crate::settings;
 use crate::settings::state::SettingsCategory;
+use crate::task_manager;
 use crate::touchscreen;
 use crate::utilities::logging;
 use crate::app_store;
-
-// ---------------------------------------------------------------------------
-// Internal app wrapper — supports multiple built-in app types
-// ---------------------------------------------------------------------------
-
-enum InternalApp {
-    CharacterSet(CharacterSetApp),
-    FileExplorer(FileExplorerApp),
-    Notes(NotesApp),
-    TextEditor(TextEditorApp),
-}
-
-impl InternalApp {
-    fn render(&mut self, frame: &mut Frame, area: Rect, border_style: Style) {
-        match self {
-            InternalApp::CharacterSet(app) => app.render(frame, area, border_style),
-            InternalApp::FileExplorer(app) => app.render(frame, area, border_style),
-            InternalApp::Notes(app) => app.render(frame, area, border_style),
-            InternalApp::TextEditor(app) => app.render(frame, area, border_style),
-        }
-    }
-
-    fn handle_key(&mut self, code: &str) -> bool {
-        // Returns true if the app wants to close
-        match self {
-            InternalApp::CharacterSet(app) => {
-                matches!(app.handle_key(code), Some(AppAction::Back))
-            }
-            InternalApp::FileExplorer(app) => {
-                matches!(app.handle_key(code), Some(FileExplorerAction::Back))
-            }
-            InternalApp::Notes(app) => app.handle_key(code) == NotesKeyResult::Close,
-            InternalApp::TextEditor(app) => {
-                matches!(app.handle_key(code), Some(TextEditorAction::Back))
-            }
-        }
-    }
-
-    fn stop(&mut self) {
-        match self {
-            InternalApp::CharacterSet(app) => app.stop(),
-            InternalApp::FileExplorer(app) => app.stop(),
-            InternalApp::Notes(app) => app.stop(),
-            InternalApp::TextEditor(app) => app.stop(),
-        }
-    }
-
-    /// Returns true if this app uses the OSK and has it active,
-    /// meaning WASD should NOT be mapped to navigation.
-    fn wants_raw_wasd(&self) -> bool {
-        match self {
-            // Notes decides itself what Back/Q means (close dialog, leave note, quit)
-            InternalApp::Notes(_) => true,
-            InternalApp::TextEditor(app) => app.keyboard_active(),
-            _ => false,
-        }
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Navbar definition
@@ -375,9 +315,25 @@ fn builtin_fullscreen(state: &TuiosState) -> bool {
 // Custom navbar renderer
 // ---------------------------------------------------------------------------
 
+/// What is running, for the navbar's markers.
+struct RunningInfo {
+    keys: std::collections::HashSet<String>,
+    count: usize,
+}
+
+impl RunningInfo {
+    fn of(sessions: &Sessions) -> Self {
+        Self { keys: sessions.running_keys(), count: sessions.live_count() }
+    }
+}
+
+fn nav_width(label: &str) -> u16 {
+    (label.chars().count() + 4) as u16
+}
+
 fn render_navbar(frame: &mut Frame, area: Rect, nav_items: &[NavItem], state: &TuiosState) {
     let focused = state.focus == FocusTarget::Navbar;
-    let labels: Vec<&str> = nav_items.iter().map(|i| i.label.as_str()).collect();
+    let labels: Vec<String> = nav_items.iter().map(|i| i.label.clone()).collect();
 
     // Load accent colour from settings
     let settings = crate::settings::persistence::load();
@@ -386,7 +342,7 @@ fn render_navbar(frame: &mut Frame, area: Rect, nav_items: &[NavItem], state: &T
 
     let mut constraints: Vec<Constraint> = labels
         .iter()
-        .map(|lbl| Constraint::Length((lbl.len() + 4) as u16))
+        .map(|lbl| Constraint::Length(nav_width(lbl)))
         .collect();
     constraints.push(Constraint::Fill(1));
 
@@ -446,7 +402,20 @@ fn render_menu_panel(
     cursor: usize,
     collapsed: &std::collections::HashSet<String>,
     opts: &NavOptions,
+    running: &RunningInfo,
 ) -> Rect {
+    // ● marks apps/dashboards with a running session; the Task Manager row shows the count
+    let suffix = |action: &str| -> String {
+        if action == "page:taskmanager" && running.count > 0 {
+            format!(" ({})", running.count)
+        } else if (action.starts_with("app:") || action.starts_with("dashboard:"))
+            && running.keys.contains(action_key(action))
+        {
+            " ●".to_string()
+        } else {
+            String::new()
+        }
+    };
     let texts: Vec<String> = rows
         .iter()
         .map(|(label, action)| {
@@ -465,7 +434,7 @@ fn render_menu_panel(
                 };
                 format!(" {} {}{} ", glyph, label, count)
             } else {
-                format!("   {} ", label)
+                format!("   {}{} ", label, suffix(action))
             }
         })
         .collect();
@@ -523,7 +492,7 @@ fn render_menu_panel(
             Style::default().fg(Color::White).bg(Color::Black)
         };
         let text = if selected && !is_nav_header(&rows[i].1) {
-            format!(" » {} ", rows[i].0)
+            format!(" » {}{} ", rows[i].0, suffix(&rows[i].1))
         } else {
             texts[i].clone()
         };
@@ -538,7 +507,14 @@ fn render_menu_panel(
     rect
 }
 
-fn render_dropdown(frame: &mut Frame, area: Rect, nav_items: &[NavItem], state: &TuiosState, open_upward: bool) {
+fn render_dropdown(
+    frame: &mut Frame,
+    area: Rect,
+    nav_items: &[NavItem],
+    state: &TuiosState,
+    open_upward: bool,
+    running: &RunningInfo,
+) {
     if !state.nav_expanded {
         return;
     }
@@ -560,10 +536,9 @@ fn render_dropdown(frame: &mut Frame, area: Rect, nav_items: &[NavItem], state: 
     }
 
     // Calculate x offset below the nav item
-    let labels: Vec<&str> = nav_items.iter().map(|i| i.label.as_str()).collect();
-    let x_offset: u16 = labels[..state.nav_cursor]
+    let x_offset: u16 = nav_items[..state.nav_cursor]
         .iter()
-        .map(|lbl| (lbl.len() + 4) as u16)
+        .map(|item| nav_width(&item.label))
         .sum();
 
     let submenu = state
@@ -581,6 +556,7 @@ fn render_dropdown(frame: &mut Frame, area: Rect, nav_items: &[NavItem], state: 
         state.dropdown_cursor,
         &state.nav_collapsed,
         &opts,
+        running,
     );
 
     if let Some(apps) = submenu {
@@ -593,105 +569,9 @@ fn render_dropdown(frame: &mut Frame, area: Rect, nav_items: &[NavItem], state: 
             state.submenu_cursor,
             &state.nav_collapsed,
             &opts,
+            running,
         );
     }
-}
-
-// ---------------------------------------------------------------------------
-// Status colors for system page
-// ---------------------------------------------------------------------------
-
-fn status_color(status: AppStatus) -> Color {
-    match status {
-        AppStatus::Running => Color::Green,
-        AppStatus::Idle => Color::Yellow,
-        AppStatus::Stopped => Color::DarkGray,
-    }
-}
-
-// ---------------------------------------------------------------------------
-// System page renderer
-// ---------------------------------------------------------------------------
-
-fn render_system_page(frame: &mut Frame, area: Rect, state: &TuiosState, border_style: Style, border_type: BorderType) {
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_type(border_type)
-        .title(" Task Manager — Running Processes ")
-        .title_alignment(ratatui::layout::Alignment::Right)
-        .style(border_style);
-    frame.render_widget(block, area);
-    let inner = area.inner(Margin { horizontal: 1, vertical: 1 });
-
-    let running = process_manager::list_running();
-    if running.is_empty() {
-        frame.render_widget(
-            Paragraph::new(Text::raw(
-                "\n  No applications are currently running.\n\n  Press Q to return.",
-            ))
-            .style(Style::default().fg(Color::DarkGray)),
-            inner,
-        );
-        return;
-    }
-
-    let mut row_constraints = vec![Constraint::Length(1), Constraint::Length(1)];
-    for _ in &running {
-        row_constraints.push(Constraint::Length(1));
-    }
-    row_constraints.push(Constraint::Length(2));
-
-    let header_rows = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(row_constraints)
-        .split(inner);
-
-    frame.render_widget(
-        Paragraph::new(Text::raw(format!(
-            "  {:<20} {:<8} {:<10} {}",
-            "NAME", "PID", "STATUS", "STARTED"
-        )))
-        .style(Style::default().fg(Color::DarkGray)),
-        header_rows[0],
-    );
-    frame.render_widget(
-        Paragraph::new(Text::raw(format!("  {}", "─".repeat(60))))
-            .style(Style::default().fg(Color::DarkGray)),
-        header_rows[1],
-    );
-
-    for (i, app) in running.iter().enumerate() {
-        let started = app.start_time.format("%H:%M:%S").to_string();
-        let name_display = if i == state.system_cursor {
-            format!("» {}", app.name)
-        } else {
-            format!("  {}", app.name)
-        };
-        let row_text = format!(
-            "  {:<20} {:<8} {:<10} {}",
-            name_display,
-            app.pid.map(|p| p.to_string()).unwrap_or_default(),
-            format!("{:?}", app.status),
-            started
-        );
-        let style = if i == state.system_cursor {
-            Style::default().fg(Color::Black).bg(Color::Cyan)
-        } else {
-            Style::default().fg(status_color(app.status))
-        };
-        frame.render_widget(
-            Paragraph::new(Text::raw(row_text)).style(style),
-            header_rows[2 + i],
-        );
-    }
-
-    frame.render_widget(
-        Paragraph::new(Text::raw(
-            "\n  Enter — stop selected app   Q — return",
-        ))
-        .style(Style::default().fg(Color::DarkGray)),
-        header_rows[2 + running.len()],
-    );
 }
 
 // ---------------------------------------------------------------------------
@@ -853,9 +733,7 @@ fn render_main(
     frame: &mut Frame,
     area: Rect,
     state: &mut TuiosState,
-    active_internal_app: &mut Option<InternalApp>,
-    active_installed_dash: &mut Option<InstalledDashboard>,
-    active_installed_app: &mut Option<InstalledDashboard>,
+    sessions: &mut Sessions,
     registered_apps: &std::collections::HashMap<String, Value>,
 ) {
     let focused = state.focus == FocusTarget::Main;
@@ -869,35 +747,32 @@ fn render_main(
     } else {
         Style::default()
     };
+    // New PTYs (including ones started in the background) open at the container's size
+    sessions.container_size = (area.width.saturating_sub(2), area.height.saturating_sub(2));
 
     if let Some(page) = &state.active_page.clone() {
         match page.as_str() {
             "settings" => settings::page::render(frame, area, border_style, &mut state.settings),
             "touchscreen" => touchscreen::page::render(frame, area, border_style),
-            "system" | "taskmanager" => render_system_page(frame, area, state, border_style, border_type),
+            "system" | "taskmanager" => task_manager::page::render(
+                frame,
+                area,
+                state,
+                sessions,
+                task_manager::page::Look { border_style, border_type, accent: accent_color, focused },
+            ),
             "logs" => render_logs_page(frame, area, state, border_style, border_type),
             "appstore" => app_store::page::render(frame, area, focused, &state.app_store, registered_apps),
             _ => {}
         }
     } else if state.active_app.is_some() {
-        if let Some(app) = active_internal_app {
-            app.render(frame, area, border_style);
-        } else if let Some(pty_app) = active_installed_app {
-            pty_app.render(frame, area, border_style);
-        } else if let Some(app_name) = &state.active_app {
-            render_app_log(frame, area, app_name, border_style);
-        }
-    } else if let Some(dash) = active_installed_dash {
-        if state.active_dashboard == dash.name {
-            dash.render(frame, area, border_style);
-        } else {
-            // Dashboard changed away from installed one
-            match state.active_dashboard.as_str() {
-                "Dashboard-1" => dashboard_1::render(frame, area, border_style),
-                "Dashboard-2" => dashboard_2::render(frame, area, border_style),
-                _ => render_no_dashboard(frame, area, border_style),
+        if !sessions.render_foreground(frame, area, border_style) {
+            if let Some(app_name) = &state.active_app {
+                render_app_log(frame, area, app_name, border_style);
             }
         }
+    } else if let Some(dash) = sessions.dashboard_pty_mut(&state.active_dashboard) {
+        dash.render(frame, area, border_style);
     } else {
         match state.active_dashboard.as_str() {
             "Dashboard-1" => dashboard_1::render(frame, area, border_style),
@@ -922,15 +797,10 @@ fn render_no_dashboard(frame: &mut Frame, area: Rect, border_style: Style) {
 }
 
 fn render_status_bar(frame: &mut Frame, area: Rect) {
-    use sysinfo::System;
-    let mut sys = System::new_all();
-    sys.refresh_cpu_usage();
-    sys.refresh_memory();
-
-    let cpu: f32 = sys.cpus().iter().map(|c| c.cpu_usage()).sum::<f32>()
-        / sys.cpus().len().max(1) as f32;
-    let used_mb = sys.used_memory() / 1024 / 1024;
-    let total_mb = sys.total_memory() / 1024 / 1024;
+    let (cpu, used_mb, total_mb) = {
+        let m = crate::task_manager::metrics::read();
+        (m.cpu_now(), m.mem_now() / 1024 / 1024, m.mem_total / 1024 / 1024)
+    };
     let now = chrono::Local::now().format("%H:%M:%S").to_string();
 
     let s = crate::settings::persistence::load();
@@ -962,9 +832,7 @@ fn handle_navbar_key(
     apps_registry: &std::collections::HashMap<String, Value>,
     dashboards_registry: &std::collections::HashMap<String, Value>,
     registered_apps: &std::collections::HashMap<String, Value>,
-    active_internal_app: &mut Option<InternalApp>,
-    active_installed_dash: &mut Option<InstalledDashboard>,
-    active_installed_app: &mut Option<InstalledDashboard>,
+    sessions: &mut Sessions,
 ) -> NavResult {
     // Tab focus toggle is now handled at the raw event level
 
@@ -1012,9 +880,7 @@ fn handle_navbar_key(
                                 apps_registry,
                                 dashboards_registry,
                                 registered_apps,
-                                active_internal_app,
-                                active_installed_dash,
-                                active_installed_app,
+                                sessions,
                             );
                         }
                     }
@@ -1052,9 +918,7 @@ fn handle_navbar_key(
                                 apps_registry,
                                 dashboards_registry,
                                 registered_apps,
-                                active_internal_app,
-                                active_installed_dash,
-                                active_installed_app,
+                                sessions,
                             );
                         }
                     } else if opts.submenu {
@@ -1108,9 +972,7 @@ fn handle_navbar_key(
                         apps_registry,
                         dashboards_registry,
                         registered_apps,
-                        active_internal_app,
-                        active_installed_dash,
-                        active_installed_app,
+                        sessions,
                     );
                 }
             }
@@ -1127,100 +989,86 @@ fn execute_action(
     apps_registry: &std::collections::HashMap<String, Value>,
     dashboards_registry: &std::collections::HashMap<String, Value>,
     registered_apps: &std::collections::HashMap<String, Value>,
-    active_internal_app: &mut Option<InternalApp>,
-    active_installed_dash: &mut Option<InstalledDashboard>,
-    active_installed_app: &mut Option<InstalledDashboard>,
+    sessions: &mut Sessions,
 ) -> NavResult {
     close_nav_menus(state);
 
     if let Some(name) = data.strip_prefix("dashboard:") {
         logging::info(&format!("Navigated to dashboard: {}", name));
 
-        // Check window mode preference for this dashboard
-        let window_mode = app_store::actions::get_window_mode(name, registered_apps.get(name));
+        // Installed (third-party) dashboards run as sessions; built-ins are just drawn
+        let installed = dashboards_registry
+            .get(name)
+            .filter(|m| m.get("type").and_then(|t| t.as_str()) == Some("installed"));
+        if let Some(meta) = installed {
+            let label = meta.get("label").and_then(|v| v.as_str()).unwrap_or(name).to_string();
 
-        // Check if this is an installed (third-party) dashboard
-        if let Some(meta) = dashboards_registry.get(name) {
-            let dash_type = meta.get("type").and_then(|t| t.as_str()).unwrap_or("");
-            if dash_type == "installed" {
-                let cmd = app_store::actions::resolve_launch_cmd(
-                    name,
-                    "Dashboard",
-                    registered_apps.get(name),
-                    Some(meta),
-                );
-                if cmd.is_empty() {
-                    logging::error(&format!("No runnable binary found for dashboard {}", name));
+            // One instance per dashboard: switch to the one already running
+            if let Some(id) = sessions.find_live(name, SessionKind::Dashboard) {
+                if sessions.get(id).map_or(false, |s| s.is_external()) {
+                    state.popup = Some((own_window_note(&label), Instant::now()));
+                } else {
+                    show_session(state, sessions, id);
                 }
+                return NavResult::None;
+            }
 
-                if window_mode == "fullscreen" && !cmd.is_empty() {
-                    logging::info(&format!("Launching dashboard {} in a new window", name));
-                    *active_installed_dash = None;
-                    state.pending_foreground = Some(cmd);
-                    return NavResult::None;
+            let window_mode = app_store::actions::get_window_mode(name, registered_apps.get(name));
+            let cmd = app_store::actions::resolve_launch_cmd(
+                name,
+                "Dashboard",
+                registered_apps.get(name),
+                Some(meta),
+            );
+            if cmd.is_empty() {
+                logging::error(&format!("No runnable binary found for dashboard {}", name));
+            }
+
+            if window_mode == "fullscreen" && !cmd.is_empty() {
+                logging::info(&format!("Launching dashboard {} in a new window", name));
+                launch_in_window(state, sessions, name, &label, SessionKind::Dashboard, cmd, false);
+                return NavResult::None;
+            }
+
+            logging::info(&format!("Launching dashboard {} in embedded tuiOS mode", name));
+            show_dashboard(state, name);
+            if !cmd.is_empty() {
+                if let Some(id) = sessions.launch_pty(name, &label, SessionKind::Dashboard, &cmd) {
+                    sessions.touch(id);
                 }
-
-                logging::info(&format!("Launching dashboard {} in embedded tuiOS mode", name));
-                state.active_dashboard = name.to_string();
-                state.active_page = None;
-                state.active_app = None;
-                state.focus = FocusTarget::Main;
-
-                let label = meta.get("label").and_then(|v| v.as_str()).unwrap_or(name).to_string();
-                *active_installed_dash = None;
-                if !cmd.is_empty() {
-                    *active_installed_dash = InstalledDashboard::start(name, &label, &cmd, 80, 24);
-                }
-            } else {
-                // Switching to a built-in dashboard; drop any installed one
-                state.active_dashboard = name.to_string();
-                state.active_page = None;
-                state.active_app = None;
-                state.focus = FocusTarget::Main;
-                *active_installed_dash = None;
             }
         } else {
-            state.active_dashboard = name.to_string();
-            state.active_page = None;
-            state.active_app = None;
-            state.focus = FocusTarget::Main;
-            *active_installed_dash = None;
+            // A built-in; any installed dashboard keeps running in the background
+            show_dashboard(state, name);
         }
     } else if let Some(name) = data.strip_prefix("app:") {
         logging::info(&format!("Opened app: {}", name));
         let meta = apps_registry.get(name);
+        let label = meta
+            .and_then(|m| m.get("label"))
+            .and_then(|v| v.as_str())
+            .unwrap_or(name)
+            .to_string();
+
+        // One instance per app unless the Task Manager starts another: switch to it
+        if let Some(id) = sessions.find_live(name, SessionKind::App) {
+            if sessions.get(id).map_or(false, |s| s.is_external()) {
+                state.popup = Some((own_window_note(&label), Instant::now()));
+            } else {
+                logging::info(&format!("Switched to running app: {}", name));
+                show_session(state, sessions, id);
+            }
+            return NavResult::None;
+        }
+
         let app_type = meta
             .and_then(|m| m.get("type"))
             .and_then(|t| t.as_str())
             .unwrap_or("external");
 
         if app_type == "internal" {
-            let internal = match name {
-                "TextEditor" => {
-                    let mut app = TextEditorApp::new();
-                    app.start();
-                    InternalApp::TextEditor(app)
-                }
-                "FileExplorer" => {
-                    let mut app = FileExplorerApp::new();
-                    app.start();
-                    InternalApp::FileExplorer(app)
-                }
-                "Notes" => {
-                    let mut app = NotesApp::new();
-                    app.start();
-                    InternalApp::Notes(app)
-                }
-                _ => {
-                    let mut app = CharacterSetApp::new();
-                    app.start();
-                    InternalApp::CharacterSet(app)
-                }
-            };
-            *active_internal_app = Some(internal);
-            state.active_app = Some(name.to_string());
-            state.active_page = None;
-            state.focus = FocusTarget::Main;
+            let id = sessions.launch_internal(name, &label);
+            show_session(state, sessions, id);
             return NavResult::ActivateInternalApp;
         } else {
             let category = registered_apps
@@ -1239,16 +1087,18 @@ fn execute_action(
                 let window_mode = app_store::actions::get_window_mode(name, registered_apps.get(name));
                 if window_mode == "fullscreen" {
                     logging::info(&format!("Launching {} in a new window", name));
-                    state.pending_foreground = Some(launch_cmd);
+                    launch_in_window(state, sessions, name, &label, SessionKind::App, launch_cmd, false);
                     return NavResult::None;
                 }
 
                 logging::info(&format!("Launching {} in embedded tuiOS mode", name));
-                *active_installed_app = InstalledDashboard::start(name, name, &launch_cmd, 80, 24);
-                state.active_app = Some(name.to_string());
-                state.active_page = None;
-                state.focus = FocusTarget::Main;
-                state.nav_expanded = false;
+                match sessions.launch_pty(name, &label, SessionKind::App, &launch_cmd) {
+                    Some(id) => show_session(state, sessions, id),
+                    None => {
+                        logging::error(&format!("Could not start {} in a terminal", name));
+                        state.popup = Some((format!("Could not start {}", label), Instant::now()));
+                    }
+                }
             } else {
                 logging::error(&format!("No runnable binary found for app {}", name));
             }
@@ -1261,6 +1111,13 @@ fn execute_action(
         }
         if page_name == "appstore" {
             state.needs_sync = true;
+        }
+        if matches!(page_name, "taskmanager" | "system") {
+            state.task_manager.on_open(apps_registry, dashboards_registry);
+        }
+        // Closing the page brings back the app it was opened over
+        if state.active_page.is_none() && state.active_app.is_some() {
+            state.page_return = sessions.foreground;
         }
         state.active_page = Some(page_name.to_string());
         state.active_app = None;
@@ -1294,6 +1151,121 @@ fn execute_action(
 }
 
 // ---------------------------------------------------------------------------
+// Sessions ↔ shell state
+// ---------------------------------------------------------------------------
+
+fn own_window_note(label: &str) -> String {
+    format!(
+        "{} is running in its own window — use the Task Manager to bring it into tuiOS",
+        label
+    )
+}
+
+fn show_dashboard(state: &mut TuiosState, name: &str) {
+    state.active_dashboard = name.to_string();
+    state.active_page = None;
+    state.active_app = None;
+    state.page_return = None;
+    state.focus = FocusTarget::Main;
+}
+
+/// Put a session on screen; whatever was there carries on in the background.
+fn show_session(state: &mut TuiosState, sessions: &mut Sessions, id: SessionId) {
+    let Some(s) = sessions.get(id) else { return };
+    let (key, kind) = (s.key.clone(), s.kind);
+    sessions.set_foreground(id);
+    match kind {
+        SessionKind::App => {
+            state.active_app = Some(key);
+            state.active_page = None;
+            state.page_return = None;
+            state.focus = FocusTarget::Main;
+        }
+        SessionKind::Dashboard => show_dashboard(state, &key),
+    }
+}
+
+/// Open an app in its own terminal window, tracked by the Task Manager. Without a
+/// window system (or when the user prefers it) tuiOS hands over its own terminal.
+/// `always_window` ignores the "keep tuiOS open" preference (Task Manager actions).
+fn launch_in_window(
+    state: &mut TuiosState,
+    sessions: &mut Sessions,
+    key: &str,
+    label: &str,
+    kind: SessionKind,
+    cmd: Vec<String>,
+    always_window: bool,
+) {
+    let want_window = always_window || app_store::actions::keep_tuios_open();
+    if want_window && app_store::actions::can_open_new_window() {
+        if sessions.launch_external(key, label, kind, &cmd).is_some() {
+            state.popup = Some(("Launched in a new window".to_string(), Instant::now()));
+            return;
+        }
+        logging::error("Failed to open a new terminal window — using the current terminal");
+    } else if want_window {
+        logging::info("New window unavailable (no display server) — using the current terminal");
+    }
+    state.pending_foreground = Some(cmd);
+}
+
+/// Home dashboard to fall back to when the shown one stops.
+fn fallback_dashboard(gone: &str) -> String {
+    let default = registry::load_settings()
+        .get("default_dashboard")
+        .and_then(|v| v.as_str())
+        .unwrap_or("Dashboard-1")
+        .to_string();
+    if default != gone && registry::is_builtin_dashboard(&default) {
+        default
+    } else {
+        "Dashboard-1".to_string()
+    }
+}
+
+/// q / Backspace inside the foreground app.
+fn close_foreground(state: &mut TuiosState, sessions: &mut Sessions) {
+    if let Some(id) = sessions.foreground {
+        let events = sessions.close(id);
+        apply_session_events(state, sessions, events);
+    }
+    sessions.foreground = None;
+    state.active_app = None;
+}
+
+fn apply_session_events(state: &mut TuiosState, sessions: &mut Sessions, events: Vec<SessionEvent>) {
+    for event in events {
+        match event {
+            SessionEvent::Toast(msg) => state.popup = Some((msg, Instant::now())),
+            SessionEvent::LeftForeground => {
+                if sessions.foreground.is_none() {
+                    state.active_app = None;
+                }
+            }
+            SessionEvent::DashboardGone(key) => {
+                if state.active_dashboard == key {
+                    state.active_dashboard = fallback_dashboard(&key);
+                }
+            }
+            SessionEvent::Foreground(id) => show_session(state, sessions, id),
+            SessionEvent::RunForeground(cmd) => state.pending_foreground = Some(cmd),
+        }
+    }
+}
+
+/// Shut down / restart, unless apps that would die with tuiOS need confirming first.
+/// Returns true when the caller should exit now.
+fn request_exit(state: &mut TuiosState, sessions: &Sessions, restart: bool) -> bool {
+    let ending = sessions.ending_with_tuios();
+    if ending.is_empty() || !task_manager::config::load().warn_on_exit {
+        return true;
+    }
+    state.exit_confirm = Some(crate::tuios::models::ExitConfirm { restart, apps: ending, cursor: 0 });
+    false
+}
+
+// ---------------------------------------------------------------------------
 // Main container key handling
 // ---------------------------------------------------------------------------
 
@@ -1306,9 +1278,7 @@ enum MainResult {
 fn handle_main_key(
     action: Action,
     state: &mut TuiosState,
-    active_internal_app: &mut Option<InternalApp>,
-    active_installed_dash: &mut Option<InstalledDashboard>,
-    active_installed_app: &mut Option<InstalledDashboard>,
+    sessions: &mut Sessions,
     registered_apps: &std::collections::HashMap<String, Value>,
 ) -> MainResult {
     // App store page handles its own Quit/Back (pane/dialog switching)
@@ -1381,7 +1351,7 @@ fn handle_main_key(
             }
             return MainResult::None;
         }
-        handle_appstore_key(action, state, registered_apps, active_installed_app);
+        handle_appstore_key(action, state, registered_apps);
         return MainResult::None;
     }
 
@@ -1395,17 +1365,24 @@ fn handle_main_key(
     // If an internal app has its OSK active, forward ALL mapped keys to it
     // (including Back/Q which normally closes the app — the OSK handles
     // Q as "close keyboard", not "close app").
-    if let Some(app) = active_internal_app {
-        if app.wants_raw_wasd() {
-            if let Some(key_name) = action_to_key_name(action) {
-                if app.handle_key(key_name) {
-                    app.stop();
-                    state.active_app = None;
-                    *active_internal_app = None;
+    if state.active_page.is_none() {
+        if let Some(app) = sessions.foreground_internal_mut() {
+            if app.wants_raw_wasd() {
+                if let Some(key_name) = action_to_key_name(action) {
+                    if app.handle_key(key_name) {
+                        close_foreground(state, sessions);
+                    }
                 }
+                return MainResult::None;
             }
-            return MainResult::None;
         }
+    }
+
+    // The Task Manager handles its own Back (dialogs, panes, then leaving the page)
+    if matches!(state.active_page.as_deref(), Some("system") | Some("taskmanager")) {
+        let events = task_manager::keys::handle_action(action, state, sessions);
+        apply_session_events(state, sessions, events);
+        return MainResult::None;
     }
 
     if action == Action::Back {
@@ -1419,17 +1396,14 @@ fn handle_main_key(
             state.active_app = None;
             return MainResult::None;
         } else if state.active_app.is_some() {
-            if let Some(app) = active_internal_app {
-                app.stop();
-            }
-            state.active_app = None;
-            *active_internal_app = None;
-            *active_installed_app = None;
+            close_foreground(state, sessions);
             return MainResult::None;
-        } else if active_installed_dash.is_some() {
-            // Close the installed dashboard and go back to default
-            *active_installed_dash = None;
-            state.active_dashboard = "Dashboard-1".to_string();
+        } else if let Some(id) = sessions.dashboard(&state.active_dashboard).map(|s| s.id) {
+            // Close the installed dashboard and go back home
+            let gone = state.active_dashboard.clone();
+            state.active_dashboard = fallback_dashboard(&gone);
+            let events = sessions.close(id);
+            apply_session_events(state, sessions, events);
             return MainResult::None;
         } else {
             return MainResult::None;
@@ -1437,38 +1411,11 @@ fn handle_main_key(
     }
 
     // Forward keys to installed dashboard if active
-    if let Some(dash) = active_installed_dash {
-        if state.active_dashboard == dash.name && state.active_page.is_none() && state.active_app.is_none() {
+    if state.active_page.is_none() && state.active_app.is_none() {
+        if let Some(dash) = sessions.dashboard_pty_mut(&state.active_dashboard) {
             dash.send_key(action);
             return MainResult::None;
         }
-    }
-
-    // System page navigation
-    if matches!(state.active_page.as_deref(), Some("system") | Some("taskmanager")) {
-        let running = process_manager::list_running();
-        match action {
-            Action::Up => {
-                if state.system_cursor > 0 {
-                    state.system_cursor -= 1;
-                }
-            }
-            Action::Down => {
-                let max_idx = running.len().saturating_sub(1);
-                if state.system_cursor < max_idx {
-                    state.system_cursor += 1;
-                }
-            }
-            Action::Enter => {
-                if !running.is_empty() {
-                    let idx = state.system_cursor.min(running.len() - 1);
-                    process_manager::stop(&running[idx].name);
-                    state.system_cursor = 0;
-                }
-            }
-            _ => {}
-        }
-        return MainResult::None;
     }
 
     // Logs page navigation
@@ -1615,17 +1562,17 @@ fn handle_main_key(
 
     // App Store page navigation
     if matches!(state.active_page.as_deref(), Some("appstore")) {
-        handle_appstore_key(action, state, registered_apps, active_installed_app);
+        handle_appstore_key(action, state, registered_apps);
         return MainResult::None;
     }
 
     // Internal app key forwarding
-    if let Some(app) = active_internal_app {
-        if let Some(key_name) = action_to_key_name(action) {
-            if app.handle_key(key_name) {
-                app.stop();
-                state.active_app = None;
-                *active_internal_app = None;
+    if state.active_page.is_none() {
+        if let Some(app) = sessions.foreground_internal_mut() {
+            if let Some(key_name) = action_to_key_name(action) {
+                if app.handle_key(key_name) {
+                    close_foreground(state, sessions);
+                }
             }
         }
     }
@@ -1694,7 +1641,6 @@ fn handle_appstore_key(
     action: Action,
     state: &mut TuiosState,
     registered_apps: &std::collections::HashMap<String, Value>,
-    active_installed_app: &mut Option<InstalledDashboard>,
 ) {
     use crate::app_store::queue::QueueOp;
     use crate::app_store::state::{AppStoreFocus, ConfirmAction, InstallStatus};
@@ -2103,7 +2049,7 @@ fn handle_appstore_key(
                         }
                     }
                     Action::Enter => {
-                        handle_appstore_action(state, registered_apps, active_installed_app);
+                        handle_appstore_action(state, registered_apps);
                     }
                     Action::Back | Action::Left => {
                         ss.focus = AppStoreFocus::LeftPane;
@@ -2370,7 +2316,6 @@ fn start_queue_retry(
 fn handle_appstore_action(
     state: &mut TuiosState,
     registered_apps: &std::collections::HashMap<String, Value>,
-    active_installed_app: &mut Option<InstalledDashboard>,
 ) {
     use crate::app_store::queue::QueueOp;
     use crate::app_store::state::{ConfirmAction, InstallLocation, InstallStatus};
@@ -2430,16 +2375,10 @@ fn handle_appstore_action(
             return;
         }
 
-        if app_store::actions::get_window_mode(&key, Some(meta)) == "fullscreen" {
-            logging::info(&format!("App Store: launching {} in a new window", key));
-            state.pending_foreground = Some(launch_cmd);
-            return;
-        }
-
-        logging::info(&format!("App Store: launching {} in embedded tuiOS mode", key));
-        *active_installed_app = InstalledDashboard::start(&key, &key, &launch_cmd, 80, 24);
-        state.active_app = Some(key.clone());
-        state.active_page = None;
+        // Same path as the navbar, so window mode and "already running" are honoured
+        let prefix = if category == "Dashboard" { "dashboard" } else { "app" };
+        logging::info(&format!("App Store: running {}", key));
+        state.pending_nav_action = Some(format!("{}:{}", prefix, key));
         return;
     }
 
@@ -3252,6 +3191,27 @@ fn run_foreground(cmd: &[String]) {
     let _ = Command::new(&cmd[0]).args(&cmd[1..]).status();
 }
 
+/// Keys for an embedded app. Shift+PgUp / Shift+PgDn browse its scrollback; any other
+/// key returns to the live screen and goes to the app.
+fn forward_to_pty(
+    pty: &mut crate::dashboards::installed_runner::InstalledDashboard,
+    key: crossterm::event::KeyEvent,
+) {
+    use crossterm::event::{KeyCode, KeyModifiers};
+    let shift = key.modifiers.contains(KeyModifiers::SHIFT);
+    let page = (pty.size().1 / 2).max(1) as isize;
+    match key.code {
+        KeyCode::PageUp if shift => pty.scroll_by(page),
+        KeyCode::PageDown if shift => pty.scroll_by(-page),
+        _ => {
+            if pty.is_scrolled() {
+                pty.scroll_to_live();
+            }
+            pty.send_key_event(key);
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Entry point
 // ---------------------------------------------------------------------------
@@ -3271,6 +3231,7 @@ fn run_app() -> bool {
 
     logging::init();
     logging::info("tuiOS started");
+    task_manager::metrics::start();
 
     let settings_map = registry::load_settings();
     let mut registered_apps = registry::load_registered_apps();
@@ -3294,9 +3255,11 @@ fn run_app() -> bool {
     state.app_store.recompute_app_list(&registered_apps);
 
     let mut nav_items = build_nav_items(&dashboards, &apps_registry);
-    let mut active_internal_app: Option<InternalApp> = None;
-    let mut active_installed_dash: Option<InstalledDashboard> = None;
-    let mut active_installed_app: Option<InstalledDashboard> = None;
+    let mut sessions = Sessions::new();
+    if let Ok((cols, rows)) = crossterm::terminal::size() {
+        // Navbar row + container border; refined on the first frame
+        sessions.container_size = (cols.saturating_sub(2), rows.saturating_sub(3));
+    }
 
     // Auto-launch default dashboard if it's an installed (third-party) one
     if let Some(meta) = dashboards.get(&default_dashboard) {
@@ -3319,7 +3282,7 @@ fn run_app() -> bool {
             };
             let label = meta.get("label").and_then(|v| v.as_str()).unwrap_or(&default_dashboard).to_string();
             if !cmd.is_empty() {
-                active_installed_dash = InstalledDashboard::start(&default_dashboard, &label, &cmd, 80, 24);
+                sessions.launch_pty(&default_dashboard, &label, SessionKind::Dashboard, &cmd);
             }
         }
     }
@@ -3359,7 +3322,82 @@ fn run_app() -> bool {
         }
     }
 
+    // Apps chosen under Task Manager › Startup begin in the background
+    launch_startup_apps(&mut sessions, &apps_registry, &dashboards, &registered_apps);
+
+    let mut last_page: Option<String> = None;
     loop {
+        // Confirmed in the "apps are still running" dialog
+        if let Some(restart) = state.exit_now.take() {
+            should_restart = restart;
+            break;
+        }
+
+        // Navbar actions requested elsewhere (App Store Run, switcher) take the normal path.
+        // Handled here at the top so every key path — including early `continue`s — gets them.
+        if let Some(data) = state.pending_nav_action.take() {
+            match execute_action(&data, &mut state, &apps_registry, &dashboards, &registered_apps, &mut sessions) {
+                NavResult::Quit => {
+                    if request_exit(&mut state, &sessions, false) {
+                        break;
+                    }
+                }
+                NavResult::Restart => {
+                    if request_exit(&mut state, &sessions, true) {
+                        should_restart = true;
+                        break;
+                    }
+                }
+                NavResult::ActivateInternalApp | NavResult::None => {}
+            }
+        }
+
+        // Leaving an app for a page, a dashboard or another app parks it in the background
+        if state.active_app.is_none() {
+            sessions.foreground = None;
+        }
+        // Closing a page brings back the app it was opened over
+        if last_page.is_some() && state.active_page.is_none() && state.active_app.is_none() {
+            if let Some(id) = state.page_return.take() {
+                let usable = sessions.get(id).map_or(false, |s| {
+                    s.kind == SessionKind::App && s.is_live() && !s.is_stopping() && !s.is_external()
+                });
+                if usable {
+                    show_session(&mut state, &mut sessions, id);
+                }
+            }
+        }
+        last_page = state.active_page.clone();
+
+        if state.needs_nav_rebuild {
+            state.needs_nav_rebuild = false;
+            state.nav_submenu = None;
+            state.submenu_cursor = 0;
+            nav_items = build_nav_items(&dashboards, &apps_registry);
+        }
+
+        // An app asked to take over tuiOS's own terminal (no window system, or the
+        // user's New Window preference). Background sessions keep running meanwhile.
+        if let Some(cmd) = state.pending_foreground.take() {
+            disable_raw_mode().ok();
+            execute!(terminal.backend_mut(), LeaveAlternateScreen).ok();
+            run_foreground(&cmd);
+            enable_raw_mode().ok();
+            execute!(terminal.backend_mut(), EnterAlternateScreen).ok();
+            terminal.clear().ok();
+        }
+
+        // Background sessions: notice exits, finish stops, find new windows' PIDs
+        let (pids, discover) = sessions.watch_list();
+        let tm_open = matches!(state.active_page.as_deref(), Some("taskmanager") | Some("system"));
+        task_manager::metrics::watch(pids, discover, tm_open);
+        let events = sessions.pump();
+        apply_session_events(&mut state, &mut sessions, events);
+        let alerts = task_manager::metrics::take_alerts();
+        if !alerts.is_empty() {
+            state.popup = Some((alerts.join(" · "), Instant::now()));
+        }
+
         // Drive the install queue: finish the running job, then start the next one
         let _ = pump_install_queue(
             &mut state,
@@ -3432,7 +3470,8 @@ fn run_app() -> bool {
                 };
 
                 // 1. Draw main container
-                render_main(frame, main_row, &mut state, &mut active_internal_app, &mut active_installed_dash, &mut active_installed_app, &registered_apps);
+                render_main(frame, main_row, &mut state, &mut sessions, &registered_apps);
+                let running = RunningInfo::of(&sessions);
 
                 // 2. Draw navbar label row
                 if let Some(nav_row) = nav_row {
@@ -3446,7 +3485,15 @@ fn run_app() -> bool {
 
                 // 4. Draw dropdown LAST (overlays main container)
                 if state.nav_expanded {
-                    render_dropdown(frame, main_row, &nav_items, &state, navbar_bottom);
+                    render_dropdown(frame, main_row, &nav_items, &state, navbar_bottom, &running);
+                }
+
+                // App switcher and the shutdown confirmation sit above everything else
+                if state.switcher.is_some() {
+                    task_manager::switcher::render(frame, &state, &sessions);
+                }
+                if state.exit_confirm.is_some() {
+                    render_exit_confirm(frame, &state);
                 }
 
                 // 4. Draw popup notification if active
@@ -3533,9 +3580,10 @@ fn run_app() -> bool {
             })
             .expect("Failed to draw frame");
 
-        // Clear expired popup
-        if let Some((_, created)) = &state.popup {
-            if created.elapsed() >= Duration::from_secs(3) {
+        // Clear expired popup (same length-scaled lifetime the renderer uses)
+        if let Some((msg, created)) = &state.popup {
+            let secs = 3 + (msg.chars().count() as u64 / 40).min(7);
+            if created.elapsed() >= Duration::from_secs(secs) {
                 state.popup = None;
             }
         }
@@ -3555,6 +3603,41 @@ fn run_app() -> bool {
             Event::Key(key) if key.kind == KeyEventKind::Press => key,
             _ => continue,
         };
+
+        // ---- Intercept: "apps are still running" shutdown confirmation ----
+        if let Some(confirm) = state.exit_confirm.as_mut() {
+            use crossterm::event::KeyCode;
+            match key_event.code {
+                KeyCode::Left | KeyCode::Right | KeyCode::Up | KeyCode::Down | KeyCode::Tab
+                | KeyCode::Char('a') | KeyCode::Char('d') | KeyCode::Char('4') | KeyCode::Char('6') => {
+                    confirm.cursor = 1 - confirm.cursor.min(1);
+                }
+                KeyCode::Enter | KeyCode::Char('e') | KeyCode::Char('9') => {
+                    let confirmed = confirm.cursor == 1;
+                    let restart = confirm.restart;
+                    state.exit_confirm = None;
+                    if confirmed {
+                        state.exit_now = Some(restart);
+                    }
+                }
+                KeyCode::Esc | KeyCode::Char('q') | KeyCode::Backspace | KeyCode::Char('7') => {
+                    state.exit_confirm = None;
+                }
+                _ => {}
+            }
+            continue;
+        }
+
+        // ---- Intercept: quick app switcher overlay ----
+        if state.switcher.is_some() {
+            let events = task_manager::switcher::handle_key(key_event, &mut state, &mut sessions);
+            apply_session_events(&mut state, &mut sessions, events);
+            // "Open Task Manager" goes through the normal page path
+            if let Some(data) = state.pending_nav_action.take() {
+                execute_action(&data, &mut state, &apps_registry, &dashboards, &registered_apps, &mut sessions);
+            }
+            continue;
+        }
 
         // ---- Intercept: Run source chooser dialog ----
         if state.run_source_dialog.is_some() {
@@ -3589,33 +3672,44 @@ fn run_app() -> bool {
             && matches!(state.active_page.as_deref(), Some("settings"))
             && state.settings.awaiting_key
         {
-            let key_name = match key_event.code {
-                crossterm::event::KeyCode::Tab => "Tab",
-                crossterm::event::KeyCode::Enter => "Enter",
-                crossterm::event::KeyCode::Esc => "Esc",
-                crossterm::event::KeyCode::Backspace => "Backspace",
-                crossterm::event::KeyCode::Up => "Up",
-                crossterm::event::KeyCode::Down => "Down",
-                crossterm::event::KeyCode::Left => "Left",
-                crossterm::event::KeyCode::Right => "Right",
-                crossterm::event::KeyCode::Char(ch) => {
-                    match ch {
-                        'a' => "A", 'b' => "B", 'c' => "C", 'd' => "D",
-                        'e' => "E", 'f' => "F", 'g' => "G", 'h' => "H",
-                        'i' => "I", 'j' => "J", 'k' => "K", 'l' => "L",
-                        'm' => "M", 'n' => "N", 'o' => "O", 'p' => "P",
-                        'q' => "Q", 'r' => "R", 's' => "S", 't' => "T",
-                        'u' => "U", 'v' => "V", 'w' => "W", 'x' => "X",
-                        'y' => "Y", 'z' => "Z", '0' => "0", '1' => "1",
-                        '2' => "2", '3' => "3", '4' => "4", '5' => "5",
-                        '6' => "6", '7' => "7", '8' => "8", '9' => "9",
-                        _ => "Tab",
-                    }
-                }
-                _ => "Tab",
-            };
-            crate::settings::pages::button_mapping::capture_key(&mut state.settings, key_name);
+            // Unnameable keys fall back to Tab, as the toggle key always has
+            let key_name = super::keybind::binding_name(&key_event).unwrap_or_else(|| "Tab".to_string());
+            crate::settings::pages::button_mapping::capture_key(&mut state.settings, &key_name);
             continue;
+        }
+
+        // ---- Global hotkeys: app switcher and Task Manager ----
+        {
+            let s = crate::settings::persistence::load();
+            if super::keybind::matches(&key_event, &task_manager::config::switcher_key(&s)) {
+                task_manager::switcher::open(&mut state, &sessions);
+                continue;
+            }
+            if super::keybind::matches(&key_event, &task_manager::config::task_manager_key(&s)) {
+                if matches!(state.active_page.as_deref(), Some("appstore")) && state.app_store.ui_locked() {
+                    ui_lock_popup(&mut state);
+                    continue;
+                }
+                execute_action(
+                    "page:taskmanager",
+                    &mut state,
+                    &apps_registry,
+                    &dashboards,
+                    &registered_apps,
+                    &mut sessions,
+                );
+                continue;
+            }
+        }
+
+        // ---- Intercept: Task Manager letter shortcuts (tabs, sort, filter, graphs) ----
+        if state.focus == FocusTarget::Main
+            && matches!(state.active_page.as_deref(), Some("system") | Some("taskmanager"))
+        {
+            if let Some(events) = task_manager::keys::handle_raw(key_event, &mut state, &mut sessions) {
+                apply_session_events(&mut state, &mut sessions, events);
+                continue;
+            }
         }
 
         // ---- Intercept: Shift+Tab for terminal output focus (Scripts & Git) ----
@@ -3809,32 +3903,20 @@ fn run_app() -> bool {
             let s = crate::settings::persistence::load();
             crate::settings::persistence::get_str(&s, "button_mapping.focus_toggle_key", "Tab")
         };
-        let is_toggle_key = match key_event.code {
-            crossterm::event::KeyCode::Tab => toggle_key_name == "Tab",
-            crossterm::event::KeyCode::Enter => toggle_key_name == "Enter",
-            crossterm::event::KeyCode::Esc => toggle_key_name == "Esc",
-            crossterm::event::KeyCode::Backspace => toggle_key_name == "Backspace",
-            crossterm::event::KeyCode::Char(ch) => {
-                let upper: String = ch.to_uppercase().collect();
-                upper == toggle_key_name
-            }
-            _ => false,
-        };
+        let is_toggle_key = super::keybind::matches(&key_event, &toggle_key_name);
 
         // ---- Intercept: Notes app receives raw keys so it can take text input,
         // Ctrl shortcuts and numpad digits. The focus toggle key still works,
         // except while Notes is capturing text and the toggle is a typable key.
-        if state.focus == FocusTarget::Main {
-            if let Some(InternalApp::Notes(notes)) = active_internal_app.as_mut() {
+        if state.focus == FocusTarget::Main && state.active_page.is_none() {
+            if let Some(InternalApp::Notes(notes)) = sessions.foreground_internal_mut() {
                 let toggle_wins = is_toggle_key
                     && (key_event.code == crossterm::event::KeyCode::Tab || !notes.captures_text());
                 if !toggle_wins {
                     match notes.handle_key_event(key_event) {
                         NotesKeyResult::Handled => continue,
                         NotesKeyResult::Close => {
-                            notes.stop();
-                            active_internal_app = None;
-                            state.active_app = None;
+                            close_foreground(&mut state, &mut sessions);
                             continue;
                         }
                         NotesKeyResult::Ignored => {}
@@ -3876,17 +3958,34 @@ fn run_app() -> bool {
                 if state.focus == FocusTarget::Navbar {
                     match handle_navbar_key(
                         a, &mut state, &nav_items, &apps_registry, &dashboards,
-                        &registered_apps, &mut active_internal_app, &mut active_installed_dash,
-                        &mut active_installed_app,
+                        &registered_apps, &mut sessions,
                     ) {
-                        NavResult::Quit => break,
-                        NavResult::Restart => { should_restart = true; break; }
+                        NavResult::Quit => {
+                            if request_exit(&mut state, &sessions, false) {
+                                break;
+                            }
+                        }
+                        NavResult::Restart => {
+                            if request_exit(&mut state, &sessions, true) {
+                                should_restart = true;
+                                break;
+                            }
+                        }
                         _ => {}
                     }
                 } else {
-                    match handle_main_key(a, &mut state, &mut active_internal_app, &mut active_installed_dash, &mut active_installed_app, &registered_apps) {
-                        MainResult::Quit => break,
-                        MainResult::Restart => { should_restart = true; break; }
+                    match handle_main_key(a, &mut state, &mut sessions, &registered_apps) {
+                        MainResult::Quit => {
+                            if request_exit(&mut state, &sessions, false) {
+                                break;
+                            }
+                        }
+                        MainResult::Restart => {
+                            if request_exit(&mut state, &sessions, true) {
+                                should_restart = true;
+                                break;
+                            }
+                        }
                         _ => {}
                     }
                 }
@@ -3897,7 +3996,7 @@ fn run_app() -> bool {
         // ---- Intercept: Hotkey number keys (1-9), any focus, no page/app active ----
         if state.active_page.is_none()
             && state.active_app.is_none()
-            && active_installed_dash.is_none()
+            && sessions.dashboard(&state.active_dashboard).is_none()
         {
             if let crossterm::event::KeyCode::Char(ch) = key_event.code {
                 if ('1'..='9').contains(&ch) {
@@ -3916,15 +4015,19 @@ fn run_app() -> bool {
                                         &apps_registry,
                                         &dashboards,
                                         &registered_apps,
-                                        &mut active_internal_app,
-                                        &mut active_installed_dash,
-                                        &mut active_installed_app,
+                                        &mut sessions,
                                     );
                                     match result {
-                                        NavResult::Quit => break,
+                                        NavResult::Quit => {
+                                            if request_exit(&mut state, &sessions, false) {
+                                                break;
+                                            }
+                                        }
                                         NavResult::Restart => {
-                                            should_restart = true;
-                                            break;
+                                            if request_exit(&mut state, &sessions, true) {
+                                                should_restart = true;
+                                                break;
+                                            }
                                         }
                                         _ => {}
                                     }
@@ -3940,55 +4043,50 @@ fn run_app() -> bool {
         // When an installed dashboard is active and main is focused,
         // forward raw key events directly to the PTY subprocess.
         // Only Esc (quit) and Tab (switch to navbar) are reserved by tuiOS.
-        if state.focus == FocusTarget::Main {
-            if let Some(dash) = &mut active_installed_dash {
-                if state.active_dashboard == dash.name
-                    && state.active_page.is_none()
-                    && state.active_app.is_none()
-                {
-                    match key_event.code {
-                        crossterm::event::KeyCode::Esc => break, // Quit tuiOS
-                        crossterm::event::KeyCode::Tab => {
-                            state.focus = FocusTarget::Navbar;
-                            continue;
+        if state.focus == FocusTarget::Main && state.active_page.is_none() && state.active_app.is_none() {
+            if let Some(dash) = sessions.dashboard_pty_mut(&state.active_dashboard) {
+                match key_event.code {
+                    crossterm::event::KeyCode::Esc => {
+                        if request_exit(&mut state, &sessions, false) {
+                            break;
                         }
-                        _ => {
-                            dash.send_key_event(key_event);
-                            continue;
-                        }
+                        continue;
+                    }
+                    crossterm::event::KeyCode::Tab => {
+                        state.focus = FocusTarget::Navbar;
+                        continue;
+                    }
+                    _ => {
+                        forward_to_pty(dash, key_event);
+                        continue;
                     }
                 }
             }
         }
 
         // Forward raw key events to installed (PTY) app in the main container
-        if state.focus == FocusTarget::Main
-            && active_installed_app.is_some()
-            && state.active_app.is_some()
-            && state.active_page.is_none()
-        {
-            match key_event.code {
-                crossterm::event::KeyCode::Backspace => {
-                    active_installed_app.take();
-                    state.active_app = None;
-                    continue;
-                }
-                crossterm::event::KeyCode::Tab => {
-                    state.focus = FocusTarget::Navbar;
-                    continue;
-                }
-                _ => {
-                    if let Some(pty_app) = &mut active_installed_app {
-                        pty_app.send_key_event(key_event);
+        if state.focus == FocusTarget::Main && state.active_app.is_some() && state.active_page.is_none() {
+            if let Some(pty_app) = sessions.foreground_pty_mut() {
+                match key_event.code {
+                    crossterm::event::KeyCode::Backspace => {
+                        close_foreground(&mut state, &mut sessions);
+                        continue;
                     }
-                    continue;
+                    crossterm::event::KeyCode::Tab => {
+                        state.focus = FocusTarget::Navbar;
+                        continue;
+                    }
+                    _ => {
+                        forward_to_pty(pty_app, key_event);
+                        continue;
+                    }
                 }
             }
         }
 
         // When text editor is in typing_mode, forward raw character keys directly
-        if state.focus == FocusTarget::Main {
-            if let Some(InternalApp::TextEditor(ref mut editor)) = active_internal_app {
+        if state.focus == FocusTarget::Main && state.active_page.is_none() {
+            if let Some(InternalApp::TextEditor(editor)) = sessions.foreground_internal_mut() {
                 if editor.typing_mode {
                     match key_event.code {
                         crossterm::event::KeyCode::Char(ch) => {
@@ -4126,8 +4224,17 @@ fn run_app() -> bool {
                     continue;
                 }
                 // Fall through to handle_main_key below
+            } else if state.focus == FocusTarget::Main
+                && matches!(state.active_page.as_deref(), Some("system") | Some("taskmanager"))
+                && task_manager::keys::close_overlay(&mut state)
+            {
+                // Esc closed a Task Manager dialog instead of quitting
+                continue;
             } else {
-                break;
+                if request_exit(&mut state, &sessions, false) {
+                    break;
+                }
+                continue;
             }
         }
 
@@ -4139,79 +4246,42 @@ fn run_app() -> bool {
                 &apps_registry,
                 &dashboards,
                 &registered_apps,
-                &mut active_internal_app,
-                &mut active_installed_dash,
-                &mut active_installed_app,
+                &mut sessions,
             ) {
-                NavResult::Quit => break,
+                NavResult::Quit => {
+                    if request_exit(&mut state, &sessions, false) {
+                        break;
+                    }
+                }
                 NavResult::Restart => {
-                    should_restart = true;
-                    break;
+                    if request_exit(&mut state, &sessions, true) {
+                        should_restart = true;
+                        break;
+                    }
                 }
                 NavResult::ActivateInternalApp | NavResult::None => {}
             }
         } else {
-            match handle_main_key(action, &mut state, &mut active_internal_app, &mut active_installed_dash, &mut active_installed_app, &registered_apps) {
-                MainResult::Quit => break,
+            match handle_main_key(action, &mut state, &mut sessions, &registered_apps) {
+                MainResult::Quit => {
+                    if request_exit(&mut state, &sessions, false) {
+                        break;
+                    }
+                }
                 MainResult::Restart => {
-                    should_restart = true;
-                    break;
+                    if request_exit(&mut state, &sessions, true) {
+                        should_restart = true;
+                        break;
+                    }
                 }
                 MainResult::None => {}
-            }
-            if state.active_app.is_none() && active_internal_app.is_some() {
-                active_internal_app = None;
-            }
-        }
-
-        // The App Store asked for a built-in to run; go through the normal nav path
-        if let Some(data) = state.pending_nav_action.take() {
-            match execute_action(
-                &data,
-                &mut state,
-                &apps_registry,
-                &dashboards,
-                &registered_apps,
-                &mut active_internal_app,
-                &mut active_installed_dash,
-                &mut active_installed_app,
-            ) {
-                NavResult::Quit => break,
-                NavResult::Restart => {
-                    should_restart = true;
-                    break;
-                }
-                NavResult::ActivateInternalApp | NavResult::None => {}
-            }
-        }
-
-        if state.needs_nav_rebuild {
-            state.needs_nav_rebuild = false;
-            state.nav_submenu = None;
-            state.submenu_cursor = 0;
-            nav_items = build_nav_items(&dashboards, &apps_registry);
-        }
-
-        // An app was asked to run outside the tuiOS container
-        if let Some(cmd) = state.pending_foreground.take() {
-            if app_store::actions::launch_detached(&cmd) {
-                state.popup = Some(("Launched in a new window".to_string(), Instant::now()));
-            } else {
-                // Hand our own terminal over to the app until it exits
-                disable_raw_mode().ok();
-                execute!(terminal.backend_mut(), LeaveAlternateScreen).ok();
-                run_foreground(&cmd);
-                enable_raw_mode().ok();
-                execute!(terminal.backend_mut(), EnterAlternateScreen).ok();
-                terminal.clear().ok();
             }
         }
     }
 
-    // Drop PTY runners before restoring terminal
-    drop(active_installed_dash);
-    drop(active_installed_app);
-    drop(active_internal_app);
+    // Embedded apps die with tuiOS; apps in their own windows carry on
+    sessions.shutdown_all();
+    drop(sessions);
 
     // Restore terminal
     disable_raw_mode().ok();
@@ -4219,4 +4289,125 @@ fn run_app() -> bool {
     drop(terminal);
 
     should_restart
+}
+
+/// Launch the apps ticked under Task Manager › Startup, in the background.
+fn launch_startup_apps(
+    sessions: &mut Sessions,
+    apps_registry: &std::collections::HashMap<String, Value>,
+    dashboards: &std::collections::HashMap<String, Value>,
+    registered_apps: &std::collections::HashMap<String, Value>,
+) {
+    let settings = crate::settings::persistence::load();
+    for action in task_manager::config::startup_apps(&settings) {
+        let (kind, key, registry) = if let Some(key) = action.strip_prefix("app:") {
+            (SessionKind::App, key, apps_registry)
+        } else if let Some(key) = action.strip_prefix("dashboard:") {
+            (SessionKind::Dashboard, key, dashboards)
+        } else {
+            continue;
+        };
+        // Uninstalled since it was ticked, or already running (e.g. the default dashboard)
+        let Some(meta) = registry.get(key) else { continue };
+        if sessions.find_live(key, kind).is_some() {
+            continue;
+        }
+        let label = meta.get("label").and_then(|v| v.as_str()).unwrap_or(key).to_string();
+        let entry_type = meta.get("type").and_then(|v| v.as_str()).unwrap_or("external");
+        if entry_type == "internal" {
+            if kind == SessionKind::App {
+                sessions.launch_internal(key, &label);
+                logging::info(&format!("Startup: {} started in the background", key));
+            }
+            continue;
+        }
+        let category = registered_apps
+            .get(key)
+            .and_then(|m| m.get("category"))
+            .and_then(|v| v.as_str())
+            .unwrap_or(if kind == SessionKind::Dashboard { "Dashboard" } else { "Other" });
+        let cmd = app_store::actions::resolve_launch_cmd(key, category, registered_apps.get(key), Some(meta));
+        if cmd.is_empty() {
+            logging::warn(&format!("Startup: no runnable binary for {}", key));
+            continue;
+        }
+        let wants_window = task_manager::config::startup_in_window(&settings, &action).unwrap_or_else(|| {
+            app_store::actions::get_window_mode(key, registered_apps.get(key)) == "fullscreen"
+        });
+        let started = if wants_window && app_store::actions::can_open_new_window() {
+            sessions.launch_external(key, &label, kind, &cmd)
+        } else {
+            sessions.launch_pty(key, &label, kind, &cmd)
+        };
+        if started.is_some() {
+            logging::info(&format!("Startup: {} started in the background", key));
+        } else {
+            logging::warn(&format!("Startup: could not start {}", key));
+        }
+    }
+}
+
+/// "Quit them and shut down?" — shown when apps that die with tuiOS are still running.
+fn render_exit_confirm(frame: &mut Frame, state: &TuiosState) {
+    use ratatui::text::{Line, Span};
+    let Some(confirm) = &state.exit_confirm else { return };
+    let verb = if confirm.restart { "Restart" } else { "Shut Down" };
+    let area = frame.area();
+    let width = 58u16.min(area.width);
+    let shown: Vec<&String> = confirm.apps.iter().take(6).collect();
+    let more = (confirm.apps.len() > shown.len()) as u16;
+    // Heading, apps, "… more", note, blank, buttons, plus the border
+    let height = (shown.len() as u16 + more + 6).min(area.height);
+    let rect = Rect {
+        x: area.x + area.width.saturating_sub(width) / 2,
+        y: area.y + area.height.saturating_sub(height) / 2,
+        width,
+        height,
+    };
+    frame.render_widget(Clear, rect);
+    frame.render_widget(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .title(format!(" {} tuiOS? ", verb))
+            .style(Style::default().fg(Color::Yellow).bg(Color::Black)),
+        rect,
+    );
+    let inner = rect.inner(Margin { horizontal: 2, vertical: 1 });
+    let count = confirm.apps.len();
+    let mut lines = vec![Line::from(Span::styled(
+        format!(
+            "{} app{} still running and will be closed:",
+            count,
+            if count == 1 { " is" } else { "s are" }
+        ),
+        Style::default().fg(Color::White),
+    ))];
+    for label in &shown {
+        lines.push(Line::from(Span::styled(format!("  • {}", label), Style::default().fg(Color::Gray))));
+    }
+    if count > shown.len() {
+        lines.push(Line::from(Span::styled(
+            format!("  … and {} more", count - shown.len()),
+            Style::default().fg(Color::DarkGray),
+        )));
+    }
+    lines.push(Line::from(Span::styled(
+        "Apps in their own windows keep running.",
+        Style::default().fg(Color::DarkGray),
+    )));
+    lines.push(Line::from(""));
+    let button = |text: String, on: bool| {
+        if on {
+            Span::styled(format!(" {} ", text), Style::default().fg(Color::Black).bg(Color::Yellow))
+        } else {
+            Span::styled(format!(" {} ", text), Style::default().fg(Color::White))
+        }
+    };
+    lines.push(Line::from(vec![
+        button("Cancel".into(), confirm.cursor == 0),
+        Span::raw("   "),
+        button(format!("Quit All & {}", verb), confirm.cursor == 1),
+    ]));
+    frame.render_widget(Paragraph::new(lines), inner);
 }

@@ -11,6 +11,7 @@ pub enum SettingsCategory {
     Hotkeys,
     Git,
     Utilities,
+    TaskManager,
     Power,
 }
 
@@ -25,6 +26,7 @@ impl SettingsCategory {
         SettingsCategory::Hotkeys,
         SettingsCategory::Git,
         SettingsCategory::Utilities,
+        SettingsCategory::TaskManager,
         SettingsCategory::Power,
     ];
 
@@ -39,6 +41,7 @@ impl SettingsCategory {
             SettingsCategory::Hotkeys => "Hotkeys",
             SettingsCategory::Git => "Scripts & Git",
             SettingsCategory::Utilities => "Utilities",
+            SettingsCategory::TaskManager => "Task Manager",
             SettingsCategory::Power => "Power",
         }
     }
@@ -67,6 +70,7 @@ pub enum SubPage {
     BootAnimation,
     NavBar,
     CategoryOrder,
+    ResourceAlerts,
 }
 
 impl SubPage {
@@ -75,13 +79,14 @@ impl SubPage {
             SubPage::BootAnimation => "Boot Up Animation",
             SubPage::NavBar => "Navigation Bar",
             SubPage::CategoryOrder => "Custom Category Order",
+            SubPage::ResourceAlerts => "Resource Alerts",
         }
     }
 
     /// The page Back returns to, or None to leave the sub-page stack entirely.
     pub fn parent(&self) -> Option<SubPage> {
         match self {
-            SubPage::BootAnimation | SubPage::NavBar => None,
+            SubPage::BootAnimation | SubPage::NavBar | SubPage::ResourceAlerts => None,
             SubPage::CategoryOrder => Some(SubPage::NavBar),
         }
     }
