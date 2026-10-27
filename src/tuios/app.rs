@@ -327,23 +327,13 @@ impl RunningInfo {
     }
 }
 
-/// Navbar label, with the number of running apps on System.
-fn nav_label(item: &NavItem, running: &RunningInfo) -> String {
-    if item.label == "System" && running.count > 0 {
-        format!("System ●{}", running.count)
-    } else {
-        item.label.clone()
-    }
-}
-
-/// Column width of a navbar label (labels can hold the ● marker, so count chars).
 fn nav_width(label: &str) -> u16 {
     (label.chars().count() + 4) as u16
 }
 
-fn render_navbar(frame: &mut Frame, area: Rect, nav_items: &[NavItem], state: &TuiosState, running: &RunningInfo) {
+fn render_navbar(frame: &mut Frame, area: Rect, nav_items: &[NavItem], state: &TuiosState) {
     let focused = state.focus == FocusTarget::Navbar;
-    let labels: Vec<String> = nav_items.iter().map(|i| nav_label(i, running)).collect();
+    let labels: Vec<String> = nav_items.iter().map(|i| i.label.clone()).collect();
 
     // Load accent colour from settings
     let settings = crate::settings::persistence::load();
@@ -548,7 +538,7 @@ fn render_dropdown(
     // Calculate x offset below the nav item
     let x_offset: u16 = nav_items[..state.nav_cursor]
         .iter()
-        .map(|item| nav_width(&nav_label(item, running)))
+        .map(|item| nav_width(&item.label))
         .sum();
 
     let submenu = state
@@ -3485,7 +3475,7 @@ fn run_app() -> bool {
 
                 // 2. Draw navbar label row
                 if let Some(nav_row) = nav_row {
-                    render_navbar(frame, nav_row, &nav_items, &state, &running);
+                    render_navbar(frame, nav_row, &nav_items, &state);
                 }
 
                 // 3. Draw status bar if enabled
