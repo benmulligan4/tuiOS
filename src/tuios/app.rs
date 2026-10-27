@@ -3905,6 +3905,19 @@ fn run_app() -> bool {
             }
         }
 
+        // ---- Intercept: Dashboard 1 character keys (clock style cycling) ----
+        if state.focus == FocusTarget::Main
+            && state.active_page.is_none()
+            && state.active_app.is_none()
+            && state.active_dashboard == dashboard_1::KEY
+        {
+            if let crossterm::event::KeyCode::Char(ch) = key_event.code {
+                if dashboard_1::handle_char(ch) {
+                    continue;
+                }
+            }
+        }
+
         // ---- Intercept: Hotkey number keys (1-9), any focus, no page/app active ----
         if state.active_page.is_none()
             && state.active_app.is_none()

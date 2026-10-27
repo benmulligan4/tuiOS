@@ -8,7 +8,7 @@
 ///     render(frame, area, border_style)  — draw the dashboard inside `area`
 ///     handle_action(action)              — returns true when the key was used
 
-pub mod bigclock;
+pub mod clockface;
 pub mod metrics;
 pub mod online;
 pub mod panels;
@@ -26,6 +26,7 @@ use ratatui::{
 
 use crate::settings::persistence;
 use crate::tuios::models::Action;
+use clockface::ClockStyle;
 use panels::Ctx;
 
 pub const KEY: &str = "Dashboard-1";
@@ -98,6 +99,31 @@ pub fn handle_action(action: Action) -> bool {
     }
 }
 
+/// Handle a plain character key. Returns true when the key was consumed.
+pub fn handle_char(ch: char) -> bool {
+    if !ch.eq_ignore_ascii_case(&'c') {
+        return false;
+    }
+    let mut settings = persistence::load();
+    let next = clock_style(&settings).next(true);
+    persistence::set(
+        &mut settings,
+        "dashboard.clock_style",
+        serde_json::Value::String(next.name().to_string()),
+    );
+    persistence::save(&settings);
+    crate::utilities::logging::info(&format!("Dashboard clock style changed to {}", next.name()));
+    true
+}
+
+pub fn clock_style(settings: &serde_json::Value) -> ClockStyle {
+    ClockStyle::from_name(&persistence::get_str(
+        settings,
+        "dashboard.clock_style",
+        ClockStyle::Block.name(),
+    ))
+}
+
 fn step(current: usize, len: usize, forward: bool) -> usize {
     if len == 0 {
         return 0;
@@ -141,7 +167,7 @@ pub fn render(frame: &mut Frame, area: Rect, border_style: Style) {
         focused,
         use_24h: persistence::get_bool(&settings, "appearance.clock_format_24h", true),
         show_seconds: persistence::get_bool(&settings, "appearance.clock_show_seconds", true),
-        ghost_segments: persistence::get_bool(&settings, "dashboard.clock_ghost_segments", true),
+        clock_style: clock_style(&settings),
     };
 
     let (page, panel, zoomed) = {
@@ -163,7 +189,7 @@ pub fn render(frame: &mut Frame, area: Rect, border_style: Style) {
         } else {
             Line::from("")
         })
-        .title_bottom(hint_line(zoomed, area.width, focused).centered());
+        .title_bottom(hint_line(page, zoomed, area.width, focused).centered());
     let inner = outer.inner(area);
     frame.render_widget(outer, area);
 
@@ -237,19 +263,21 @@ fn tab_line(page: usize, width: u16, accent: Color, focused: bool) -> Line<'stat
     Line::from(spans)
 }
 
-fn hint_line(zoomed: bool, width: u16, focused: bool) -> Line<'static> {
+fn hint_line(page: usize, zoomed: bool, width: u16, focused: bool) -> Line<'static> {
     if !focused || width < 52 {
         return Line::from("");
     }
     let text = if zoomed {
-        " ⏎ / Q  back   ▲ ▼  panel "
+        " ⏎ / Q  back   ▲ ▼  panel ".to_string()
     } else {
-        " ◀ ▶  page   ▲ ▼  panel   ⏎  zoom "
+        let mut text = " ◀ ▶  page   ▲ ▼  panel   ⏎  zoom".to_string();
+        if page == 0 && width >= 70 {
+            text.push_str("   C  clock");
+        }
+        text.push(' ');
+        text
     };
-    Line::from(Span::styled(
-        text.to_string(),
-        Style::default().fg(Color::DarkGray),
-    ))
+    Line::from(Span::styled(text, Style::default().fg(Color::DarkGray)))
 }
 
 // ---------------------------------------------------------------------------

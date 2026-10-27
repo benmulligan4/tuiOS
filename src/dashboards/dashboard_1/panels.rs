@@ -13,7 +13,7 @@ use ratatui::{
     Frame,
 };
 
-use super::bigclock;
+use super::clockface::{self, ClockStyle};
 use super::metrics::{fmt_bytes, fmt_duration, fmt_rate, ProcInfo, Snapshot};
 use super::online::{self, OnlineState, Status};
 
@@ -34,7 +34,7 @@ pub struct Ctx<'a> {
     pub focused: bool,
     pub use_24h: bool,
     pub show_seconds: bool,
-    pub ghost_segments: bool,
+    pub clock_style: ClockStyle,
 }
 
 // ---------------------------------------------------------------------------
@@ -172,22 +172,28 @@ pub fn clock(frame: &mut Frame, area: Rect, ctx: &Ctx, selected: bool) {
         ctx.now.format(" %p").to_string()
     };
 
-    // Largest digit size that fits, leaving two rows for the date and greeting.
-    let sizes: [(usize, usize); 4] = [(9, 9), (7, 7), (5, 5), (4, 5)];
-    let chosen = sizes.into_iter().find(|(w, h)| {
-        bigclock::width(&time_text, *w) + suffix.chars().count() <= inner.width as usize
-            && *h as u16 + 2 <= inner.height
-    });
-
-    let date_line = Line::from(vec![Span::styled(
+    let date_line = Line::from(Span::styled(
         ctx.now.format("%A, %-d %B %Y").to_string(),
         Style::default().fg(VALUE),
-    )])
+    ))
     .alignment(Alignment::Center);
-    let greeting = Line::from(Span::styled(greeting(ctx), Style::default().fg(MUTED)))
+    let greeting_line = Line::from(Span::styled(greeting(ctx), Style::default().fg(MUTED)))
         .alignment(Alignment::Center);
 
-    let Some((w, h)) = chosen else {
+    if ctx.clock_style == ClockStyle::Analog {
+        analog_clock(frame, inner, ctx, &time_text, &suffix, date_line, greeting_line);
+        return;
+    }
+
+    let shade = shade_of(ctx.accent);
+    let fitted = clockface::best_size(
+        ctx.clock_style,
+        &time_text,
+        (inner.width as usize).saturating_sub(suffix.chars().count()),
+        (inner.height as usize).saturating_sub(2),
+    );
+
+    let Some(size) = fitted else {
         let mut lines = vec![Line::from(Span::styled(
             format!("{}{}", time_text, suffix),
             Style::default().fg(ctx.accent).add_modifier(Modifier::BOLD),
@@ -197,7 +203,7 @@ pub fn clock(frame: &mut Frame, area: Rect, ctx: &Ctx, selected: bool) {
             lines.push(date_line);
         }
         if inner.height >= 3 {
-            lines.push(greeting);
+            lines.push(greeting_line);
         }
         let pad = (inner.height as usize).saturating_sub(lines.len()) / 2;
         for _ in 0..pad {
@@ -207,21 +213,20 @@ pub fn clock(frame: &mut Frame, area: Rect, ctx: &Ctx, selected: bool) {
         return;
     };
 
-    let digit_w = bigclock::width(&time_text, w);
+    let (digits, digit_w) = clockface::render(ctx.clock_style, &time_text, size, ctx.accent, shade);
+    let height = digits.len() as u16;
     let total_w = digit_w + suffix.chars().count();
-    let pad_top = (inner.height as usize).saturating_sub(h + 2) / 2;
-    let x = inner.x + ((inner.width as usize - total_w) / 2) as u16;
-    let y = inner.y + pad_top as u16;
+    let pad_top = inner.height.saturating_sub(height + 2) / 2;
+    let x = inner.x + (inner.width.saturating_sub(total_w as u16)) / 2;
+    let y = inner.y + pad_top;
 
-    let ghost = ctx.ghost_segments.then_some(Color::Rgb(38, 38, 38));
-    let digits = bigclock::render(&time_text, w, h, ctx.accent, ghost);
     paragraph(
         frame,
         Rect {
             x,
             y,
             width: digit_w as u16,
-            height: h as u16,
+            height,
         },
         digits,
     );
@@ -231,7 +236,7 @@ pub fn clock(frame: &mut Frame, area: Rect, ctx: &Ctx, selected: bool) {
             frame,
             Rect {
                 x: x + digit_w as u16,
-                y: y + h as u16 - 1,
+                y: y + height - 1,
                 width: suffix.chars().count() as u16,
                 height: 1,
             },
@@ -244,16 +249,72 @@ pub fn clock(frame: &mut Frame, area: Rect, ctx: &Ctx, selected: bool) {
 
     let below = Rect {
         x: inner.x,
-        y: y + h as u16,
+        y: y + height,
         width: inner.width,
-        height: inner.height.saturating_sub(y + h as u16 - inner.y),
+        height: (inner.y + inner.height).saturating_sub(y + height),
     };
     if below.height > 0 {
         let mut lines = vec![date_line];
         if below.height > 1 {
-            lines.push(greeting);
+            lines.push(greeting_line);
         }
         paragraph(frame, below, lines);
+    }
+}
+
+fn analog_clock(
+    frame: &mut Frame,
+    inner: Rect,
+    ctx: &Ctx,
+    time_text: &str,
+    suffix: &str,
+    date_line: Line<'static>,
+    greeting_line: Line<'static>,
+) {
+    let captions = 3.min(inner.height.saturating_sub(4)) as u16;
+    let face = Rect {
+        height: inner.height - captions,
+        ..inner
+    };
+    clockface::analog(
+        frame,
+        face,
+        ctx.now,
+        ctx.accent,
+        shade_of(ctx.accent),
+        ctx.show_seconds,
+    );
+    if captions == 0 {
+        return;
+    }
+    let mut lines = vec![Line::from(Span::styled(
+        format!("{}{}", time_text, suffix),
+        Style::default().fg(ctx.accent).add_modifier(Modifier::BOLD),
+    ))
+    .alignment(Alignment::Center)];
+    if captions > 1 {
+        lines.push(date_line);
+    }
+    if captions > 2 {
+        lines.push(greeting_line);
+    }
+    paragraph(
+        frame,
+        Rect {
+            x: inner.x,
+            y: inner.y + face.height,
+            width: inner.width,
+            height: captions,
+        },
+        lines,
+    );
+}
+
+/// A dark tint of the accent, used for shadows, dial rings and flap seams.
+fn shade_of(accent: Color) -> Color {
+    match accent {
+        Color::Rgb(r, g, b) => Color::Rgb(r / 4, g / 4, b / 4),
+        _ => Color::Rgb(58, 58, 58),
     }
 }
 

@@ -233,7 +233,7 @@ pub fn handle_enter(cursor: usize, ss: &mut SettingsState) {
                     "online_panels": true,
                     "weather_location": crate::dashboards::dashboard_1::online::DEFAULT_LOCATION,
                     "weather_units": "Celsius",
-                    "clock_ghost_segments": true
+                    "clock_style": "Block"
                 },
                 "appearance": {
                     "accent_color": "Cyan",

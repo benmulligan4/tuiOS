@@ -10,6 +10,7 @@ use ratatui::{
 
 use serde_json::Value;
 
+use crate::dashboards::dashboard_1::clockface;
 use crate::dashboards::dashboard_1::online;
 use crate::settings::persistence;
 
@@ -26,25 +27,28 @@ const UNITS: &[&str] = &["Celsius", "Fahrenheit"];
 
 #[derive(Clone, Copy, PartialEq)]
 enum Row {
+    ClockStyleRow,
     OnlinePanels,
     WeatherLocation,
     WeatherUnits,
-    ClockSegments,
 }
 
 impl Row {
     /// True for rows picked from a fixed list with ◄ ►.
     fn cycles(self) -> bool {
-        matches!(self, Row::WeatherLocation | Row::WeatherUnits)
+        matches!(
+            self,
+            Row::ClockStyleRow | Row::WeatherLocation | Row::WeatherUnits
+        )
     }
 }
 
 fn rows() -> Vec<Row> {
     vec![
+        Row::ClockStyleRow,
         Row::OnlinePanels,
         Row::WeatherLocation,
         Row::WeatherUnits,
-        Row::ClockSegments,
     ]
 }
 
@@ -54,6 +58,10 @@ fn row_at(cursor: usize) -> Option<Row> {
 
 fn label_value(row: Row, s: &Value) -> (&'static str, String) {
     match row {
+        Row::ClockStyleRow => (
+            "Clock Style",
+            crate::dashboards::dashboard_1::clock_style(s).name().to_string(),
+        ),
         Row::OnlinePanels => (
             "Online Panels",
             enabled(persistence::get_bool(s, "dashboard.online_panels", true)),
@@ -62,14 +70,6 @@ fn label_value(row: Row, s: &Value) -> (&'static str, String) {
         Row::WeatherUnits => (
             "Weather Units",
             persistence::get_str(s, "dashboard.weather_units", "Celsius"),
-        ),
-        Row::ClockSegments => (
-            "Clock Segments",
-            if persistence::get_bool(s, "dashboard.clock_ghost_segments", true) {
-                "Show unlit".into()
-            } else {
-                "Lit only".into()
-            },
         ),
     }
 }
@@ -113,6 +113,17 @@ pub fn render(frame: &mut Frame, area: Rect, cursor: usize, _scroll: usize, edit
 
     lines.push(Line::from(""));
     lines.push(Line::from(Span::styled(
+        format!(
+            "    Press C on the dashboard to cycle the clock: {}.",
+            clockface::ALL
+                .iter()
+                .map(|s| s.name())
+                .collect::<Vec<_>>()
+                .join(", ")
+        ),
+        Style::default().fg(Color::DarkGray),
+    )));
+    lines.push(Line::from(Span::styled(
         "    Weather and connectivity use open-meteo.com and api.ipify.org.",
         Style::default().fg(Color::DarkGray),
     )));
@@ -136,6 +147,15 @@ pub fn handle_cycle(cursor: usize, forward: bool) {
     let mut settings = persistence::load();
     let Some(row) = row_at(cursor) else { return };
     match row {
+        Row::ClockStyleRow => {
+            let next = crate::dashboards::dashboard_1::clock_style(&settings).next(forward);
+            persistence::set(
+                &mut settings,
+                "dashboard.clock_style",
+                Value::String(next.name().to_string()),
+            );
+            crate::utilities::logging::settings(&format!("Clock style changed to {}", next.name()));
+        }
         Row::WeatherLocation => {
             let current = online::configured_location(&settings);
             // A hand-edited city is not in the preset list; start from the top.
@@ -178,18 +198,6 @@ pub fn handle_enter(cursor: usize) {
             crate::utilities::logging::settings(&format!(
                 "Dashboard online panels {}",
                 if next { "enabled" } else { "disabled" }
-            ));
-        }
-        Row::ClockSegments => {
-            let next = !persistence::get_bool(&settings, "dashboard.clock_ghost_segments", true);
-            persistence::set(
-                &mut settings,
-                "dashboard.clock_ghost_segments",
-                Value::Bool(next),
-            );
-            crate::utilities::logging::settings(&format!(
-                "Dashboard clock unlit segments {}",
-                if next { "shown" } else { "hidden" }
             ));
         }
         _ => return,
