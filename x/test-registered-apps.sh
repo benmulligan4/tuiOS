@@ -1,10 +1,14 @@
 #!/bin/bash
 # Test every install method for every app in config/registered-apps.json.
 #
+# Nothing is installed for real: every method runs against a throwaway sandbox
+# directory that is deleted afterwards, so ~/.cargo/bin and downloads/ are left
+# exactly as they were.
+#
 # For each app the script tries, in order:
-#   global   cargo install --force <crate_name>
-#   git      cargo install --force --git <repository>
-#   local    git clone <repository> into downloads/ + cargo build --release
+#   global   cargo install --root <sandbox> <crate_name>
+#   git      cargo install --root <sandbox> --git <repository>
+#   local    git clone <repository> into <sandbox> + cargo build --release
 #
 # Methods that succeed are written back to "install_methods" in
 # config/registered-apps.json, methods that fail to "failed_install_methods".
@@ -19,15 +23,14 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 REGISTERED_JSON="$PROJECT_ROOT/config/registered-apps.json"
 LOG_DIR="$PROJECT_ROOT/logs"
 LOG_FILE="$LOG_DIR/test-registered-apps.log"
-DOWNLOADS_DIR="$PROJECT_ROOT/downloads"
 
 ONLY_APP=""
-KEEP_CLONES=0
+KEEP_SANDBOX=0
 
 usage() {
     echo "Usage: $(basename "$0") [--app <key>] [--keep]"
     echo "  --app <key>  Only test the given registered-apps.json key"
-    echo "  --keep       Keep directories the local method cloned into downloads/"
+    echo "  --keep       Keep the sandbox directory instead of deleting it"
 }
 
 while [ $# -gt 0 ]; do
@@ -37,7 +40,7 @@ while [ $# -gt 0 ]; do
             if [ -z "$ONLY_APP" ]; then echo "--app needs an app key"; exit 1; fi
             shift 2
             ;;
-        --keep) KEEP_CLONES=1; shift ;;
+        --keep) KEEP_SANDBOX=1; shift ;;
         -h|--help) usage; exit 0 ;;
         *) echo "Unknown option: $1"; usage; exit 1 ;;
     esac
@@ -54,7 +57,17 @@ if [ ! -f "$REGISTERED_JSON" ]; then echo "Not found: $REGISTERED_JSON"; exit 1;
 
 mkdir -p "$LOG_DIR"
 RESULTS_FILE="$(mktemp "${TMPDIR:-/tmp}/tuios-install-test.XXXXXX")"
-trap 'rm -f "$RESULTS_FILE"' EXIT
+SANDBOX="$(mktemp -d "${TMPDIR:-/tmp}/tuios-install-sandbox.XXXXXX")"
+
+cleanup() {
+    rm -f "$RESULTS_FILE"
+    if [ "$KEEP_SANDBOX" -eq 1 ]; then
+        echo "Sandbox kept at: $SANDBOX"
+    else
+        rm -rf "$SANDBOX"
+    fi
+}
+trap cleanup EXIT
 
 log() {
     printf '[%s] [%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1" "$2" >> "$LOG_FILE"
@@ -65,43 +78,29 @@ run_logged() {
     "$@" >> "$LOG_FILE" 2>&1
 }
 
+# --root keeps the built binary inside the sandbox instead of ~/.cargo/bin.
 test_global() {
-    run_logged cargo install --force "$1"
+    local key="$1" crate="$2"
+    run_logged cargo install --root "$SANDBOX/root-$key-global" "$crate"
 }
 
 test_git() {
-    run_logged cargo install --force --git "$1"
+    local key="$1" repo="$2"
+    run_logged cargo install --root "$SANDBOX/root-$key-git" --git "$repo"
 }
 
 test_local() {
-    local key="$1" repo="$2" category="$3"
-    local subdir="applications"
-    if [ "$category" = "Dashboard" ]; then subdir="dashboards"; fi
-    local target="$DOWNLOADS_DIR/$subdir/$key"
-    local fresh=0
+    local key="$1" repo="$2"
+    local target="$SANDBOX/clone-$key"
 
-    mkdir -p "$DOWNLOADS_DIR/$subdir"
-    if [ -d "$target" ]; then
-        if [ -d "$target/.git" ] && ! run_logged git -C "$target" pull; then
-            return 1
-        fi
-    else
-        fresh=1
-        if ! run_logged git clone "$repo" "$target"; then
-            rm -rf "$target"
-            return 1
-        fi
+    if ! run_logged git clone "$repo" "$target"; then
+        return 1
     fi
 
     # The app store strips VCS metadata from downloads/ copies.
     rm -rf "$target/.git" "$target/.github"
 
     run_logged cargo build --release --manifest-path "$target/Cargo.toml"
-    local rc=$?
-    if [ "$fresh" -eq 1 ] && [ "$KEEP_CLONES" -eq 0 ]; then
-        rm -rf "$target"
-    fi
-    return $rc
 }
 
 APP_LIST="$("$PY" - "$REGISTERED_JSON" "$ONLY_APP" <<'PYEOF'
@@ -128,9 +127,10 @@ if [ -z "$APP_LIST" ]; then
 fi
 
 echo "=== tuiOS Registered Apps Install Test ==="
-echo "Log: $LOG_FILE"
+echo "Log:     $LOG_FILE"
+echo "Sandbox: $SANDBOX (nothing is installed outside it)"
 echo ""
-log "SCRIPT" "test-registered-apps.sh started"
+log "SCRIPT" "test-registered-apps.sh started (sandbox $SANDBOX)"
 
 total=0
 flagged=0
@@ -154,9 +154,9 @@ while IFS='#' read -r key crate repo category; do
         echo "  - $method: running ..."
         start=$SECONDS
         case "$method" in
-            global) test_global "$crate" ;;
-            git)    test_git "$repo" ;;
-            local)  test_local "$key" "$repo" "$category" ;;
+            global) test_global "$key" "$crate" ;;
+            git)    test_git "$key" "$repo" ;;
+            local)  test_local "$key" "$repo" ;;
         esac
         rc=$?
         elapsed=$((SECONDS - start))
@@ -169,6 +169,10 @@ while IFS='#' read -r key crate repo category; do
             failed="${failed:+$failed,}$method"
             echo "    FAILED (${elapsed}s)"
             log "RESULT" "$key: $method FAILED (${elapsed}s, exit $rc)"
+        fi
+
+        if [ "$KEEP_SANDBOX" -eq 0 ]; then
+            rm -rf "$SANDBOX/root-$key-$method" "$SANDBOX/clone-$key"
         fi
     done
 

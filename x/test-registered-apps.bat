@@ -1,10 +1,14 @@
 @echo off
 REM Test every install method for every app in config\registered-apps.json.
 REM
+REM Nothing is installed for real: every method runs against a throwaway sandbox
+REM directory that is deleted afterwards, so %%USERPROFILE%%\.cargo\bin and
+REM downloads\ are left exactly as they were.
+REM
 REM For each app the script tries, in order:
-REM   global   cargo install --force <crate_name>
-REM   git      cargo install --force --git <repository>
-REM   local    git clone <repository> into downloads\ + cargo build --release
+REM   global   cargo install --root <sandbox> <crate_name>
+REM   git      cargo install --root <sandbox> --git <repository>
+REM   local    git clone <repository> into <sandbox> + cargo build --release
 REM
 REM Methods that succeed are written back to "install_methods" in
 REM config\registered-apps.json, methods that fail to "failed_install_methods".
@@ -19,12 +23,12 @@ for %%I in ("%SCRIPT_DIR%..") do set "PROJECT_ROOT=%%~fI"
 set "REGISTERED_JSON=%PROJECT_ROOT%\config\registered-apps.json"
 set "LOG_DIR=%PROJECT_ROOT%\logs"
 set "LOG_FILE=%LOG_DIR%\test-registered-apps.log"
-set "DOWNLOADS_DIR=%PROJECT_ROOT%\downloads"
 set "RESULTS=%TEMP%\tuios-install-test-%RANDOM%.txt"
 set "APP_LIST=%TEMP%\tuios-install-apps-%RANDOM%.txt"
+set "SANDBOX=%TEMP%\tuios-install-sandbox-%RANDOM%"
 
 set "ONLY_APP="
-set "KEEP_CLONES=0"
+set "KEEP_SANDBOX=0"
 
 :parse_args
 if "%~1"=="" goto args_done
@@ -39,7 +43,7 @@ if /i "%~1"=="--app" (
     goto parse_args
 )
 if /i "%~1"=="--keep" (
-    set "KEEP_CLONES=1"
+    set "KEEP_SANDBOX=1"
     shift
     goto parse_args
 )
@@ -76,11 +80,13 @@ if not exist "%REGISTERED_JSON%" (
 if not exist "%LOG_DIR%" mkdir "%LOG_DIR%"
 if exist "%RESULTS%" del /q "%RESULTS%"
 if exist "%APP_LIST%" del /q "%APP_LIST%"
+if not exist "%SANDBOX%" mkdir "%SANDBOX%"
 
 echo === tuiOS Registered Apps Install Test ===
-echo Log: %LOG_FILE%
+echo Log:     %LOG_FILE%
+echo Sandbox: %SANDBOX% - nothing is installed outside it
 echo.
-call :log SCRIPT "test-registered-apps.bat started"
+call :log SCRIPT "test-registered-apps.bat started, sandbox %SANDBOX%"
 
 set "TOTAL=0"
 set "FLAGGED=0"
@@ -99,6 +105,7 @@ del /q "%APP_LIST%" >nul 2>&1
 if "%TOTAL%"=="0" (
     echo No apps to test in %REGISTERED_JSON%
     if exist "%RESULTS%" del /q "%RESULTS%"
+    rmdir /s /q "%SANDBOX%" >nul 2>&1
     exit /b 1
 )
 
@@ -112,6 +119,11 @@ call :log SCRIPT "test-registered-apps.bat completed - %TOTAL% tested, %FLAGGED%
 echo Updated: %REGISTERED_JSON%
 
 del /q "%RESULTS%" >nul 2>&1
+if "%KEEP_SANDBOX%"=="1" (
+    echo Sandbox kept at: %SANDBOX%
+) else (
+    rmdir /s /q "%SANDBOX%" >nul 2>&1
+)
 if not "%FLAGGED%"=="0" exit /b 1
 exit /b 0
 
@@ -120,7 +132,7 @@ REM --------------------------------------------------------------------------
 :usage
 echo Usage: test-registered-apps.bat [--app ^<key^>] [--keep]
 echo   --app ^<key^>  Only test the given registered-apps.json key
-echo   --keep       Keep directories the local method cloned into downloads\
+echo   --keep       Keep the sandbox directory instead of deleting it
 exit /b 1
 
 :test_app
@@ -157,9 +169,11 @@ goto :eof
 
 :method_global
 echo   - global: running ...
-call :log CMD "cargo install --force !CRATE!"
-cargo install --force "!CRATE!" >>"%LOG_FILE%" 2>&1
+set "ROOT=%SANDBOX%\root-!KEY!-global"
+call :log CMD "cargo install --root !ROOT! !CRATE!"
+cargo install --root "!ROOT!" "!CRATE!" >>"%LOG_FILE%" 2>&1
 if errorlevel 1 (call :mark_failed global) else (call :mark_working global)
+if "%KEEP_SANDBOX%"=="0" rmdir /s /q "!ROOT!" >nul 2>&1
 goto :eof
 
 :method_git
@@ -169,9 +183,11 @@ if not defined REPO (
     goto :eof
 )
 echo   - git: running ...
-call :log CMD "cargo install --force --git !REPO!"
-cargo install --force --git "!REPO!" >>"%LOG_FILE%" 2>&1
+set "ROOT=%SANDBOX%\root-!KEY!-git"
+call :log CMD "cargo install --root !ROOT! --git !REPO!"
+cargo install --root "!ROOT!" --git "!REPO!" >>"%LOG_FILE%" 2>&1
 if errorlevel 1 (call :mark_failed git) else (call :mark_working git)
+if "%KEEP_SANDBOX%"=="0" rmdir /s /q "!ROOT!" >nul 2>&1
 goto :eof
 
 :method_local
@@ -181,30 +197,13 @@ if not defined REPO (
     goto :eof
 )
 echo   - local: running ...
-set "SUBDIR=applications"
-if /i "!CATEGORY!"=="Dashboard" set "SUBDIR=dashboards"
-set "TARGET=%DOWNLOADS_DIR%\!SUBDIR!\!KEY!"
-set "FRESH=0"
-if not exist "%DOWNLOADS_DIR%\!SUBDIR!" mkdir "%DOWNLOADS_DIR%\!SUBDIR!"
-
-if exist "!TARGET!" (
-    if exist "!TARGET!\.git" (
-        call :log CMD "git -C !TARGET! pull"
-        git -C "!TARGET!" pull >>"%LOG_FILE%" 2>&1
-        if errorlevel 1 (
-            call :mark_failed local
-            goto :eof
-        )
-    )
-) else (
-    set "FRESH=1"
-    call :log CMD "git clone !REPO! !TARGET!"
-    git clone "!REPO!" "!TARGET!" >>"%LOG_FILE%" 2>&1
-    if errorlevel 1 (
-        rmdir /s /q "!TARGET!" >nul 2>&1
-        call :mark_failed local
-        goto :eof
-    )
+set "TARGET=%SANDBOX%\clone-!KEY!"
+call :log CMD "git clone !REPO! !TARGET!"
+git clone "!REPO!" "!TARGET!" >>"%LOG_FILE%" 2>&1
+if errorlevel 1 (
+    rmdir /s /q "!TARGET!" >nul 2>&1
+    call :mark_failed local
+    goto :eof
 )
 
 REM The app store strips VCS metadata from downloads\ copies.
@@ -213,11 +212,8 @@ if exist "!TARGET!\.github" rmdir /s /q "!TARGET!\.github" >nul 2>&1
 
 call :log CMD "cargo build --release --manifest-path !TARGET!\Cargo.toml"
 cargo build --release --manifest-path "!TARGET!\Cargo.toml" >>"%LOG_FILE%" 2>&1
-if errorlevel 1 (set "LOCAL_OK=0") else (set "LOCAL_OK=1")
-
-if "!FRESH!"=="1" if "%KEEP_CLONES%"=="0" rmdir /s /q "!TARGET!" >nul 2>&1
-
-if "!LOCAL_OK!"=="1" (call :mark_working local) else (call :mark_failed local)
+if errorlevel 1 (call :mark_failed local) else (call :mark_working local)
+if "%KEEP_SANDBOX%"=="0" rmdir /s /q "!TARGET!" >nul 2>&1
 goto :eof
 
 :mark_working
