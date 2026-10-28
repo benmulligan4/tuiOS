@@ -88,7 +88,7 @@ impl SubPage {
             SubPage::BootAnimation => "Boot Up Animation",
             SubPage::CategoryOrder => "Custom Category Order",
             SubPage::TaskBar => "Task Manager Bar",
-            SubPage::TaskBarStats => "Extra Stats",
+            SubPage::TaskBarStats => "Stats Shown",
             SubPage::TaskBarColours => "Status Colours",
             SubPage::ResourceAlerts => "Resource Alerts",
             SubPage::Backups => "Import Settings",

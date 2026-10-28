@@ -3600,7 +3600,24 @@ fn run_app() -> bool {
                         task_manager::bar::render_stats(frame, stats, &bar_cfg);
                     }
                     if let Some(bar) = l.bar {
-                        tile_rect = task_manager::bar::render_bar(frame, bar, &mut state, &sessions, &bar_cfg, border_type);
+                        // The main container's border row the tiles' edges run into
+                        let joint_row = if main_row.height == 0 {
+                            None
+                        } else if navbar_bottom {
+                            Some(main_row.bottom() - 1)
+                        } else {
+                            Some(main_row.y)
+                        };
+                        tile_rect = task_manager::bar::render_bar(
+                            frame,
+                            bar,
+                            &mut state,
+                            &sessions,
+                            &bar_cfg,
+                            border_type,
+                            !navbar_bottom,
+                            joint_row,
+                        );
                     }
                 }
 

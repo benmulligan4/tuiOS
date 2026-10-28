@@ -1,5 +1,5 @@
-/// Task Manager bar settings — opened from the Navigation Bar category. Extra stats and
-/// status colours are sub-pages so no page outgrows the (non-scrolling) settings pane.
+/// Task Manager bar settings — opened from the Navigation Bar category. The stats
+/// shown and the status colours are sub-pages so no page outgrows the settings pane.
 
 use ratatui::{
     layout::Rect,
@@ -13,7 +13,7 @@ use serde_json::Value;
 
 use crate::settings::persistence;
 use crate::settings::state::SubPage;
-use crate::task_manager::bar_config::{self as bc, Status};
+use crate::task_manager::bar_config::{self as bc, Stat, Status};
 use crate::task_manager::config::choice;
 
 use super::cycle_option;
@@ -23,12 +23,11 @@ enum Row {
     Enabled,
     Width,
     StatsPosition,
-    ExtraRow,
-    ExtrasPage,
+    StatsPage,
     TileInfo,
     Group,
     ColoursPage,
-    Extra(usize),
+    Stat(Stat),
     Colour(Status),
 }
 
@@ -40,14 +39,13 @@ enum Kind {
 
 fn rows(page: SubPage) -> Vec<Row> {
     match page {
-        SubPage::TaskBarStats => (0..bc::EXTRAS.len()).map(Row::Extra).collect(),
+        SubPage::TaskBarStats => Stat::ALL.iter().map(|s| Row::Stat(*s)).collect(),
         SubPage::TaskBarColours => Status::ALL.iter().map(|s| Row::Colour(*s)).collect(),
         _ => vec![
             Row::Enabled,
             Row::Width,
             Row::StatsPosition,
-            Row::ExtraRow,
-            Row::ExtrasPage,
+            Row::StatsPage,
             Row::TileInfo,
             Row::Group,
             Row::ColoursPage,
@@ -65,7 +63,7 @@ fn spec(row: Row) -> (String, Kind, &'static str) {
         Row::Enabled => (
             "Task Manager Bar".into(),
             Toggle { key: bc::KEY_ENABLED, default: true },
-            "Running apps beside the navbar, with CPU and RAM under it. Off = the one-line navbar.",
+            "Running apps beside the navbar, with a stats line under it. Off = the one-line navbar.",
         ),
         Row::Width => (
             "Bar Width".into(),
@@ -73,16 +71,15 @@ fn spec(row: Row) -> (String, Kind, &'static str) {
             "Auto: the navbar takes what its items need and the bar gets the rest.",
         ),
         Row::StatsPosition => (
-            "Stats Line".into(),
+            "Stats Line Position".into(),
             Cycle { key: bc::KEY_STATS_POSITION, options: bc::STATS_POSITIONS, default: "Below Navbar" },
-            "Put the CPU / RAM line below or above the navbar, wherever the navbar is.",
+            "Put the stats line below or above the navbar, wherever the navbar is.",
         ),
-        Row::ExtraRow => (
-            "Extra Stats Row".into(),
-            Toggle { key: bc::KEY_EXTRA_ROW, default: true },
-            "On: CPU and RAM share a row and the next row shows extra stats. Off: a row each.",
+        Row::StatsPage => (
+            "Stats Shown".into(),
+            Open(SubPage::TaskBarStats),
+            "Choose what the stats line shows (CPU and RAM by default).",
         ),
-        Row::ExtrasPage => ("Extra Stats".into(), Open(SubPage::TaskBarStats), "Choose what the extra stats row shows."),
         Row::TileInfo => (
             "Tile Shows".into(),
             Cycle { key: bc::KEY_TILE_INFO, options: bc::TILE_INFOS, default: "Status" },
@@ -94,10 +91,11 @@ fn spec(row: Row) -> (String, Kind, &'static str) {
             "Show several copies of one app as a single tile, e.g. Notes ×2.",
         ),
         Row::ColoursPage => ("Status Colours".into(), Open(SubPage::TaskBarColours), "Pick the border colour for each app status."),
-        Row::Extra(i) => {
-            let (key, label, default) = bc::EXTRAS[i];
-            (label.into(), Toggle { key, default }, "Shown on the extra stats row (when it is on).")
-        }
+        Row::Stat(stat) => (
+            stat.label().into(),
+            Toggle { key: stat.key(), default: stat.on_by_default() },
+            "Shown on the stats line beside the navbar. Stats that do not fit are left out.",
+        ),
         Row::Colour(status) => (
             status.label().into(),
             Cycle { key: status.key(), options: bc::COLOURS, default: status.default_colour() },

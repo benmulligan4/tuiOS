@@ -40,7 +40,7 @@ impl Row {
 }
 
 fn rows(settings: &Value) -> Vec<Row> {
-    let mut rows = vec![Row::Position, Row::TaskBar, Row::Organise];
+    let mut rows = vec![Row::TaskBar, Row::Position, Row::Organise];
     if group_by_category(settings) {
         rows.extend([Row::MenuStyle, Row::CategorySort]);
         if category_sort(settings) == "Custom" {
@@ -139,7 +139,7 @@ fn enabled(on: bool) -> String {
 fn hint(row: Row) -> &'static str {
     match row {
         Row::Position => "Draw the navigation bar along the top or the bottom of the screen.",
-        Row::TaskBar => "Running apps beside the navbar, CPU / RAM stats, widths and colours.",
+        Row::TaskBar => "Running apps beside the navbar, the stats line, widths and colours.",
         Row::Organise => "Group the Apps dropdown under App Store category headings.",
         Row::MenuStyle => {
             "Submenu: categories open a second panel to the right (Enter/e opens, q/← goes back)."
@@ -179,6 +179,10 @@ pub fn render(frame: &mut Frame, area: Rect, cursor: usize, _scroll: usize, edit
                 Span::styled(format!("{}{:<26}", prefix, label), style),
                 Span::styled(format!("  {}", value), style),
             ]));
+        }
+        // The Task Manager Bar button stands apart from the navbar's own settings
+        if *row == Row::TaskBar {
+            lines.push(Line::from(""));
         }
     }
 

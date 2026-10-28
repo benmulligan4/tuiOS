@@ -13,12 +13,12 @@ use ratatui::{
 use crate::tuios::models::{Action, FocusTarget, TuiosState};
 use crate::tuios::sessions::{Body, Kind, Phase, Session, SessionEvent, SessionId, Sessions};
 
-use super::bar_config::{BarConfig, Status};
+use super::bar_config::{BarConfig, Stat, Status};
 use super::state::{Focus, RowId, Tab, TmAction};
 use super::{graphs, keys, metrics};
 
-/// Rows the header takes when the bar is on (tiles need a full box).
-pub const HEIGHT: u16 = 3;
+/// Rows the header takes when the bar is on: navbar + stats line beside two-row tiles.
+pub const HEIGHT: u16 = 2;
 /// Seconds a crashed app stays on the bar before it disappears.
 const CRASH_LINGER_SECS: i64 = 5;
 const TILE_MIN: u16 = 12;
@@ -163,7 +163,7 @@ fn info(cfg: &BarConfig, status: Status, members: &[&Session]) -> String {
 }
 
 /// Every running app (tuiOS itself is never a session), plus crashes from the last
-/// few seconds, in launch order.
+/// few seconds. The most recently opened app comes first.
 pub fn tiles(state: &TuiosState, sessions: &Sessions, cfg: &BarConfig) -> Vec<Tile> {
     let shown: Vec<&Session> = sessions.iter().filter(|s| s.is_live() || crashed_recently(s)).collect();
     let mut groups: Vec<(TileKey, Vec<&Session>)> = Vec::new();
@@ -178,6 +178,8 @@ pub fn tiles(state: &TuiosState, sessions: &Sessions, cfg: &BarConfig) -> Vec<Ti
             None => groups.push((ident, vec![s])),
         }
     }
+    // Session ids grow with every launch, so the newest instance dates the tile
+    groups.sort_by_key(|(_, members)| std::cmp::Reverse(members.iter().map(|s| s.id).max().unwrap_or(0)));
     groups
         .into_iter()
         .map(|(ident, members)| {
@@ -226,7 +228,7 @@ fn fit(text: &str, width: usize) -> String {
 
 // ── Layout ───────────────────────────────────────────────────────────────────
 
-/// Split the 3-row header into navbar, stats (2 rows) and the bar. `nav_needed` is
+/// Split the 2-row header into the navbar, the stats line and the bar. `nav_needed` is
 /// the width the navbar's items and clock take.
 pub fn split_header(area: Rect, cfg: &BarConfig, nav_needed: u16) -> HeaderLayout {
     let left_w = match cfg.width_pct {
@@ -239,8 +241,8 @@ pub fn split_header(area: Rect, cfg: &BarConfig, nav_needed: u16) -> HeaderLayou
     } else {
         (left_w, Some(Rect { x: area.x + left_w, y: area.y, width: bar_w, height: area.height }))
     };
-    let row = |dy: u16, h: u16| Rect { x: area.x, y: area.y + dy, width: left_w, height: h };
-    let (nav, stats) = if cfg.stats_above { (row(2, 1), row(0, 2)) } else { (row(0, 1), row(1, 2)) };
+    let row = |dy: u16| Rect { x: area.x, y: area.y + dy, width: left_w, height: 1 };
+    let (nav, stats) = if cfg.stats_above { (row(1), row(0)) } else { (row(0), row(1)) };
     HeaderLayout { nav, stats: Some(stats), bar }
 }
 
@@ -248,15 +250,24 @@ pub fn split_header(area: Rect, cfg: &BarConfig, nav_needed: u16) -> HeaderLayou
 
 const EIGHTHS: [&str; 8] = [" ", "▏", "▎", "▍", "▌", "▋", "▊", "▉"];
 
-/// "CPU ▕████▌░░░░▏ 42%" filling `area` (one row). `short` replaces `suffix` when the
-/// bar would otherwise get too thin to read.
-fn meter(frame: &mut Frame, area: Rect, label: &str, pct: f32, suffix: &str, short: &str) {
-    let label = format!(" {} ", label);
-    let room = |s: &str| (area.width as usize).saturating_sub(label.chars().count() + s.chars().count() + 4);
-    let suffix = if room(suffix) >= 8 { format!(" {} ", suffix) } else { format!(" {} ", short) };
-    let width = room(suffix.trim());
+/// "CPU ▕████▌░░░░▏ 42%" in `area` (one row). Falls back to the `short` suffix, then to
+/// plain "CPU 42%", as the room for the bar shrinks.
+fn meter(frame: &mut Frame, area: Rect, label: &str, pct: f32, long: &str, short: &str) {
     let pct = pct.clamp(0.0, 100.0);
     let colour = graphs::heat(pct as f64);
+    let bold = Style::default().fg(Color::White).add_modifier(Modifier::BOLD);
+    // "CPU " + "▕" + bar + "▏" + " " + suffix
+    let room = |s: &str| (area.width as usize).saturating_sub(label.chars().count() + s.chars().count() + 4);
+    let suffix = if room(long) >= 6 { long } else { short };
+    let width = room(suffix);
+    if width < 3 {
+        let line = Line::from(vec![
+            Span::styled(format!("{} ", label), bold),
+            Span::styled(short.to_string(), Style::default().fg(colour)),
+        ]);
+        frame.render_widget(Paragraph::new(line), area);
+        return;
+    }
     let eighths = (pct as f64 / 100.0 * width as f64 * 8.0).round() as usize;
     let (full, part) = (eighths / 8, eighths % 8);
     let mut filled = "█".repeat(full.min(width));
@@ -265,12 +276,12 @@ fn meter(frame: &mut Frame, area: Rect, label: &str, pct: f32, suffix: &str, sho
     }
     let empty = width.saturating_sub(filled.chars().count());
     let line = Line::from(vec![
-        Span::styled(label, Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+        Span::styled(format!("{} ", label), bold),
         Span::styled("▕", Style::default().fg(Color::DarkGray)),
         Span::styled(filled, Style::default().fg(colour)),
         Span::styled("░".repeat(empty), Style::default().fg(Color::DarkGray)),
         Span::styled("▏", Style::default().fg(Color::DarkGray)),
-        Span::styled(suffix, Style::default().fg(colour)),
+        Span::styled(format!(" {}", suffix), Style::default().fg(colour)),
     ]);
     frame.render_widget(Paragraph::new(line), area);
 }
@@ -296,81 +307,115 @@ fn uptime(secs: u64) -> String {
     }
 }
 
-fn extras(cfg: &BarConfig, m: &metrics::Metrics, width: usize) -> Line<'static> {
-    let label = Style::default().fg(Color::DarkGray);
-    let value = Style::default().fg(Color::White);
-    let mut items: Vec<Vec<Span<'static>>> = Vec::new();
-    if cfg.show_gpu {
-        if let Some(gpu) = m.gpu_now() {
-            items.push(vec![
-                Span::styled("GPU ", label),
-                Span::styled(format!("{:.0}%", gpu), Style::default().fg(graphs::heat(gpu as f64))),
-            ]);
+/// One item on the stats line.
+enum Piece {
+    /// label, percent, long suffix, short suffix
+    Meter(&'static str, f32, String, String),
+    Text(Vec<Span<'static>>),
+}
+
+impl Piece {
+    fn text_width(&self) -> usize {
+        match self {
+            Piece::Text(spans) => spans.iter().map(|s| s.content.chars().count()).sum(),
+            Piece::Meter(..) => 0,
         }
     }
-    if cfg.show_temperature {
-        let temp = m.cpu_temp.last().copied().flatten().or_else(|| m.gpu_temp.last().copied().flatten());
-        if let Some(t) = temp {
-            let colour = if t >= 80.0 { Color::Red } else if t >= 65.0 { Color::Yellow } else { Color::Green };
-            items.push(vec![Span::styled("Temp ", label), Span::styled(format!("{:.0}°C", t), Style::default().fg(colour))]);
-        }
-    }
-    if cfg.show_network {
-        let rx = m.net_rx.last().copied().unwrap_or(0.0);
-        let tx = m.net_tx.last().copied().unwrap_or(0.0);
-        items.push(vec![
-            Span::styled("↓ ", label),
-            Span::styled(graphs::rate(rx), value),
-            Span::styled("  ↑ ", label),
-            Span::styled(graphs::rate(tx), value),
-        ]);
-    }
-    if cfg.show_swap && m.swap_total > 0 {
-        items.push(vec![Span::styled("Swap ", label), Span::styled(used_of(m.swap_used, m.swap_total), value)]);
-    }
-    if cfg.show_uptime && m.uptime > 0 {
-        items.push(vec![Span::styled("Up ", label), Span::styled(uptime(m.uptime), value)]);
-    }
-    // Whole items only: one cut off mid-way reads as a different number
-    let mut spans = vec![Span::raw(" ")];
-    let mut used = 1;
-    for item in items {
-        let sep = if used > 1 { "  · " } else { "" };
-        let w: usize = sep.chars().count() + item.iter().map(|s| s.content.chars().count()).sum::<usize>();
-        if used + w > width {
-            break;
-        }
-        if !sep.is_empty() {
-            spans.push(Span::styled(sep, label));
-        }
-        spans.extend(item);
-        used += w;
-    }
-    Line::from(spans)
+}
+
+/// Narrowest a meter can be and still show a usable bar: "CPU ▕█████▏ 42%".
+const METER_MIN: usize = 15;
+const GAP: usize = 3;
+
+fn pieces(cfg: &BarConfig, m: &metrics::Metrics) -> Vec<Piece> {
+    let dim = Style::default().fg(Color::DarkGray);
+    let white = Style::default().fg(Color::White);
+    let pct = |v: f32| format!("{:.0}%", v);
+    cfg.stats
+        .iter()
+        .map(|stat| match stat {
+            Stat::Cpu => Piece::Meter("CPU", m.cpu_now(), pct(m.cpu_now()), pct(m.cpu_now())),
+            Stat::Ram => {
+                let p = m.mem_pct();
+                Piece::Meter("RAM", p, format!("{} {}", pct(p), used_of(m.mem_now(), m.mem_total)), pct(p))
+            }
+            Stat::Gpu => match m.gpu_now() {
+                Some(g) => Piece::Meter("GPU", g, pct(g), pct(g)),
+                None => Piece::Text(vec![Span::styled("GPU n/a", dim)]),
+            },
+            Stat::Swap if m.swap_total > 0 => {
+                let p = m.swap_used as f32 / m.swap_total as f32 * 100.0;
+                Piece::Meter("Swap", p, format!("{} {}", pct(p), used_of(m.swap_used, m.swap_total)), pct(p))
+            }
+            Stat::Swap => Piece::Text(vec![Span::styled("Swap off", dim)]),
+            Stat::Temperature => {
+                match m.cpu_temp.last().copied().flatten().or_else(|| m.gpu_temp.last().copied().flatten()) {
+                    Some(t) => {
+                        let colour = if t >= 80.0 { Color::Red } else if t >= 65.0 { Color::Yellow } else { Color::Green };
+                        Piece::Text(vec![Span::styled("Temp ", dim), Span::styled(format!("{:.0}°C", t), Style::default().fg(colour))])
+                    }
+                    None => Piece::Text(vec![Span::styled("Temp n/a", dim)]),
+                }
+            }
+            Stat::Network => Piece::Text(vec![
+                Span::styled("↓ ", dim),
+                Span::styled(graphs::rate(m.net_rx.last().copied().unwrap_or(0.0)), white),
+                Span::styled(" ↑ ", dim),
+                Span::styled(graphs::rate(m.net_tx.last().copied().unwrap_or(0.0)), white),
+            ]),
+            Stat::Uptime => Piece::Text(vec![Span::styled("Up ", dim), Span::styled(uptime(m.uptime), white)]),
+        })
+        .collect()
 }
 
 pub fn render_stats(frame: &mut Frame, area: Rect, cfg: &BarConfig) {
     let m = metrics::read();
     if !m.ready {
         let text = Span::styled(" Collecting system stats…", Style::default().fg(Color::DarkGray));
-        frame.render_widget(Paragraph::new(text), Rect { height: 1, ..area });
+        frame.render_widget(Paragraph::new(text), area);
         return;
     }
-    let cpu = m.cpu_now();
-    let ram_pct = m.mem_pct();
-    let cpu_text = format!("{:.0}%", cpu);
-    let ram_text = format!("{:.0}%", ram_pct);
-    let ram_full = format!("{} {}", ram_text, used_of(m.mem_now(), m.mem_total));
-    let top = Rect { height: 1, ..area };
-    let bottom = Rect { y: area.y + 1, height: area.height.saturating_sub(1).min(1), ..area };
-    if cfg.extra_row {
-        let half = area.width / 2;
-        meter(frame, Rect { width: half, ..top }, "CPU", cpu, &cpu_text, &cpu_text);
-        meter(frame, Rect { x: top.x + half, width: top.width - half, ..top }, "RAM", ram_pct, &ram_full, &ram_text);
-        frame.render_widget(Paragraph::new(extras(cfg, &m, bottom.width as usize)), bottom);
-    } else {
-        meter(frame, top, "CPU", cpu, &cpu_text, &cpu_text);
-        meter(frame, bottom, "RAM", ram_pct, &ram_full, &ram_text);
+    let mut pieces = pieces(cfg, &m);
+    // 1 column of padding at the left
+    let width = (area.width as usize).saturating_sub(1);
+    let needed = |pieces: &[Piece]| {
+        let meters = pieces.iter().filter(|p| matches!(p, Piece::Meter(..))).count();
+        let texts: usize = pieces.iter().map(Piece::text_width).sum();
+        texts + pieces.len().saturating_sub(1) * GAP + meters * METER_MIN
+    };
+    // Too much for the space: drop items from the end, so the ones listed first keep
+    // a full-size bar
+    while pieces.len() > 1 && needed(&pieces) > width {
+        pieces.pop();
+    }
+
+    let meters = pieces.iter().filter(|p| matches!(p, Piece::Meter(..))).count();
+    let texts: usize = pieces.iter().map(Piece::text_width).sum();
+    let spare = width.saturating_sub(texts + pieces.len().saturating_sub(1) * GAP);
+    let (meter_w, mut extra) = if meters > 0 { (spare / meters, spare % meters) } else { (0, 0) };
+    let mut x = area.x + 1;
+    for (i, piece) in pieces.iter().enumerate() {
+        if i > 0 {
+            x += GAP as u16;
+        }
+        let w = match piece {
+            Piece::Meter(..) => {
+                let w = meter_w + if extra > 0 { 1 } else { 0 };
+                extra = extra.saturating_sub(1);
+                w
+            }
+            Piece::Text(_) => piece.text_width(),
+        } as u16;
+        let w = w.min(area.right().saturating_sub(x));
+        if w == 0 {
+            break;
+        }
+        let rect = Rect { x, width: w, ..area };
+        match piece {
+            Piece::Meter(label, pct, long, short) => meter(frame, rect, label, *pct, long, short),
+            Piece::Text(spans) => frame.render_widget(Paragraph::new(Line::from(spans.clone())), rect),
+        }
+        x += w;
     }
 }
 
@@ -398,7 +443,37 @@ fn visible_range(widths: &[u16], scroll: usize, total: u16) -> (usize, bool, boo
     }
 }
 
-/// Draw the bar; returns the selected tile's rectangle (for its menu).
+/// The box-drawing character for a tile edge meeting the main container's border.
+/// `from_above`: the tile sits above that border (header at the top of the screen).
+fn junction(existing: &str, from_above: bool, double: bool) -> Option<&'static str> {
+    Some(match (existing, from_above, double) {
+        ("─", true, false) => "┴",
+        ("─", false, false) => "┬",
+        ("─", true, true) => "╨",
+        ("─", false, true) => "╥",
+        ("═", true, true) => "╩",
+        ("═", false, true) => "╦",
+        ("═", true, false) => "╧",
+        ("═", false, false) => "╤",
+        ("╮" | "┐", true, false) | ("╯" | "┘", false, false) => "┤",
+        ("╭" | "┌", true, false) | ("╰" | "└", false, false) => "├",
+        ("╗", true, true) | ("╝", false, true) => "╣",
+        ("╔", true, true) | ("╚", false, true) => "╠",
+        _ => return None,
+    })
+}
+
+fn join(frame: &mut Frame, x: u16, y: u16, colour: Color, from_above: bool, double: bool) {
+    if let Some(cell) = frame.buffer_mut().cell_mut((x, y)) {
+        // Titles and other content on the border line are left alone
+        if let Some(symbol) = junction(cell.symbol(), from_above, double) {
+            cell.set_symbol(symbol).set_fg(colour);
+        }
+    }
+}
+
+/// Draw the bar; returns the selected tile's rectangle (for its menu). Tiles are open on
+/// the side facing the main container, and their edges join its border at `joint_row`.
 pub fn render_bar(
     frame: &mut Frame,
     area: Rect,
@@ -406,19 +481,22 @@ pub fn render_bar(
     sessions: &Sessions,
     cfg: &BarConfig,
     border_type: BorderType,
+    header_top: bool,
+    joint_row: Option<u16>,
 ) -> Option<Rect> {
     let tiles = tiles(state, sessions, cfg);
     let focused = state.task_bar.focused && state.focus == FocusTarget::Navbar;
     state.task_bar.visible = true;
     // 1 column gap from the navbar side
     let area = Rect { x: area.x + 1, width: area.width.saturating_sub(1), ..area };
+    // The row inside the tiles; the other one is their border carrying the name
+    let info_y = if header_top { area.y + 1 } else { area.y };
     if tiles.is_empty() {
         state.task_bar.focused = false;
         state.task_bar.menu = None;
-        let mid = Rect { y: area.y + 1, height: 1, ..area };
         frame.render_widget(
             Paragraph::new("No apps running").alignment(Alignment::Center).style(Style::default().fg(Color::DarkGray)),
-            mid,
+            Rect { y: info_y, height: 1, ..area },
         );
         return None;
     }
@@ -438,17 +516,19 @@ pub fn render_bar(
     }
     let (end, left_marker, right_marker) = visible_range(&widths, bar.scroll, area.width);
     let marker_style = Style::default().fg(Color::DarkGray).add_modifier(Modifier::BOLD);
-    let mid_y = area.y + 1;
+    let double = border_type == BorderType::Double;
+    let borders = Borders::LEFT | Borders::RIGHT | if header_top { Borders::TOP } else { Borders::BOTTOM };
 
     let mut x = area.x;
     if left_marker {
         let text = format!("◀{}", bar.scroll);
-        frame.render_widget(Paragraph::new(text).style(marker_style), Rect { x, y: mid_y, width: MARKER_W, height: 1 });
+        frame.render_widget(Paragraph::new(text).style(marker_style), Rect { x, y: info_y, width: MARKER_W, height: 1 });
         x += MARKER_W;
     }
     let mut selected_rect = None;
+    let limit = area.right().saturating_sub(if right_marker { MARKER_W } else { 0 });
     for (i, tile) in tiles.iter().enumerate().take(end).skip(bar.scroll) {
-        let width = widths[i].min(area.right().saturating_sub(x));
+        let width = widths[i].min(limit.saturating_sub(x));
         if width < 4 {
             break;
         }
@@ -461,19 +541,26 @@ pub fn render_bar(
             Style::default().fg(Color::White).add_modifier(Modifier::BOLD)
         };
         let inner_w = width.saturating_sub(2) as usize;
+        let title = Span::styled(fit(&format!(" {} ", tile.label), inner_w), title_style);
         let block = Block::default()
-            .borders(Borders::ALL)
-            .border_type(if is_sel { BorderType::Thick } else { border_type })
-            .border_style(Style::default().fg(colour))
-            .title(Span::styled(fit(&format!(" {} ", tile.label), inner_w), title_style));
+            .borders(borders)
+            .border_type(border_type)
+            .border_style(Style::default().fg(colour));
+        let block = if header_top { block.title(title) } else { block.title_bottom(title) };
         let inner = block.inner(rect);
         frame.render_widget(block, rect);
-        frame.render_widget(
-            Paragraph::new(fit(&tile.info, inner_w))
-                .alignment(Alignment::Center)
-                .style(Style::default().fg(if tile.status == Status::Crashed { colour } else { Color::Gray })),
-            inner,
-        );
+        let info_style = if tile.status == Status::Crashed {
+            Style::default().fg(colour)
+        } else if is_sel {
+            Style::default().fg(Color::White)
+        } else {
+            Style::default().fg(Color::Gray)
+        };
+        frame.render_widget(Paragraph::new(fit(&tile.info, inner_w)).alignment(Alignment::Center).style(info_style), inner);
+        if let Some(y) = joint_row {
+            join(frame, rect.x, y, colour, header_top, double);
+            join(frame, rect.right() - 1, y, colour, header_top, double);
+        }
         if i == sel {
             selected_rect = Some(rect);
         }
@@ -484,7 +571,7 @@ pub fn render_bar(
         let rx = area.right().saturating_sub(MARKER_W);
         frame.render_widget(
             Paragraph::new(format!("{}▶", hidden)).alignment(Alignment::Right).style(marker_style),
-            Rect { x: rx, y: mid_y, width: MARKER_W, height: 1 },
+            Rect { x: rx, y: info_y, width: MARKER_W, height: 1 },
         );
     }
     selected_rect.filter(|_| focused)
