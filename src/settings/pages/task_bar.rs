@@ -13,7 +13,7 @@ use serde_json::Value;
 
 use crate::settings::persistence;
 use crate::settings::state::SubPage;
-use crate::task_manager::bar_config::{self as bc, Stat, Status};
+use crate::task_manager::bar_config::{self as bc, Stat, Status, TileInfo};
 use crate::task_manager::config::choice;
 
 use super::cycle_option;
@@ -25,10 +25,13 @@ enum Row {
     StatsPosition,
     StatsPage,
     TileInfo,
+    RotationPage,
     Group,
     ColoursPage,
     Stat(Stat),
     Colour(Status),
+    Rotate(TileInfo),
+    RotateEvery,
 }
 
 enum Kind {
@@ -41,12 +44,18 @@ fn rows(page: SubPage) -> Vec<Row> {
     match page {
         SubPage::TaskBarStats => Stat::ALL.iter().map(|s| Row::Stat(*s)).collect(),
         SubPage::TaskBarColours => Status::ALL.iter().map(|s| Row::Colour(*s)).collect(),
+        SubPage::TaskBarRotation => {
+            let mut rows: Vec<Row> = TileInfo::ROTATABLE.iter().map(|t| Row::Rotate(*t)).collect();
+            rows.push(Row::RotateEvery);
+            rows
+        }
         _ => vec![
             Row::Enabled,
             Row::Width,
             Row::StatsPosition,
             Row::StatsPage,
             Row::TileInfo,
+            Row::RotationPage,
             Row::Group,
             Row::ColoursPage,
         ],
@@ -82,8 +91,13 @@ fn spec(row: Row) -> (String, Kind, &'static str) {
         ),
         Row::TileInfo => (
             "Tile Shows".into(),
-            Cycle { key: bc::KEY_TILE_INFO, options: bc::TILE_INFOS, default: "Status" },
-            "The line inside each app tile: its status, CPU use or how long it has run.",
+            Cycle { key: bc::KEY_TILE_INFO, options: bc::TILE_INFOS, default: "Rotate" },
+            "The line under each app's name. Rotate cycles through your picks; Off = name only.",
+        ),
+        Row::RotationPage => (
+            "Rotation".into(),
+            Open(SubPage::TaskBarRotation),
+            "What Rotate cycles through, and how long each one shows.",
         ),
         Row::Group => (
             "Group App Instances".into(),
@@ -100,6 +114,20 @@ fn spec(row: Row) -> (String, Kind, &'static str) {
             status.label().into(),
             Cycle { key: status.key(), options: bc::COLOURS, default: status.default_colour() },
             "Border colour for tiles in this state. Accent = your tuiOS colour.",
+        ),
+        Row::Rotate(info) => (
+            info.label().into(),
+            Toggle { key: info.rotate_key(), default: info.rotates_by_default() },
+            match info {
+                TileInfo::CpuMemory => "e.g. 3% · 120 MB, added up across grouped copies.",
+                TileInfo::CpuGraph => "A small graph of recent CPU use, newest on the right.",
+                _ => "Included when Tile Shows is set to Rotate.",
+            },
+        ),
+        Row::RotateEvery => (
+            "Rotate Every".into(),
+            Cycle { key: bc::KEY_ROTATE_EVERY, options: bc::ROTATE_INTERVALS, default: "3 s" },
+            "How long each one shows before the tiles move on to the next.",
         ),
     }
 }

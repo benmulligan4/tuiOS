@@ -2,6 +2,7 @@
 /// system stats line that sits under (or above) the navbar.
 
 use chrono::Local;
+use std::time::{SystemTime, UNIX_EPOCH};
 use ratatui::{
     layout::{Alignment, Rect},
     style::{Color, Modifier, Style},
@@ -13,7 +14,7 @@ use ratatui::{
 use crate::tuios::models::{Action, FocusTarget, TuiosState};
 use crate::tuios::sessions::{Body, Kind, Phase, Session, SessionEvent, SessionId, Sessions};
 
-use super::bar_config::{BarConfig, Stat, Status};
+use super::bar_config::{BarConfig, Stat, Status, TileInfo};
 use super::state::{Focus, RowId, Tab, TmAction};
 use super::{graphs, keys, metrics};
 
@@ -138,27 +139,95 @@ fn base_label(s: &Session) -> String {
     s.label.strip_suffix(&suffix).unwrap_or(&s.label).to_string()
 }
 
-fn info(cfg: &BarConfig, status: Status, members: &[&Session]) -> String {
-    if status == Status::Crashed || cfg.tile_info == "Status" {
+fn info(kind: TileInfo, status: Status, members: &[&Session]) -> String {
+    if status == Status::Crashed {
         return status_text(status).into();
     }
-    if cfg.tile_info == "Uptime" {
-        let up = members.iter().map(|s| s.uptime()).max().unwrap_or_default();
-        return format!("Up {}", graphs::duration(up));
+    match kind {
+        TileInfo::Off => String::new(),
+        TileInfo::Status | TileInfo::Rotate => status_text(status).into(),
+        TileInfo::Uptime => {
+            let up = members.iter().map(|s| s.uptime()).max().unwrap_or_default();
+            format!("Up {}", graphs::duration(up))
+        }
+        TileInfo::Cpu | TileInfo::CpuMemory | TileInfo::CpuGraph => {
+            if members.iter().all(|s| s.is_builtin()) {
+                return "Built-in".into();
+            }
+            let pids: Vec<u32> = members.iter().filter_map(|s| s.pid()).collect();
+            let m = metrics::read();
+            if kind == TileInfo::CpuGraph {
+                return sparkline(&m, &pids);
+            }
+            let samples: Vec<&metrics::ProcSample> = pids.iter().filter_map(|p| m.procs.get(p)).collect();
+            if samples.is_empty() {
+                return "CPU –".into();
+            }
+            let cpu: f32 = samples.iter().map(|p| p.cpu).sum();
+            if kind == TileInfo::Cpu {
+                format!("CPU {:.0}%", cpu)
+            } else {
+                format!("{:.0}% · {}", cpu, mem_short(samples.iter().map(|p| p.mem).sum()))
+            }
+        }
     }
-    if members.iter().all(|s| s.is_builtin()) {
-        return "Built-in".into();
+}
+
+const GRAPH_W: usize = 10;
+const SPARKS: [char; 8] = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
+
+/// Recent CPU of the app's processes, newest on the right. Scaled to at least 10% so an
+/// idle app reads as flat rather than as noise.
+fn sparkline(m: &metrics::Metrics, pids: &[u32]) -> String {
+    let mut series = [0f32; GRAPH_W];
+    let mut any = false;
+    for pid in pids {
+        if let Some(h) = m.proc_hist.get(pid) {
+            let values: Vec<f32> = h.cpu.tail(GRAPH_W).copied().collect();
+            let offset = GRAPH_W - values.len();
+            for (i, v) in values.iter().enumerate() {
+                series[offset + i] += v;
+                any = true;
+            }
+        }
     }
-    let m = metrics::read();
-    let samples: Vec<f32> = members
-        .iter()
-        .filter_map(|s| s.pid())
-        .filter_map(|pid| m.procs.get(&pid).map(|p| p.cpu))
-        .collect();
-    if samples.is_empty() {
-        "CPU –".into()
-    } else {
-        format!("CPU {:.0}%", samples.iter().sum::<f32>())
+    if !any {
+        return "CPU –".into();
+    }
+    let peak = series.iter().copied().fold(10.0, f32::max);
+    series.iter().map(|v| SPARKS[((v / peak) * 7.0).round().clamp(0.0, 7.0) as usize]).collect()
+}
+
+/// "120 MB" / "1.4 GB"
+fn mem_short(bytes: u64) -> String {
+    let mb = bytes / 1024 / 1024;
+    if mb < 1024 { format!("{} MB", mb) } else { format!("{:.1} GB", mb as f64 / 1024.0) }
+}
+
+/// What the tiles show right now: Rotate steps through its list on the clock, so every
+/// tile changes together.
+fn current_info(cfg: &BarConfig) -> TileInfo {
+    match cfg.tile_info {
+        TileInfo::Rotate => {
+            let secs = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+            cfg.rotate[(secs / cfg.rotate_secs.max(1)) as usize % cfg.rotate.len()]
+        }
+        other => other,
+    }
+}
+
+/// Columns the info line needs, so tiles keep their width while Rotate cycles.
+fn info_width(cfg: &BarConfig) -> usize {
+    let one = |t: TileInfo| match t {
+        TileInfo::Off => 0,
+        TileInfo::Status | TileInfo::Rotate | TileInfo::CpuMemory => 14,
+        TileInfo::Cpu => 8,
+        TileInfo::CpuGraph => GRAPH_W,
+        TileInfo::Uptime => 10,
+    };
+    match cfg.tile_info {
+        TileInfo::Rotate => cfg.rotate.iter().map(|t| one(*t)).max().unwrap_or(0),
+        other => one(other),
     }
 }
 
@@ -180,6 +249,7 @@ pub fn tiles(state: &TuiosState, sessions: &Sessions, cfg: &BarConfig) -> Vec<Ti
     }
     // Session ids grow with every launch, so the newest instance dates the tile
     groups.sort_by_key(|(_, members)| std::cmp::Reverse(members.iter().map(|s| s.id).max().unwrap_or(0)));
+    let kind = current_info(cfg);
     groups
         .into_iter()
         .map(|(ident, members)| {
@@ -193,7 +263,7 @@ pub fn tiles(state: &TuiosState, sessions: &Sessions, cfg: &BarConfig) -> Vec<Ti
                 label.push_str(&format!(" ×{}", members.len()));
             }
             Tile {
-                info: info(cfg, status, &members),
+                info: info(kind, status, &members),
                 label: super::clean_text(&label),
                 ids: members.iter().map(|s| s.id).collect(),
                 status,
@@ -211,8 +281,8 @@ fn selected_index(bar: &TaskBarState, tiles: &[Tile]) -> usize {
         .min(tiles.len().saturating_sub(1))
 }
 
-fn tile_width(t: &Tile) -> u16 {
-    let text = t.label.chars().count().max(t.info.chars().count()) as u16;
+fn tile_width(t: &Tile, info_w: usize) -> u16 {
+    let text = t.label.chars().count().max(info_w) as u16;
     (text + 4).clamp(TILE_MIN, TILE_MAX)
 }
 
@@ -463,11 +533,12 @@ fn junction(existing: &str, from_above: bool, double: bool) -> Option<&'static s
     })
 }
 
-fn join(frame: &mut Frame, x: u16, y: u16, colour: Color, from_above: bool, double: bool) {
+fn join(frame: &mut Frame, x: u16, y: u16, from_above: bool, double: bool) {
     if let Some(cell) = frame.buffer_mut().cell_mut((x, y)) {
-        // Titles and other content on the border line are left alone
+        // Titles and other content on the border line are left alone; the joint keeps
+        // the container's colour since one cell cannot hold two
         if let Some(symbol) = junction(cell.symbol(), from_above, double) {
-            cell.set_symbol(symbol).set_fg(colour);
+            cell.set_symbol(symbol);
         }
     }
 }
@@ -505,7 +576,7 @@ pub fn render_bar(
     if state.task_bar.selected.is_none() || focused {
         state.task_bar.selected = Some(tiles[sel].ident.clone());
     }
-    let widths: Vec<u16> = tiles.iter().map(tile_width).collect();
+    let widths: Vec<u16> = tiles.iter().map(|t| tile_width(t, info_width(cfg))).collect();
     let bar = &mut state.task_bar;
     bar.scroll = bar.scroll.min(tiles.len() - 1);
     if focused && sel < bar.scroll {
@@ -541,25 +612,36 @@ pub fn render_bar(
             Style::default().fg(Color::White).add_modifier(Modifier::BOLD)
         };
         let inner_w = width.saturating_sub(2) as usize;
-        let title = Span::styled(fit(&format!(" {} ", tile.label), inner_w), title_style);
+        let name = Span::styled(fit(&format!(" {} ", tile.label), inner_w), title_style);
         let block = Block::default()
             .borders(borders)
             .border_type(border_type)
             .border_style(Style::default().fg(colour));
-        let block = if header_top { block.title(title) } else { block.title_bottom(title) };
+        // Tile Shows = Off: the name moves inside the box and the edge stays plain
+        let off = cfg.tile_info == TileInfo::Off;
+        let block = match (off, header_top) {
+            (true, _) => block,
+            (false, true) => block.title(name.clone()),
+            (false, false) => block.title_bottom(name.clone()),
+        };
         let inner = block.inner(rect);
         frame.render_widget(block, rect);
-        let info_style = if tile.status == Status::Crashed {
-            Style::default().fg(colour)
-        } else if is_sel {
-            Style::default().fg(Color::White)
+        let body = if off {
+            Line::from(name)
         } else {
-            Style::default().fg(Color::Gray)
+            let info_style = if tile.status == Status::Crashed {
+                Style::default().fg(colour)
+            } else if is_sel {
+                Style::default().fg(Color::White)
+            } else {
+                Style::default().fg(Color::Gray)
+            };
+            Line::from(Span::styled(fit(&tile.info, inner_w), info_style))
         };
-        frame.render_widget(Paragraph::new(fit(&tile.info, inner_w)).alignment(Alignment::Center).style(info_style), inner);
+        frame.render_widget(Paragraph::new(body).alignment(Alignment::Center), inner);
         if let Some(y) = joint_row {
-            join(frame, rect.x, y, colour, header_top, double);
-            join(frame, rect.right() - 1, y, colour, header_top, double);
+            join(frame, rect.x, y, header_top, double);
+            join(frame, rect.right() - 1, y, header_top, double);
         }
         if i == sel {
             selected_rect = Some(rect);

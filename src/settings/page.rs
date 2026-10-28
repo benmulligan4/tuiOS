@@ -127,7 +127,7 @@ pub fn render(frame: &mut Frame, area: Rect, border_style: Style, ss: &mut Setti
         boot::render(frame, content_area, cursor, scroll, editing);
         return;
     }
-    if let Some(sub @ (SubPage::TaskBar | SubPage::TaskBarStats | SubPage::TaskBarColours)) = ss.subpage {
+    if let Some(sub @ (SubPage::TaskBar | SubPage::TaskBarStats | SubPage::TaskBarColours | SubPage::TaskBarRotation)) = ss.subpage {
         task_bar::render(frame, content_area, cursor, editing, sub);
         return;
     }
@@ -170,7 +170,7 @@ pub fn is_edit_mode_item(ss: &SettingsState) -> bool {
     if let Some(SubPage::BootAnimation) = ss.subpage {
         return boot::is_edit_mode_item(cursor);
     }
-    if let Some(sub @ (SubPage::TaskBar | SubPage::TaskBarStats | SubPage::TaskBarColours)) = ss.subpage {
+    if let Some(sub @ (SubPage::TaskBar | SubPage::TaskBarStats | SubPage::TaskBarColours | SubPage::TaskBarRotation)) = ss.subpage {
         return task_bar::is_edit_mode_item(cursor, sub);
     }
     if let Some(SubPage::CategoryOrder) = ss.subpage {
@@ -202,7 +202,7 @@ pub fn handle_setting_cycle(ss: &mut SettingsState, forward: bool) -> bool {
         boot::handle_cycle(cursor, forward);
         return false;
     }
-    if let Some(sub @ (SubPage::TaskBar | SubPage::TaskBarStats | SubPage::TaskBarColours)) = ss.subpage {
+    if let Some(sub @ (SubPage::TaskBar | SubPage::TaskBarStats | SubPage::TaskBarColours | SubPage::TaskBarRotation)) = ss.subpage {
         task_bar::handle_cycle(cursor, forward, sub);
         return false;
     }
@@ -230,7 +230,7 @@ pub fn current_item_count(ss: &SettingsState) -> usize {
     if let Some(SubPage::BootAnimation) = ss.subpage {
         return boot::item_count();
     }
-    if let Some(sub @ (SubPage::TaskBar | SubPage::TaskBarStats | SubPage::TaskBarColours)) = ss.subpage {
+    if let Some(sub @ (SubPage::TaskBar | SubPage::TaskBarStats | SubPage::TaskBarColours | SubPage::TaskBarRotation)) = ss.subpage {
         return task_bar::item_count(sub);
     }
     if let Some(SubPage::CategoryOrder) = ss.subpage {
@@ -292,7 +292,7 @@ pub fn handle_right_pane_enter(ss: &mut SettingsState) -> SettingsAction {
         backup::handle_list_enter(ss);
         return SettingsAction::None;
     }
-    if let Some(sub @ (SubPage::TaskBar | SubPage::TaskBarStats | SubPage::TaskBarColours)) = ss.subpage {
+    if let Some(sub @ (SubPage::TaskBar | SubPage::TaskBarStats | SubPage::TaskBarColours | SubPage::TaskBarRotation)) = ss.subpage {
         match task_bar::opens(cursor, sub) {
             Some(next) => open_subpage(ss, next),
             None => task_bar::handle_enter(cursor, sub),

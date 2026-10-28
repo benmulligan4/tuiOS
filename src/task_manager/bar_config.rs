@@ -11,7 +11,8 @@ use super::config::choice;
 
 pub const WIDTHS: &[&str] = &["Auto", "30%", "40%", "50%", "60%"];
 pub const STATS_POSITIONS: &[&str] = &["Below Navbar", "Above Navbar"];
-pub const TILE_INFOS: &[&str] = &["Status", "CPU", "Uptime"];
+pub const TILE_INFOS: &[&str] = &["Rotate", "Status", "CPU", "CPU + Memory", "CPU Graph", "Uptime", "Off"];
+pub const ROTATE_INTERVALS: &[&str] = &["2 s", "3 s", "5 s", "10 s"];
 pub const COLOURS: &[&str] = &[
     "Accent", "Cyan", "Green", "Yellow", "Blue", "Magenta", "Red", "White", "Light Blue", "Orange", "Pink",
     "Teal", "Purple", "Grey",
@@ -21,7 +22,69 @@ pub const KEY_ENABLED: &str = "task_bar.enabled";
 pub const KEY_WIDTH: &str = "task_bar.width";
 pub const KEY_STATS_POSITION: &str = "task_bar.stats_position";
 pub const KEY_TILE_INFO: &str = "task_bar.tile_info";
+pub const KEY_ROTATE_EVERY: &str = "task_bar.rotate_every";
 pub const KEY_GROUP: &str = "task_bar.group_instances";
+
+/// The line inside an app tile, under its name.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TileInfo {
+    /// No line: the name sits inside the box instead of on its edge.
+    Off,
+    Status,
+    Cpu,
+    CpuMemory,
+    CpuGraph,
+    Uptime,
+    /// Cycle through the `rotate` list.
+    Rotate,
+}
+
+impl TileInfo {
+    /// The ones Rotate can cycle through, in order.
+    pub const ROTATABLE: [TileInfo; 5] =
+        [TileInfo::Status, TileInfo::Cpu, TileInfo::CpuMemory, TileInfo::CpuGraph, TileInfo::Uptime];
+
+    pub fn label(self) -> &'static str {
+        match self {
+            TileInfo::Off => "Off",
+            TileInfo::Status => "Status",
+            TileInfo::Cpu => "CPU",
+            TileInfo::CpuMemory => "CPU + Memory",
+            TileInfo::CpuGraph => "CPU Graph",
+            TileInfo::Uptime => "Uptime",
+            TileInfo::Rotate => "Rotate",
+        }
+    }
+
+    fn from_label(label: &str) -> TileInfo {
+        [
+            TileInfo::Off,
+            TileInfo::Status,
+            TileInfo::Cpu,
+            TileInfo::CpuMemory,
+            TileInfo::CpuGraph,
+            TileInfo::Uptime,
+            TileInfo::Rotate,
+        ]
+        .into_iter()
+        .find(|t| t.label() == label)
+        .unwrap_or(TileInfo::Rotate)
+    }
+
+    pub fn rotate_key(self) -> &'static str {
+        match self {
+            TileInfo::Status => "task_bar.rotate.status",
+            TileInfo::Cpu => "task_bar.rotate.cpu",
+            TileInfo::CpuMemory => "task_bar.rotate.cpu_memory",
+            TileInfo::CpuGraph => "task_bar.rotate.cpu_graph",
+            _ => "task_bar.rotate.uptime",
+        }
+    }
+
+    pub fn rotates_by_default(self) -> bool {
+        matches!(self, TileInfo::Status | TileInfo::CpuMemory | TileInfo::Uptime)
+    }
+}
 
 /// Something the stats line can show, in display order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -137,7 +200,10 @@ pub struct BarConfig {
     pub stats_above: bool,
     /// What the stats line shows, in display order.
     pub stats: Vec<Stat>,
-    pub tile_info: String,
+    pub tile_info: TileInfo,
+    /// What Rotate cycles through (never empty) and how long each one shows.
+    pub rotate: Vec<TileInfo>,
+    pub rotate_secs: u64,
     pub group: bool,
     colours: [Color; 7],
 }
@@ -151,6 +217,10 @@ impl BarConfig {
 
 pub fn stat_enabled(s: &Value, stat: Stat) -> bool {
     persistence::get_bool(s, stat.key(), stat.on_by_default())
+}
+
+pub fn rotates(s: &Value, info: TileInfo) -> bool {
+    persistence::get_bool(s, info.rotate_key(), info.rotates_by_default())
 }
 
 pub fn colour_name(s: &Value, status: Status) -> String {
@@ -168,7 +238,13 @@ pub fn from_settings(s: &Value, accent: Color) -> BarConfig {
         width_pct: width.trim_end_matches('%').parse().ok(),
         stats_above: choice(s, KEY_STATS_POSITION, STATS_POSITIONS, "Below Navbar") == "Above Navbar",
         stats: Stat::ALL.into_iter().filter(|st| stat_enabled(s, *st)).collect(),
-        tile_info: choice(s, KEY_TILE_INFO, TILE_INFOS, "Status"),
+        tile_info: TileInfo::from_label(&choice(s, KEY_TILE_INFO, TILE_INFOS, "Rotate")),
+        rotate: {
+            let list: Vec<TileInfo> = TileInfo::ROTATABLE.into_iter().filter(|t| rotates(s, *t)).collect();
+            if list.is_empty() { vec![TileInfo::Status] } else { list }
+        },
+        rotate_secs: super::config::leading_number(&choice(s, KEY_ROTATE_EVERY, ROTATE_INTERVALS, "3 s"))
+            .unwrap_or(3.0) as u64,
         group: persistence::get_bool(s, KEY_GROUP, true),
         colours,
     }
@@ -186,9 +262,15 @@ pub fn default_settings() -> Value {
         "enabled": true,
         "width": "Auto",
         "stats_position": "Below Navbar",
-        "tile_info": "Status",
+        "tile_info": "Rotate",
+        "rotate_every": "3 s",
         "group_instances": true,
     });
+    let mut rotate = serde_json::Map::new();
+    for info in TileInfo::ROTATABLE {
+        rotate.insert(info.rotate_key().trim_start_matches("task_bar.rotate.").into(), Value::Bool(info.rotates_by_default()));
+    }
+    out["rotate"] = Value::Object(rotate);
     let mut stats = serde_json::Map::new();
     for stat in Stat::ALL {
         stats.insert(stat.key().trim_start_matches("task_bar.stats.").into(), Value::Bool(stat.on_by_default()));
@@ -210,6 +292,9 @@ mod tests {
         let c = from_settings(&s, Color::Cyan);
         assert!(c.enabled && c.group);
         assert_eq!(c.stats, vec![Stat::Cpu, Stat::Ram]);
+        assert_eq!(c.tile_info, TileInfo::Rotate);
+        assert_eq!(c.rotate, vec![TileInfo::Status, TileInfo::CpuMemory, TileInfo::Uptime]);
+        assert_eq!(c.rotate_secs, 3);
         assert_eq!(c.width_pct, None);
         assert_eq!(c.colour(Status::Background), Color::Cyan);
         assert_eq!(c.colour(Status::Crashed), Color::Red);

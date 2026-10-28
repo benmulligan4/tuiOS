@@ -78,6 +78,7 @@ pub enum SubPage {
     TaskBar,
     TaskBarStats,
     TaskBarColours,
+    TaskBarRotation,
     ResourceAlerts,
     Backups,
 }
@@ -90,6 +91,7 @@ impl SubPage {
             SubPage::TaskBar => "Task Manager Bar",
             SubPage::TaskBarStats => "Stats Shown",
             SubPage::TaskBarColours => "Status Colours",
+            SubPage::TaskBarRotation => "Rotation",
             SubPage::ResourceAlerts => "Resource Alerts",
             SubPage::Backups => "Import Settings",
         }
@@ -98,7 +100,7 @@ impl SubPage {
     /// The page Back returns to, or None to leave the sub-page stack entirely.
     pub fn parent(&self) -> Option<SubPage> {
         match self {
-            SubPage::TaskBarStats | SubPage::TaskBarColours => Some(SubPage::TaskBar),
+            SubPage::TaskBarStats | SubPage::TaskBarColours | SubPage::TaskBarRotation => Some(SubPage::TaskBar),
             _ => None,
         }
     }
