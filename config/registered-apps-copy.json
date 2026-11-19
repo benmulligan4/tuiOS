@@ -1,0 +1,256 @@
+{
+  "budget-tracker-tui": {
+    "label": "budget-tracker-tui",
+    "description": "A fast, keyboard-driven TUI for tracking expenses, tracking investments, and analyzing your budget with ease.",
+    "category": "Productivity and Planning",
+    "author": "Feromond",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/Feromond/budget-tracker-tui",
+    "crate_name": "budget-tracker-tui",
+    "cmd": [
+      "budget-tracker"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "bin_name": "budget-tracker"
+  },
+  "chess-tui": {
+    "approved": true,
+    "author": "thomas-mauran",
+    "bin_name": "chess-tui",
+    "category": "Games",
+    "cmd": [
+      "chess-tui"
+    ],
+    "crate_name": "chess-tui",
+    "default_window_mode": "embedded",
+    "description": "A free, open-source terminal chess game. Play with a friend locally, against any UCI chess engine (e.g. Stockfish), or online via Lichess. Features local 2-player mode, engine integration, Lichess multiplayer, helper menu, and custom skins. Runs on macOS, Linux, and Windows.",
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "label": "Chess TUI",
+    "license": "MIT",
+    "pre_installed": false,
+    "repository": "https://github.com/thomas-mauran/chess-tui",
+    "supports_embedded": true,
+    "version": "2.7.1"
+  },
+  "inertia": {
+    "label": "Inertia",
+    "description": "A 3D physics simulator in your terminal.",
+    "category": "Games",
+    "author": "aclfe",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/aclfe/inertia",
+    "crate_name": "inertia",
+    "cmd": [
+      "inertia"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "failed_install_methods": [
+      "global"
+    ],
+    "bin_name": "inertia"
+  },
+  "mirador": {
+    "label": "mirador",
+    "description": "A personal dashboard with world clocks, calendar, weather, tasks, notes, a market watchlist and live CPU and network graphs.",
+    "category": "Productivity and Planning",
+    "author": "jchultarsky",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/jchultarsky/mirador",
+    "crate_name": "mirador",
+    "cmd": [
+      "mirador"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "bin_name": "mirador"
+  },
+  "myx": {
+    "label": "myx",
+    "description": "Modern Spotify player for the terminal. With reactive themes.",
+    "category": "Music and Media",
+    "author": "HaseebKhalid1507",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/HaseebKhalid1507/Myx",
+    "crate_name": "myx",
+    "cmd": [
+      "myx"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "bin_name": "myx"
+  },
+  "sigye": {
+    "approved": true,
+    "author": "am2rican5",
+    "bin_name": "sigye",
+    "category": "Dashboard",
+    "cmd": [
+      "sigye"
+    ],
+    "crate_name": "sigye",
+    "default_window_mode": "embedded",
+    "description": "A feature-rich terminal clock with ASCII art fonts, animated backgrounds, and productivity timers. 6 display modes including Clock, Pomodoro, Timer, Stopwatch, World Clock, and Countdown. 40+ bundled FIGlet fonts, 18 color themes, 21 animated backgrounds, and desktop notifications.",
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "label": "Sigye — Terminal Clock",
+    "license": "MIT",
+    "pre_installed": true,
+    "repository": "https://github.com/am2rican5/sigye",
+    "supports_embedded": true,
+    "version": "0.6.0"
+  },
+  "spotatui": {
+    "label": "spotatui",
+    "description": "Spotify client with native streaming, synced lyrics, and audio visualization. A direct fork of spotify-tui with continued development and new features.",
+    "category": "Music and Media",
+    "author": "LargeModGames",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/LargeModGames/spotatui",
+    "crate_name": "spotatui",
+    "cmd": [
+      "spotatui"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "bin_name": "spotatui"
+  },
+  "sxtetris": {
+    "approved": false,
+    "author": "shixinhuang99",
+    "bin_name": "sxtetris",
+    "category": "Games",
+    "cmd": [
+      "sxtetris"
+    ],
+    "crate_name": "sxtetris",
+    "default_window_mode": "embedded",
+    "description": "A terminal Tetris game.",
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "label": "sxtetris",
+    "license": "unknown",
+    "pre_installed": false,
+    "repository": "https://github.com/shixinhuang99/sxtetris",
+    "supports_embedded": false,
+    "version": "unknown"
+  },
+  "tetris-tui": {
+    "approved": false,
+    "author": "Axyl1410",
+    "bin_name": "tetris-tui",
+    "category": "Games",
+    "cmd": [
+      "tetris-tui"
+    ],
+    "crate_name": "tetris-tui",
+    "default_window_mode": "embedded",
+    "description": "Terminal Tetris following the Tetris Guideline.",
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "label": "tetris-tui",
+    "license": "unknown",
+    "pre_installed": false,
+    "repository": "https://github.com/Axyl1410/tetris-tui",
+    "supports_embedded": true,
+    "version": "unknown"
+  },
+  "tuitar": {
+    "label": "Tuitar",
+    "description": "A portable guitar training tool.",
+    "category": "Music and Media",
+    "author": "orhun",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/orhun/tuitar",
+    "crate_name": "tuitar",
+    "cmd": [
+      "tuitar"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "bin_name": "tuitar"
+  },
+  "wordl-rs": {
+    "approved": false,
+    "author": "palerdot",
+    "bin_name": "wordl",
+    "category": "Games",
+    "cmd": [
+      "wordl"
+    ],
+    "crate_name": "wordl-rs",
+    "default_window_mode": "embedded",
+    "description": "Terminal-based Wordle game. Web like experience with keyboard hints and guess reveal animations.",
+    "install_methods": [
+      "git",
+      "local"
+    ],
+    "label": "wordl",
+    "license": "unknown",
+    "pre_installed": false,
+    "repository": "https://github.com/palerdot/wordl-rs",
+    "supports_embedded": true,
+    "version": "unknown"
+  }
+}

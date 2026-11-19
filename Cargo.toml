@@ -19,6 +19,7 @@ ratatui-explorer = { version = "0.2.1", features = ["crossterm"] }
 ureq = "2"
 ratatui-splash-screen = { version = "0.1.5", default-features = false, features = ["png"] }
 image = { version = "0.25", default-features = false, features = ["png"] }
+tui-markdown = { version = "0.3", default-features = false }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

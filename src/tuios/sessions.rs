@@ -14,7 +14,9 @@ use crate::app_store::actions;
 use crate::applications::character_set::{AppAction, CharacterSetApp};
 use crate::applications::file_explorer::{FileExplorerAction, FileExplorerApp};
 use crate::applications::notes::{NotesApp, NotesKeyResult};
+use crate::applications::markdown_viewer::{MarkdownViewerAction, MarkdownViewerApp};
 use crate::applications::text_editor::{TextEditorAction, TextEditorApp};
+use crate::applications::widget_gallery::{WidgetGalleryAction, WidgetGalleryApp};
 use crate::dashboards::installed_runner::InstalledDashboard;
 use crate::task_manager::{config, metrics};
 use crate::utilities::logging;
@@ -34,7 +36,9 @@ pub enum InternalApp {
     CharacterSet(CharacterSetApp),
     FileExplorer(FileExplorerApp),
     Notes(NotesApp),
+    MarkdownViewer(MarkdownViewerApp),
     TextEditor(TextEditorApp),
+    WidgetGallery(WidgetGalleryApp),
 }
 
 impl InternalApp {
@@ -56,6 +60,16 @@ impl InternalApp {
                 app.start();
                 InternalApp::Notes(app)
             }
+            "MarkdownViewer" => {
+                let mut app = MarkdownViewerApp::new();
+                app.start();
+                InternalApp::MarkdownViewer(app)
+            }
+            "WidgetGallery" => {
+                let mut app = WidgetGalleryApp::new();
+                app.start();
+                InternalApp::WidgetGallery(app)
+            }
             _ => {
                 let mut app = CharacterSetApp::new();
                 app.start();
@@ -69,7 +83,9 @@ impl InternalApp {
             InternalApp::CharacterSet(app) => app.render(frame, area, border_style),
             InternalApp::FileExplorer(app) => app.render(frame, area, border_style),
             InternalApp::Notes(app) => app.render(frame, area, border_style),
+            InternalApp::MarkdownViewer(app) => app.render(frame, area, border_style),
             InternalApp::TextEditor(app) => app.render(frame, area, border_style),
+            InternalApp::WidgetGallery(app) => app.render(frame, area, border_style),
         }
     }
 
@@ -81,7 +97,9 @@ impl InternalApp {
                 matches!(app.handle_key(code), Some(FileExplorerAction::Back))
             }
             InternalApp::Notes(app) => app.handle_key(code) == NotesKeyResult::Close,
+            InternalApp::MarkdownViewer(app) => matches!(app.handle_key(code), Some(MarkdownViewerAction::Back)),
             InternalApp::TextEditor(app) => matches!(app.handle_key(code), Some(TextEditorAction::Back)),
+            InternalApp::WidgetGallery(app) => matches!(app.handle_key(code), Some(WidgetGalleryAction::Back)),
         }
     }
 
@@ -90,7 +108,9 @@ impl InternalApp {
             InternalApp::CharacterSet(app) => app.stop(),
             InternalApp::FileExplorer(app) => app.stop(),
             InternalApp::Notes(app) => app.stop(),
+            InternalApp::MarkdownViewer(app) => app.stop(),
             InternalApp::TextEditor(app) => app.stop(),
+            InternalApp::WidgetGallery(app) => app.stop(),
         }
     }
 

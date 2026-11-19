@@ -1,0 +1,1624 @@
+[2026-07-10 09:58:14] [INFO] TUIX started
+[2026-07-10 09:58:18] [INFO] Navigated to dashboard: Dashboard-2
+[2026-07-10 09:58:34] [INFO] Opened page: logs
+[2026-07-10 09:58:37] [INFO] Opened page: touchscreen
+[2026-07-10 09:58:39] [INFO] Opened page: logs
+[2026-07-10 09:58:41] [INFO] Opened page: settings
+[2026-07-10 09:58:43] [INFO] Opened page: logs
+[2026-07-10 09:58:50] [INFO] Opened app: TextEditor
+[2026-07-10 09:58:55] [INFO] System restart requested
+[2026-07-10 09:58:55] [INFO] TUIX started
+[2026-07-10 09:58:57] [INFO] Opened page: logs
+[2026-07-10 09:59:02] [INFO] Opened app: TextEditor
+[2026-07-10 10:02:15] [INFO] TUIX started
+[2026-07-10 10:02:24] [INFO] TUIX started
+[2026-07-10 10:02:26] [INFO] Opened page: settings
+[2026-07-10 10:02:28] [INFO] Opened app: TextEditor
+[2026-07-10 10:14:31] [INFO] TUIX started
+[2026-07-10 10:14:35] [INFO] Navigated to dashboard: sigye
+[2026-07-10 10:21:59] [INFO] TUIX started
+[2026-07-10 10:41:19] [INFO] TUIX started
+[2026-07-10 10:41:21] [INFO] Opened app: chess-tui
+[2026-07-10 16:57:28] [INFO] TUIX started
+[2026-07-10 16:57:29] [INFO] Navigated to dashboard: sigye
+[2026-07-10 16:57:37] [INFO] TUIX started
+[2026-07-10 16:57:39] [INFO] Navigated to dashboard: sigye
+[2026-07-10 16:57:47] [INFO] TUIX started
+[2026-07-10 16:57:49] [INFO] Navigated to dashboard: sigye
+[2026-07-10 16:59:06] [INFO] TUIX started
+[2026-07-10 16:59:07] [INFO] Navigated to dashboard: sigye
+[2026-07-10 16:59:57] [INFO] TUIX started
+[2026-07-10 17:02:27] [INFO] TUIX started
+[2026-07-10 17:02:30] [INFO] Navigated to dashboard: sigye
+[2026-07-10 17:05:25] [INFO] TUIX started
+[2026-07-10 17:05:26] [INFO] Navigated to dashboard: sigye
+[2026-07-10 17:08:53] [INFO] TUIX started
+[2026-07-10 17:08:54] [INFO] Navigated to dashboard: sigye
+[2026-07-10 17:09:00] [INFO] TUIX started
+[2026-07-10 17:09:02] [INFO] Navigated to dashboard: sigye
+[2026-07-10 17:14:44] [INFO] TUIX started
+[2026-07-10 17:14:46] [INFO] Navigated to dashboard: sigye
+[2026-07-12 22:59:04] [INFO] TUIX started
+[2026-07-12 22:59:08] [INFO] Opened app: chess-tui
+[2026-07-12 22:59:24] [INFO] TUIX started
+[2026-07-12 22:59:28] [INFO] Opened page: logs
+[2026-07-12 23:04:09] [INFO] TUIX started
+[2026-07-12 23:04:12] [INFO] Opened page: logs
+[2026-07-12 23:05:51] [INFO] Opened page: touchscreen
+[2026-07-12 23:05:53] [INFO] Opened page: logs
+[2026-07-12 23:11:44] [INFO] TUIX started
+[2026-07-12 23:11:47] [INFO] Opened page: logs
+[2026-07-12 23:12:05] [INFO] TUIX started
+[2026-07-12 23:12:08] [INFO] Opened page: logs
+[2026-07-13 15:17:50] [SCRIPT] setup.bat started 
+[2026-07-13 15:17:50] [SCRIPT] install.bat started 
+[2026-07-13 15:17:50] [SCRIPT] install.bat completed 
+[2026-07-13 15:17:51] [SCRIPT] clone.bat started 
+[2026-07-13 15:17:51] [SCRIPT] clone.bat completed 
+[2026-07-13 15:17:51] [SCRIPT] build.bat started 
+[2026-07-13 15:17:52] [SCRIPT] build.bat completed 
+[2026-07-13 15:17:52] [SCRIPT] setup.bat completed 
+[2026-07-13 15:49:18] [INFO] TUIX started
+[2026-07-13 15:59:28] [INFO] TUIX started
+[2026-07-13 15:59:32] [INFO] Opened app: FileExplorer
+[2026-07-13 17:57:56] [INFO] TUIX started
+[2026-07-13 18:01:41] [SCRIPT] setup.bat started 
+[2026-07-13 18:01:41] [SCRIPT] install.bat started 
+[2026-07-13 18:01:41] [SCRIPT] install.bat completed 
+[2026-07-13 18:01:41] [SCRIPT] clone.bat started 
+[2026-07-13 18:01:42] [SCRIPT] clone.bat completed 
+[2026-07-13 18:01:42] [SCRIPT] build.bat started 
+[2026-07-13 18:01:42] [SCRIPT] build.bat completed 
+[2026-07-13 18:01:42] [SCRIPT] setup.bat completed 
+[2026-07-13 18:01:48] [SCRIPT] clone.bat started 
+[2026-07-13 18:01:48] [SCRIPT] clone.bat completed 
+[2026-07-13 18:02:25] [SCRIPT] setup.bat started 
+[2026-07-13 18:02:26] [SCRIPT] install.bat started 
+[2026-07-13 18:02:26] [SCRIPT] install.bat completed 
+[2026-07-13 18:02:26] [SCRIPT] clone.bat started 
+[2026-07-13 18:02:26] [SCRIPT] clone.bat completed 
+[2026-07-13 18:02:27] [SCRIPT] build.bat started 
+[2026-07-13 18:02:27] [SCRIPT] build.bat completed 
+[2026-07-13 18:02:27] [SCRIPT] setup.bat completed 
+[2026-07-13 18:02:29] [SCRIPT] clone.bat started 
+[2026-07-13 18:02:30] [SCRIPT] clone.bat completed 
+[2026-07-13 18:03:01] [SCRIPT] clone.bat started 
+[2026-07-13 18:03:02] [SCRIPT] clone.bat completed 
+[2026-07-13 18:03:04] [SCRIPT] setup.bat started 
+[2026-07-13 18:03:04] [SCRIPT] install.bat started 
+[2026-07-13 18:03:04] [SCRIPT] install.bat completed 
+[2026-07-13 18:03:05] [SCRIPT] clone.bat started 
+[2026-07-13 18:03:05] [SCRIPT] clone.bat completed 
+[2026-07-13 18:03:05] [SCRIPT] build.bat started 
+[2026-07-13 18:03:05] [SCRIPT] build.bat completed 
+[2026-07-13 18:03:06] [SCRIPT] setup.bat completed 
+[2026-07-13 18:03:36] [SCRIPT] setup.bat started 
+[2026-07-13 18:03:36] [SCRIPT] install.bat started 
+[2026-07-13 18:03:37] [SCRIPT] install.bat completed 
+[2026-07-13 18:03:37] [SCRIPT] clone.bat started 
+[2026-07-13 18:03:37] [SCRIPT] clone.bat completed 
+[2026-07-13 18:03:37] [SCRIPT] build.bat started 
+[2026-07-13 18:03:38] [SCRIPT] build.bat completed 
+[2026-07-13 18:03:38] [SCRIPT] setup.bat completed 
+[2026-07-13 18:03:50] [INFO] TUIX started
+[2026-07-13 18:03:53] [INFO] Opened app: CharacterSet
+[2026-07-13 18:03:55] [INFO] Navigated to dashboard: Dashboard-2
+[2026-07-13 18:04:17] [INFO] TUIX started
+[2026-07-13 18:04:20] [INFO] TUIX started
+[2026-07-13 18:04:22] [INFO] Navigated to dashboard: sigye
+[2026-07-13 18:18:58] [INFO] TUIX started
+[2026-07-13 18:19:01] [INFO] Opened app: Crossword
+[2026-07-13 18:19:01] [ERROR] Local binary not found for app Crossword: downloads/applications/Crossword/target/release/crosstui
+[2026-07-13 18:19:01] [INFO] Launched installed app Crossword via PTY: ["downloads/applications/Crossword/crossword/puzzles/version-1.2-puzzle.puz"]
+[2026-07-13 18:19:08] [INFO] Opened page: taskmanager
+[2026-07-13 18:19:10] [INFO] Opened app: TextEditor
+[2026-07-13 18:19:11] [INFO] Opened app: Crossword
+[2026-07-13 18:19:11] [ERROR] Local binary not found for app Crossword: downloads/applications/Crossword/target/release/crosstui
+[2026-07-13 18:19:11] [INFO] Launched installed app Crossword via PTY: ["downloads/applications/Crossword/crossword/puzzles/version-1.2-puzzle.puz"]
+[2026-07-13 18:19:28] [SCRIPT] setup.bat started 
+[2026-07-13 18:19:28] [SCRIPT] install.bat started 
+[2026-07-13 18:19:29] [SCRIPT] install.bat completed 
+[2026-07-13 18:19:29] [SCRIPT] clone.bat started 
+[2026-07-13 18:19:29] [SCRIPT] clone.bat completed 
+[2026-07-13 18:19:29] [SCRIPT] build.bat started 
+[2026-07-13 18:19:30] [SCRIPT] build.bat completed 
+[2026-07-13 18:19:30] [SCRIPT] setup.bat completed 
+[2026-07-13 18:19:35] [SCRIPT] clone.bat started 
+[2026-07-13 18:19:36] [SCRIPT] clone.bat completed 
+[2026-07-25 16:44:40] [INFO] TUIX started
+[2026-07-25 16:44:43] [INFO] Opened page: settings
+[2026-07-25 16:45:09] [SETTINGS] Fullscreen enabled
+[2026-07-25 16:45:09] [SETTINGS] Fullscreen disabled
+[2026-07-25 16:45:15] [SETTINGS] TUIX Colour changed to Green
+[2026-07-25 16:45:16] [SETTINGS] TUIX Colour changed to Yellow
+[2026-07-25 16:45:16] [SETTINGS] TUIX Colour changed to Blue
+[2026-07-25 16:45:17] [SETTINGS] TUIX Colour changed to Magenta
+[2026-07-25 16:45:17] [SETTINGS] TUIX Colour changed to Red
+[2026-07-25 16:45:17] [SETTINGS] TUIX Colour changed to White
+[2026-07-25 16:45:18] [SETTINGS] TUIX Colour changed to Light Blue
+[2026-07-25 16:45:18] [SETTINGS] TUIX Colour changed to Orange
+[2026-07-25 16:45:19] [SETTINGS] TUIX Colour changed to Pink
+[2026-07-25 16:45:19] [SETTINGS] TUIX Colour changed to Teal
+[2026-07-25 16:45:20] [SETTINGS] TUIX Colour changed to Purple
+[2026-07-25 16:45:20] [SETTINGS] TUIX Colour changed to Grey
+[2026-07-25 16:45:21] [SETTINGS] TUIX Colour changed to Rainbow
+[2026-07-25 16:45:25] [SETTINGS] Clock enabled
+[2026-07-25 16:45:27] [SETTINGS] Clock seconds shown
+[2026-07-25 16:45:28] [SETTINGS] Clock format set to 12h
+[2026-07-25 16:45:29] [SETTINGS] Clock format set to 24h
+[2026-07-25 16:45:34] [SETTINGS] Default dashboard changed to Dashboard-2
+[2026-07-25 16:45:35] [SETTINGS] Default dashboard changed to Dashboard-1
+[2026-07-25 16:45:35] [SETTINGS] Default dashboard changed to Dashboard-2
+[2026-07-25 16:45:35] [SETTINGS] Default dashboard changed to sigye
+[2026-07-25 16:45:36] [SETTINGS] Default dashboard changed to Dashboard-2
+[2026-07-25 16:45:36] [SETTINGS] Default dashboard changed to sigye
+[2026-07-25 16:45:37] [SETTINGS] Default dashboard changed to Dashboard-2
+[2026-07-25 16:45:37] [SETTINGS] Default dashboard changed to Dashboard-1
+[2026-07-25 16:45:37] [SETTINGS] Default dashboard changed to sigye
+[2026-07-25 16:45:40] [SETTINGS] Border style changed to Single
+[2026-07-25 16:45:40] [SETTINGS] Border style changed to Rounded
+[2026-07-25 16:45:42] [SETTINGS] Border style changed to Single
+[2026-07-25 16:45:42] [SETTINGS] Border style changed to Double
+[2026-07-25 16:45:43] [SETTINGS] Border style changed to None
+[2026-07-25 16:45:44] [SETTINGS] Border style changed to Rounded
+[2026-07-25 16:45:45] [SETTINGS] Border style changed to None
+[2026-07-25 16:45:45] [SETTINGS] Border style changed to Rounded
+[2026-07-25 16:45:45] [SETTINGS] Border style changed to Single
+[2026-07-25 16:45:46] [SETTINGS] Border style changed to Rounded
+[2026-07-25 16:45:46] [SETTINGS] Border style changed to None
+[2026-07-25 16:45:46] [SETTINGS] Border style changed to Rounded
+[2026-07-25 16:45:46] [SETTINGS] Border style changed to Single
+[2026-07-25 16:45:47] [SETTINGS] Border style changed to Rounded
+[2026-07-25 16:45:50] [SETTINGS] Status bar enabled
+[2026-07-25 16:45:52] [SETTINGS] Status bar disabled
+[2026-07-25 16:45:59] [SETTINGS] Hotkey 1 set to dashboard:Dashboard-2
+[2026-07-25 16:46:16] [SETTINGS] On-Screen Keyboard disabled
+[2026-07-25 16:46:18] [INFO] Opened app: CharacterSet
+[2026-07-25 16:46:20] [INFO] Opened app: TextEditor
+[2026-07-25 16:46:32] [INFO] Navigated to dashboard: sigye
+[2026-07-25 16:46:36] [INFO] System restart requested
+[2026-07-25 16:46:36] [INFO] TUIX started
+[2026-07-25 16:46:38] [INFO] Opened page: settings
+[2026-07-25 16:46:49] [SETTINGS] Settings restored to defaults
+[2026-07-25 16:46:52] [SETTINGS] Settings restored to defaults
+[2026-07-25 16:47:33] [INFO] TUIX started
+[2026-07-25 16:47:40] [INFO] Opened page: settings
+[2026-07-25 16:47:51] [SETTINGS] TUIX Colour changed to Green
+[2026-07-25 16:47:51] [SETTINGS] TUIX Colour changed to Cyan
+[2026-07-25 16:47:55] [SETTINGS] Clock enabled
+[2026-07-25 16:48:00] [SETTINGS] Settings restored to defaults
+[2026-08-01 16:12:07] [INFO] TUIX started
+[2026-08-01 16:12:20] [INFO] Opened page: taskmanager
+[2026-08-01 16:12:21] [INFO] Opened page: settings
+[2026-08-01 16:13:16] [INFO] TUIX started
+[2026-08-01 16:13:19] [INFO] Opened page: settings
+[2026-08-01 16:13:26] [INFO] Opened app: FileExplorer
+[2026-08-01 16:13:29] [INFO] Opened page: settings
+[2026-08-01 16:13:31] [INFO] Opened app: FileExplorer
+[2026-08-01 16:13:36] [INFO] Opened page: settings
+[2026-08-01 16:13:37] [INFO] Opened app: FileExplorer
+[2026-08-01 16:15:37] [INFO] TUIX started
+[2026-08-01 16:15:38] [INFO] Opened page: settings
+[2026-08-01 16:15:46] [SETTINGS] TUIX Colour changed to Green
+[2026-08-01 16:15:46] [SETTINGS] TUIX Colour changed to Yellow
+[2026-08-01 16:15:47] [SETTINGS] TUIX Colour changed to Blue
+[2026-08-01 16:15:47] [SETTINGS] TUIX Colour changed to Yellow
+[2026-08-01 16:15:47] [SETTINGS] TUIX Colour changed to Green
+[2026-08-01 16:15:47] [SETTINGS] TUIX Colour changed to Cyan
+[2026-08-01 16:15:48] [SETTINGS] TUIX Colour changed to Rainbow
+[2026-08-01 16:15:48] [SETTINGS] TUIX Colour changed to Grey
+[2026-08-01 16:15:48] [SETTINGS] TUIX Colour changed to Rainbow
+[2026-08-01 16:16:05] [INFO] TUIX started
+[2026-08-01 16:16:10] [INFO] Opened page: settings
+[2026-08-01 16:29:18] [INFO] TUIX started
+[2026-08-01 16:29:30] [INFO] TUIX started
+[2026-08-01 16:29:33] [INFO] TUIX started
+[2026-08-01 16:30:14] [INFO] TUIX started
+[2026-08-01 16:30:18] [INFO] TUIX started
+[2026-08-01 16:31:05] [INFO] TUIX started
+[2026-08-01 16:31:09] [INFO] TUIX started
+[2026-08-01 16:31:27] [INFO] TUIX started
+[2026-08-01 16:31:31] [INFO] TUIX started
+[2026-08-01 16:31:44] [INFO] Opened page: settings
+[2026-08-01 16:31:50] [SETTINGS] Boot Animation disabled
+[2026-08-01 16:31:52] [INFO] TUIX started
+[2026-08-01 16:31:54] [INFO] TUIX started
+[2026-08-01 16:32:24] [INFO] TUIX started
+[2026-08-01 16:32:26] [INFO] Opened page: settings
+[2026-08-01 16:32:31] [SETTINGS] Boot Animation enabled
+[2026-08-01 16:32:35] [INFO] TUIX started
+[2026-08-01 16:36:12] [INFO] Opened page: settings
+[2026-08-01 16:44:40] [INFO] TUIX started
+[2026-08-01 16:44:45] [INFO] TUIX started
+[2026-08-01 16:44:50] [INFO] TUIX started
+[2026-08-01 16:44:55] [INFO] TUIX started
+[2026-08-01 16:44:59] [INFO] Opened page: settings
+[2026-08-01 16:45:07] [SETTINGS] Boot Animation Colour changed to Light Blue
+[2026-08-01 16:45:07] [SETTINGS] Boot Animation Colour changed to Orange
+[2026-08-01 16:45:07] [SETTINGS] Boot Animation Colour changed to Pink
+[2026-08-01 16:45:08] [SETTINGS] Boot Animation Colour changed to Teal
+[2026-08-01 16:45:08] [SETTINGS] Boot Animation Colour changed to Purple
+[2026-08-01 16:45:09] [SETTINGS] Boot Animation Colour changed to Grey
+[2026-08-01 16:45:09] [SETTINGS] Boot Animation Colour changed to Rainbow
+[2026-08-01 16:45:10] [SETTINGS] Boot Animation Colour changed to Cyan
+[2026-08-01 16:45:10] [SETTINGS] Boot Animation Colour changed to Rainbow
+[2026-08-01 16:45:16] [INFO] TUIX started
+[2026-08-01 16:45:20] [INFO] TUIX started
+[2026-08-01 16:45:23] [INFO] TUIX started
+[2026-08-01 16:45:26] [INFO] TUIX started
+[2026-08-01 16:45:29] [INFO] TUIX started
+[2026-08-01 16:45:58] [INFO] TUIX started
+[2026-08-01 16:45:59] [INFO] Opened page: settings
+[2026-08-01 16:46:10] [INFO] TUIX started
+[2026-08-19 23:36:05] [INFO] TUIX started
+[2026-08-19 23:36:08] [INFO] Navigated to dashboard: sigye
+[2026-08-19 23:36:13] [INFO] TUIX started
+[2026-08-19 23:36:58] [INFO] TUIX started
+[2026-08-19 23:57:08] [INFO] Opened page: settings
+[2026-08-20 00:03:55] [INFO] Navigated to dashboard: sigye
+[2026-08-20 00:04:01] [INFO] Opened page: settings
+[2026-08-20 00:10:30] [INFO] TUIX started
+[2026-08-20 00:10:37] [INFO] Opened page: logs
+[2026-08-20 00:10:42] [INFO] Opened app: FileExplorer
+[2026-08-20 00:10:49] [INFO] System shutdown requested
+[2026-08-20 00:14:48] [INFO] TUIX started
+[2026-08-20 00:22:37] [INFO] TUIX started
+[2026-08-20 00:22:40] [INFO] Opened page: settings
+[2026-08-20 00:23:09] [SETTINGS] Status bar enabled
+[2026-08-20 00:26:21] [SETTINGS] Status bar disabled
+[2026-08-21 17:14:51] [INFO] TUIX started
+[2026-08-21 17:15:01] [INFO] Opened page: appstore
+[2026-08-21 17:15:18] [INFO] Opened page: appstore
+[2026-08-21 17:15:22] [INFO] Opened page: appstore
+[2026-08-21 17:16:10] [INFO] App Store: uninstalling globally: chess-tui
+[2026-08-21 17:16:10] [INFO] App Store: chess-tui uninstalled globally
+[2026-08-21 17:16:10] [INFO] App Store: removed chess-tui from apps.json
+[2026-08-21 17:16:40] [INFO] Opened page: appstore
+[2026-08-21 17:17:50] [INFO] App Store: cloning https://github.com/thomas-mauran/chess-tui to downloads/applications/chess-tui
+[2026-08-21 17:17:58] [INFO] App Store: building chess-tui
+[2026-08-21 17:19:30] [ERROR] App Store: build failed for chess-tui
+[2026-08-21 17:19:38] [INFO] TUIX started
+[2026-08-21 17:19:45] [INFO] Opened page: appstore
+[2026-08-21 17:19:56] [INFO] Opened page: appstore
+[2026-08-21 17:19:59] [INFO] TUIX started
+[2026-08-21 17:20:01] [INFO] Opened page: appstore
+[2026-08-21 17:21:08] [INFO] App Store: opening URL: https://github.com/thomas-mauran/chess-tui
+[2026-08-21 17:21:13] [INFO] App Store: installing globally: chess-tui
+[2026-08-21 17:24:29] [INFO] App Store: chess-tui installed globally
+[2026-08-21 17:24:29] [INFO] App Store: added chess-tui to apps.json
+[2026-08-21 17:25:06] [INFO] TUIX started
+[2026-08-21 17:25:09] [INFO] Opened app: chess-tui
+[2026-08-21 17:25:16] [INFO] TUIX started
+[2026-08-21 17:25:25] [INFO] TUIX started
+[2026-08-21 17:25:31] [INFO] Opened page: appstore
+[2026-08-21 17:27:05] [INFO] TUIX started
+[2026-08-21 17:27:07] [INFO] Opened page: settings
+[2026-08-21 17:27:56] [INFO] TUIX started
+[2026-08-21 17:27:57] [INFO] Opened page: settings
+[2026-08-21 17:29:23] [INFO] Opened page: appstore
+[2026-08-21 17:29:31] [INFO] App Store: uninstalling globally: chess-tui
+[2026-08-21 17:29:31] [INFO] App Store: chess-tui uninstalled globally
+[2026-08-21 17:29:31] [INFO] App Store: removed chess-tui from apps.json
+[2026-08-21 17:30:19] [INFO] Opened page: logs
+[2026-08-21 17:31:05] [INFO] Opened page: appstore
+[2026-08-21 17:31:11] [INFO] Opened page: appstore
+[2026-08-21 17:31:37] [INFO] Opened app: CharacterSet
+[2026-08-21 17:31:42] [INFO] Opened page: appstore
+[2026-08-21 17:41:01] [INFO] TUIX started
+[2026-08-21 17:41:04] [INFO] Opened page: appstore
+[2026-08-21 17:41:17] [INFO] Opened page: appstore
+[2026-08-21 17:41:22] [INFO] TUIX started
+[2026-08-21 17:41:24] [INFO] Opened page: appstore
+[2026-08-21 17:41:25] [INFO] App Store: closed
+[2026-08-21 17:41:27] [INFO] Opened page: appstore
+[2026-08-21 17:43:38] [INFO] App Store: added chess-tui to apps.json
+[2026-08-21 17:44:44] [INFO] TUIX started
+[2026-08-21 17:44:45] [INFO] Opened page: appstore
+[2026-08-21 17:45:24] [INFO] TUIX started
+[2026-08-21 17:45:26] [INFO] Opened page: appstore
+[2026-08-21 17:46:07] [INFO] Navigated to dashboard: sigye
+[2026-08-21 17:46:10] [INFO] Opened page: appstore
+[2026-08-21 17:47:30] [INFO] App Store: uninstalling globally: sigye
+[2026-08-21 17:47:30] [ERROR] App Store: failed to uninstall sigye
+[2026-08-21 17:47:30] [INFO] App Store: removed sigye from dashboards.json
+[2026-08-21 17:47:53] [INFO] App Store: opening in OS file manager: C:\Users\Ben Mulligan\.cargo\bin
+[2026-08-21 17:48:11] [INFO] App Store: uninstalling globally: sigye
+[2026-08-21 17:48:11] [ERROR] App Store: failed to uninstall sigye
+[2026-08-21 17:48:11] [INFO] App Store: removed sigye from dashboards.json
+[2026-08-21 17:48:34] [INFO] App Store: removing local install: downloads/applications/chess-tui
+[2026-08-21 17:48:35] [INFO] App Store: chess-tui removed locally
+[2026-08-21 17:48:35] [INFO] App Store: removed chess-tui from apps.json
+[2026-08-21 17:50:31] [INFO] App Store: added chess-tui to apps.json
+[2026-08-21 17:50:54] [INFO] App Store: uninstalling globally: chess-tui
+[2026-08-21 17:50:54] [INFO] App Store: chess-tui uninstalled globally
+[2026-08-21 17:50:54] [INFO] App Store: removed chess-tui from apps.json
+[2026-08-21 17:51:19] [INFO] App Store: uninstalling globally: sigye
+[2026-08-21 17:51:19] [ERROR] App Store: failed to uninstall sigye
+[2026-08-21 17:51:19] [INFO] App Store: removed sigye from dashboards.json
+[2026-08-21 17:53:51] [INFO] App Store: added chess-tui to apps.json
+[2026-08-21 18:03:27] [INFO] TUIX started
+[2026-08-21 18:03:40] [INFO] TUIX started
+[2026-08-21 18:03:53] [INFO] Opened page: appstore
+[2026-08-21 18:04:29] [INFO] App Store: uninstalling globally: chess-tui
+[2026-08-21 18:04:29] [INFO] App Store: chess-tui uninstalled globally
+[2026-08-21 18:04:29] [INFO] App Store: removed chess-tui from apps.json
+[2026-08-21 18:04:45] [INFO] Opened page: settings
+[2026-08-21 18:06:00] [INFO] Opened page: settings
+[2026-08-21 18:06:07] [INFO] Opened page: appstore
+[2026-08-21 18:06:24] [INFO] App Store: added chess-tui to apps.json
+[2026-08-21 18:07:40] [INFO] TUIX started
+[2026-08-21 18:07:52] [INFO] Opened app: chess-tui
+[2026-08-21 18:08:01] [INFO] TUIX started
+[2026-08-21 18:08:13] [INFO] TUIX started
+[2026-08-21 18:08:29] [INFO] Opened page: appstore
+[2026-08-22 16:03:39] [INFO] TUIX started
+[2026-08-22 16:03:42] [INFO] Opened page: settings
+[2026-08-22 16:03:52] [INFO] Opened page: appstore
+[2026-08-22 16:03:56] [INFO] App Store: uninstalling globally: chess-tui
+[2026-08-22 16:03:56] [INFO] App Store: chess-tui uninstalled globally
+[2026-08-22 16:03:56] [INFO] App Store: removed chess-tui from apps.json
+[2026-08-22 16:34:05] [INFO] TUIX started
+[2026-08-22 16:34:09] [INFO] Opened page: settings
+[2026-08-22 16:34:32] [INFO] Opened page: appstore
+[2026-08-22 16:37:10] [INFO] App Store: added chess-tui to apps.json
+[2026-08-22 16:43:36] [INFO] System restart requested
+[2026-08-22 16:43:36] [INFO] TUIX started
+[2026-08-22 16:43:38] [INFO] Navigated to dashboard: Dashboard-2
+[2026-08-22 16:43:41] [INFO] Opened app: chess-tui
+[2026-08-22 16:43:50] [INFO] TUIX started
+[2026-08-22 16:43:52] [INFO] Navigated to dashboard: Dashboard-1
+[2026-08-22 16:43:58] [INFO] TUIX started
+[2026-08-22 16:43:59] [INFO] Opened page: appstore
+[2026-08-22 16:47:04] [INFO] Opened page: appstore
+[2026-08-22 16:47:30] [INFO] App Store: added sigye to dashboards.json
+[2026-08-22 16:48:36] [INFO] Opened page: logs
+[2026-08-22 16:49:20] [INFO] TUIX started
+[2026-08-22 16:49:22] [INFO] Navigated to dashboard: sigye
+[2026-08-22 16:49:22] [ERROR] Local binary not found for dashboard sigye: downloads/dashboards/sigye/target/release/sigye
+[2026-08-22 16:53:39] [INFO] TUIX started
+[2026-08-22 16:53:42] [INFO] Navigated to dashboard: sigye
+[2026-08-22 16:53:42] [ERROR] Local binary not found for dashboard sigye: downloads/dashboards/sigye/target/release/sigye
+[2026-08-22 16:53:46] [INFO] Opened page: logs
+[2026-08-22 16:53:57] [INFO] System restart requested
+[2026-08-22 16:53:57] [INFO] TUIX started
+[2026-08-22 16:53:59] [INFO] Navigated to dashboard: sigye
+[2026-08-22 16:53:59] [ERROR] Local binary not found for dashboard sigye: downloads/dashboards/sigye/target/release/sigye
+[2026-08-22 16:54:19] [INFO] TUIX started
+[2026-08-22 16:54:21] [INFO] Navigated to dashboard: sigye
+[2026-08-22 16:54:21] [ERROR] Local binary not found for dashboard sigye: downloads/dashboards/sigye/target/release/sigye
+[2026-08-22 16:54:23] [INFO] Opened page: appstore
+[2026-08-22 16:54:33] [INFO] TUIX started
+[2026-08-22 16:56:09] [INFO] TUIX started
+[2026-08-22 16:56:12] [INFO] Opened page: appstore
+[2026-08-22 16:56:26] [INFO] App Store: uninstalling globally: chess-tui
+[2026-08-22 16:56:26] [INFO] App Store: chess-tui uninstalled globally
+[2026-08-22 16:56:26] [INFO] App Store: removed chess-tui from apps.json
+[2026-08-22 16:56:49] [INFO] Navigated to dashboard: Dashboard-1
+[2026-08-22 16:56:51] [INFO] Navigated to dashboard: sigye
+[2026-08-22 16:56:51] [ERROR] Local binary not found for dashboard sigye: downloads/dashboards/sigye/target/release/sigye
+[2026-08-22 16:56:52] [INFO] Opened page: appstore
+[2026-08-22 16:59:38] [INFO] App Store: added chess-tui to apps.json
+[2026-08-22 16:59:46] [INFO] Opened page: appstore
+[2026-08-22 17:00:16] [INFO] TUIX started
+[2026-08-22 17:00:21] [INFO] Navigated to dashboard: sigye
+[2026-08-22 17:00:21] [ERROR] Local binary not found for dashboard sigye: downloads/dashboards/sigye/target/release/sigye
+[2026-08-22 17:00:23] [INFO] Opened page: appstore
+[2026-08-22 17:07:34] [INFO] TUIX started
+[2026-08-22 17:07:37] [INFO] Opened page: appstore
+[2026-08-22 17:07:43] [INFO] Navigated to dashboard: sigye
+[2026-08-22 17:07:43] [ERROR] Local binary not found for dashboard sigye: downloads/dashboards/sigye/target/release/sigye
+[2026-08-22 17:07:45] [INFO] Opened page: appstore
+[2026-08-22 17:08:11] [INFO] App Store: uninstalling globally: sigye
+[2026-08-22 17:08:11] [INFO] App Store: sigye uninstalled globally
+[2026-08-22 17:08:11] [INFO] App Store: removed sigye from dashboards.json
+[2026-08-22 17:09:13] [INFO] App Store: added sigye to dashboards.json
+[2026-08-22 17:09:35] [INFO] Navigated to dashboard: sigye
+[2026-08-22 17:09:37] [INFO] Opened page: appstore
+[2026-08-22 17:09:53] [INFO] App Store: uninstalling globally: chess-tui
+[2026-08-22 17:09:53] [INFO] App Store: chess-tui uninstalled globally
+[2026-08-22 17:09:53] [INFO] App Store: removed chess-tui from apps.json
+[2026-08-22 17:10:41] [INFO] Opened page: settings
+[2026-08-22 17:11:09] [INFO] Opened page: appstore
+[2026-08-22 17:12:23] [INFO] App Store: added sigye to dashboards.json
+[2026-08-22 17:14:06] [INFO] TUIX started
+[2026-08-22 17:14:07] [INFO] Navigated to dashboard: sigye
+[2026-08-22 17:14:07] [ERROR] Local binary not found for dashboard sigye: downloads/dashboards/sigye/target/release/sigye
+[2026-08-22 17:14:10] [INFO] TUIX started
+[2026-08-22 17:14:13] [INFO] Navigated to dashboard: sigye
+[2026-08-22 17:14:13] [ERROR] Local binary not found for dashboard sigye: downloads/dashboards/sigye/target/release/sigye
+[2026-08-22 17:14:15] [INFO] Navigated to dashboard: Dashboard-1
+[2026-08-22 17:14:20] [INFO] Opened page: appstore
+[2026-08-22 17:16:39] [INFO] App Store: added chess-tui to apps.json
+[2026-08-22 17:16:47] [INFO] Opened app: chess-tui
+[2026-08-22 17:16:53] [INFO] TUIX started
+[2026-08-22 17:16:59] [INFO] Opened page: settings
+[2026-08-22 17:17:39] [INFO] TUIX started
+[2026-08-22 17:17:44] [INFO] TUIX started
+[2026-08-22 17:18:16] [INFO] Opened page: appstore
+[2026-08-22 17:20:42] [INFO] App Store: added chess-tui to apps.json
+[2026-08-22 17:20:56] [INFO] Opened page: appstore
+[2026-08-22 17:21:09] [INFO] Opened app: chess-tui
+[2026-08-22 17:24:02] [INFO] TUIX started
+[2026-08-22 17:24:58] [INFO] TUIX started
+[2026-08-22 17:25:02] [INFO] TUIX started
+[2026-08-22 17:25:14] [INFO] Opened page: appstore
+[2026-08-22 17:25:45] [INFO] Opened page: logs
+[2026-08-22 17:26:25] [INFO] TUIX started
+[2026-08-22 17:26:36] [INFO] Opened page: settings
+[2026-08-22 17:27:32] [INFO] TUIX started
+[2026-08-22 17:27:35] [INFO] Opened page: settings
+[2026-08-22 17:28:56] [INFO] TUIX started
+[2026-08-22 17:29:14] [INFO] Opened page: appstore
+[2026-08-22 17:29:28] [INFO] Navigated to dashboard: sigye
+[2026-08-22 17:29:28] [ERROR] Local binary not found for dashboard sigye: downloads/dashboards/sigye/target/release/sigye
+[2026-08-22 17:29:34] [INFO] Opened page: logs
+[2026-08-22 17:29:41] [INFO] Opened page: appstore
+[2026-08-22 17:29:48] [INFO] App Store: uninstalling globally: sigye
+[2026-08-22 17:29:48] [INFO] App Store: sigye uninstalled globally
+[2026-08-22 17:29:48] [INFO] App Store: removing local install: downloads/dashboards/sigye
+[2026-08-22 17:29:49] [INFO] App Store: sigye removed locally
+[2026-08-22 17:29:49] [INFO] App Store: removed sigye from dashboards.json
+[2026-08-22 17:30:48] [INFO] App Store: added sigye to dashboards.json
+[2026-08-22 17:31:29] [INFO] Navigated to dashboard: sigye
+[2026-08-22 17:31:32] [INFO] Opened page: appstore
+[2026-08-22 17:32:48] [INFO] App Store: added sigye to dashboards.json
+[2026-08-22 17:32:50] [INFO] App Store: set run source for sigye to local
+[2026-08-22 17:33:06] [INFO] Navigated to dashboard: sigye
+[2026-08-22 17:33:06] [ERROR] Local binary not found for dashboard sigye: downloads/dashboards/sigye/target/release/sigye
+[2026-08-22 17:33:08] [INFO] TUIX started
+[2026-08-22 17:33:11] [INFO] Opened page: appstore
+[2026-08-22 17:33:17] [INFO] App Store: set run source for sigye to global
+[2026-08-22 17:33:22] [INFO] Navigated to dashboard: sigye
+[2026-08-22 17:33:22] [ERROR] Local binary not found for dashboard sigye: downloads/dashboards/sigye/target/release/sigye
+[2026-08-22 17:33:25] [INFO] TUIX started
+[2026-08-22 17:33:27] [INFO] Navigated to dashboard: sigye
+[2026-08-22 17:33:27] [ERROR] Local binary not found for dashboard sigye: downloads/dashboards/sigye/target/release/sigye
+[2026-08-22 17:33:31] [INFO] Opened page: logs
+[2026-08-22 17:34:11] [INFO] Opened page: appstore
+[2026-08-22 17:36:58] [INFO] App Store: removing local install: downloads/dashboards/sigye
+[2026-08-22 17:36:59] [INFO] App Store: sigye removed locally
+[2026-08-22 17:36:59] [INFO] App Store: removed sigye from dashboards.json
+[2026-08-22 17:37:03] [INFO] Navigated to dashboard: Dashboard-1
+[2026-08-22 17:37:07] [INFO] Opened page: appstore
+[2026-08-22 17:39:30] [INFO] TUIX started
+[2026-08-22 17:39:33] [INFO] Opened page: appstore
+[2026-08-22 17:39:41] [INFO] App Store: uninstalling globally: sigye
+[2026-08-22 17:39:41] [INFO] App Store: sigye uninstalled globally
+[2026-08-22 17:39:41] [INFO] App Store: removed sigye from dashboards.json
+[2026-08-22 17:40:35] [INFO] App Store: added sigye to dashboards.json
+[2026-08-22 17:40:46] [INFO] Navigated to dashboard: sigye
+[2026-08-22 17:40:50] [INFO] TUIX started
+[2026-08-22 17:40:52] [INFO] Opened page: appstore
+[2026-08-26 18:42:34] [INFO] TUIX started
+[2026-08-26 18:42:41] [INFO] Opened page: appstore
+[2026-08-26 18:42:51] [INFO] App Store: set run source for chess-tui to local
+[2026-08-26 18:42:55] [INFO] App Store: set run source for chess-tui to global
+[2026-08-26 18:43:19] [INFO] Opened app: chess-tui
+[2026-08-26 18:43:23] [INFO] TUIX started
+[2026-08-26 18:44:57] [INFO] TUIX started
+[2026-08-26 18:45:01] [INFO] Opened page: appstore
+[2026-08-26 18:45:29] [INFO] Navigated to dashboard: sigye
+[2026-08-26 18:45:36] [INFO] Opened page: appstore
+[2026-08-26 18:45:41] [INFO] App Store: set window mode for sigye to fullscreen
+[2026-08-26 18:45:55] [INFO] Navigated to dashboard: sigye
+[2026-08-26 18:46:00] [INFO] TUIX started
+[2026-08-26 18:46:09] [INFO] Opened page: appstore
+[2026-08-26 18:46:26] [INFO] Navigated to dashboard: sigye
+[2026-08-26 18:46:34] [INFO] Opened app: chess-tui
+[2026-08-26 18:46:34] [INFO] Launching chess-tui in fullscreen mode
+[2026-08-26 18:46:41] [INFO] Navigated to dashboard: sigye
+[2026-08-26 18:47:33] [INFO] Opened page: appstore
+[2026-08-26 18:47:41] [INFO] App Store: set window mode for sigye to embedded
+[2026-08-26 18:47:41] [INFO] App Store: set window mode for sigye to fullscreen
+[2026-08-26 18:49:59] [INFO] TUIX started
+[2026-08-26 18:50:02] [INFO] Opened page: appstore
+[2026-08-26 18:50:09] [INFO] Navigated to dashboard: sigye
+[2026-08-26 18:50:09] [INFO] Launching dashboard sigye in fullscreen mode
+[2026-08-26 18:50:20] [INFO] Opened page: appstore
+[2026-08-26 18:50:21] [INFO] App Store: set window mode for sigye to embedded
+[2026-08-26 18:50:26] [INFO] Navigated to dashboard: sigye
+[2026-08-26 18:50:26] [INFO] Launching dashboard sigye in embedded TUIX mode
+[2026-08-26 18:50:33] [INFO] Opened app: chess-tui
+[2026-08-26 18:50:33] [INFO] Launching chess-tui in fullscreen mode
+[2026-08-26 19:19:50] [INFO] TUIX started
+[2026-08-26 19:19:56] [INFO] Opened page: appstore
+[2026-08-26 19:20:05] [INFO] App Store: launching wordl in embedded TUIX mode
+[2026-08-26 19:20:09] [INFO] TUIX started
+[2026-08-26 19:20:10] [INFO] Opened page: appstore
+[2026-08-26 19:20:14] [INFO] App Store: set window mode for wordl to fullscreen
+[2026-08-26 19:20:16] [INFO] App Store: launching wordl in embedded TUIX mode
+[2026-08-26 19:20:19] [INFO] TUIX started
+[2026-08-26 19:20:21] [INFO] Opened page: appstore
+[2026-08-26 19:20:24] [INFO] App Store: launching wordl in embedded TUIX mode
+[2026-08-26 19:20:33] [INFO] TUIX started
+[2026-08-26 19:20:42] [INFO] Navigated to dashboard: sigye
+[2026-08-26 19:20:42] [INFO] Launching dashboard sigye in embedded TUIX mode
+[2026-08-26 19:20:45] [INFO] Opened app: chess-tui
+[2026-08-26 19:20:46] [INFO] Launching chess-tui in fullscreen mode
+[2026-08-26 19:20:58] [INFO] Opened page: appstore
+[2026-08-26 19:21:01] [INFO] App Store: uninstalling globally: wordl
+[2026-08-26 19:21:01] [INFO] App Store: wordl uninstalled globally
+[2026-08-26 19:21:01] [INFO] App Store: removed wordl from apps.json
+[2026-08-26 19:21:28] [INFO] App Store: added wordl to apps.json
+[2026-08-26 19:21:40] [INFO] Opened app: wordl
+[2026-08-26 19:21:40] [INFO] Launching wordl in fullscreen mode
+[2026-08-26 19:21:52] [INFO] Opened page: appstore
+[2026-08-26 19:21:56] [INFO] App Store: set window mode for wordl to embedded
+[2026-08-26 19:21:59] [INFO] Opened app: wordl
+[2026-08-26 19:21:59] [INFO] Launching wordl in embedded TUIX mode
+[2026-08-26 19:22:02] [INFO] TUIX started
+[2026-08-26 19:28:52] [INFO] Opened page: appstore
+[2026-08-26 19:36:50] [INFO] TUIX started
+[2026-08-26 19:36:52] [INFO] Opened page: appstore
+[2026-08-26 19:36:58] [INFO] App Store: closed
+[2026-08-26 19:38:15] [INFO] TUIX started
+[2026-08-26 19:38:18] [INFO] Opened page: appstore
+[2026-08-26 19:38:24] [INFO] App Store: removing local install: downloads/applications/chess-tui
+[2026-08-26 19:38:25] [INFO] App Store: chess-tui removed locally
+[2026-08-26 19:38:25] [INFO] App Store: removed chess-tui from apps.json
+[2026-08-26 19:38:32] [INFO] App Store: closed
+[2026-08-26 19:38:36] [INFO] Opened app: wordl
+[2026-08-26 19:38:36] [INFO] Launching wordl in embedded TUIX mode
+[2026-08-26 19:38:40] [INFO] TUIX started
+[2026-08-26 19:38:43] [INFO] Opened page: appstore
+[2026-08-26 19:38:56] [INFO] App Store: set window mode for sigye to fullscreen
+[2026-08-26 19:39:09] [INFO] Opened app: wordl
+[2026-08-26 19:39:10] [INFO] Launching wordl in embedded TUIX mode
+[2026-08-26 19:39:16] [INFO] TUIX started
+[2026-08-26 19:39:19] [INFO] Opened page: appstore
+[2026-08-26 19:39:30] [INFO] App Store: set window mode for wordl to fullscreen
+[2026-08-26 19:39:40] [INFO] Opened app: wordl
+[2026-08-26 19:39:40] [INFO] Launching wordl in fullscreen mode
+[2026-08-26 19:42:38] [INFO] TUIX started
+[2026-08-26 19:42:51] [INFO] Opened page: appstore
+[2026-08-26 19:43:12] [INFO] App Store: set window mode for wordl to embedded
+[2026-08-26 19:43:26] [INFO] Opened app: wordl
+[2026-08-26 19:43:26] [INFO] Launching wordl in embedded TUIX mode
+[2026-08-26 19:55:21] [INFO] TUIX started
+[2026-08-26 19:55:48] [INFO] Opened page: appstore
+[2026-08-26 19:56:16] [INFO] Opened app: wordl
+[2026-08-26 19:56:16] [INFO] Launching wordl in embedded TUIX mode
+[2026-08-26 19:56:31] [INFO] TUIX started
+[2026-08-26 19:56:36] [INFO] Opened page: appstore
+[2026-08-26 19:59:41] [INFO] App Store: added chess-tui to apps.json
+[2026-08-26 20:00:19] [INFO] TUIX started
+[2026-08-26 20:00:22] [INFO] Opened app: chess-tui
+[2026-08-26 20:00:23] [INFO] Launching chess-tui in fullscreen mode
+[2026-08-26 20:00:26] [INFO] Opened page: appstore
+[2026-08-26 20:00:44] [INFO] Opened app: chess-tui
+[2026-08-26 20:00:44] [INFO] Launching chess-tui in fullscreen mode
+[2026-08-26 20:00:48] [INFO] TUIX started
+[2026-08-26 20:00:50] [INFO] Opened app: chess-tui
+[2026-08-26 20:00:50] [INFO] Launching chess-tui in fullscreen mode
+[2026-08-26 20:00:53] [INFO] Opened page: appstore
+[2026-08-26 20:01:32] [INFO] TUIX started
+[2026-08-26 20:01:33] [INFO] Opened page: appstore
+[2026-08-26 20:01:40] [INFO] App Store: uninstalling globally: chess-tui
+[2026-08-26 20:01:40] [INFO] App Store: chess-tui uninstalled globally
+[2026-08-26 20:01:40] [INFO] App Store: removed chess-tui from apps.json
+[2026-08-26 20:03:28] [INFO] App Store: added chess-tui to apps.json
+[2026-08-26 20:03:37] [INFO] Opened app: chess-tui
+[2026-08-26 20:03:37] [INFO] Launching chess-tui in embedded TUIX mode
+[2026-08-26 20:04:09] [INFO] Navigated to dashboard: Dashboard-1
+[2026-08-27 15:26:38] [INFO] TUIX started
+[2026-08-27 15:26:48] [INFO] TUIX started
+[2026-08-27 15:26:52] [INFO] Opened page: appstore
+[2026-08-27 15:28:09] [INFO] App Store: opening URL: https://github.com/thomas-mauran/chess-tui
+[2026-08-27 15:35:04] [INFO] App Store: closed
+[2026-08-27 15:35:26] [INFO] Opened page: appstore
+[2026-08-27 15:36:08] [INFO] TUIX started
+[2026-08-27 15:36:11] [INFO] Opened page: appstore
+[2026-08-27 15:37:46] [INFO] Opened app: chess-tui
+[2026-08-27 15:37:46] [INFO] Launching chess-tui in embedded TUIX mode
+[2026-08-27 15:37:54] [INFO] Opened page: touchscreen
+[2026-08-27 15:37:56] [INFO] Opened app: chess-tui
+[2026-08-27 15:37:57] [INFO] Launching chess-tui in embedded TUIX mode
+[2026-08-27 15:38:03] [INFO] Navigated to dashboard: sigye
+[2026-08-27 15:38:03] [INFO] Launching dashboard sigye in fullscreen mode
+[2026-08-27 15:38:08] [INFO] Opened page: appstore
+[2026-08-27 15:38:15] [INFO] App Store: set window mode for sigye to embedded
+[2026-08-27 15:38:18] [INFO] Navigated to dashboard: sigye
+[2026-08-27 15:38:18] [INFO] Launching dashboard sigye in embedded TUIX mode
+[2026-08-27 15:38:39] [INFO] TUIX started
+[2026-08-27 15:39:07] [INFO] Opened page: settings
+[2026-08-27 16:20:16] [INFO] TUIX started
+[2026-08-27 16:20:18] [INFO] Opened page: appstore
+[2026-08-27 16:22:53] [INFO] App Store: manual refresh triggered
+[2026-08-27 16:23:08] [INFO] Opened page: logs
+[2026-08-27 16:31:56] [INFO] Opened page: appstore
+[2026-08-27 16:33:10] [INFO] TUIX started
+[2026-08-27 16:33:32] [INFO] Opened page: appstore
+[2026-08-27 16:33:35] [INFO] App Store: manual refresh triggered
+[2026-08-27 16:54:16] [INFO] TUIX started
+[2026-08-27 16:54:18] [INFO] Opened page: appstore
+[2026-08-27 17:01:34] [INFO] TUIX started
+[2026-08-27 17:01:37] [INFO] Opening TUIX Git repository
+[2026-08-30 14:51:45] [INFO] TUIX started
+[2026-08-30 14:51:45] [INFO] App Store sync: added wordl (found installed)
+[2026-08-30 14:51:45] [INFO] App Store sync: added chess-tui (found installed)
+[2026-08-30 14:51:45] [INFO] App Store sync: configs updated
+[2026-08-30 14:51:50] [INFO] Opened page: appstore
+[2026-08-30 15:24:12] [INFO] TUIX started
+[2026-08-30 15:24:12] [INFO] App Store sync: added sigye (found installed)
+[2026-08-30 15:24:12] [INFO] App Store sync: added chess-tui (found installed)
+[2026-08-30 15:24:12] [INFO] App Store sync: added wordl (found installed)
+[2026-08-30 15:24:12] [INFO] App Store sync: configs updated
+[2026-08-30 15:24:24] [INFO] Opened page: appstore
+[2026-08-30 15:24:30] [INFO] Awesome Ratatui: fetching README from GitHub...
+[2026-08-30 15:24:30] [INFO] Awesome Ratatui: parsed 400 apps from README
+[2026-08-30 15:24:30] [INFO] Awesome Ratatui browser: opened with 400 apps
+[2026-08-30 15:31:21] [INFO] Awesome Ratatui: added 'Battleship.rs' (Games) to registered apps as 'battleship-rs'
+[2026-08-30 15:31:21] [INFO] Awesome Ratatui: added 'Battleship.rs' to app store
+[2026-08-30 15:31:29] [ERROR] App Store: cargo install failed for battleship-rs
+[2026-08-30 15:31:29] [ERROR] App Store: install failed for battleship-rs
+[2026-08-30 15:31:56] [INFO] Awesome Ratatui: loaded 400 apps from cache (446s old)
+[2026-08-30 15:31:56] [INFO] Awesome Ratatui browser: opened with 400 apps
+[2026-08-30 15:32:05] [INFO] Awesome Ratatui: added 'Snake' (Games) to registered apps as 'ratatui-snake'
+[2026-08-30 15:32:05] [INFO] Awesome Ratatui: added 'Snake' to app store
+[2026-08-30 15:32:08] [INFO] App Store: closed
+[2026-08-30 15:32:10] [INFO] Opened page: appstore
+[2026-08-30 15:32:33] [INFO] App Store: added ratatui-snake to apps.json
+[2026-08-30 15:34:16] [INFO] Opened app: ratatui-snake
+[2026-08-30 15:34:16] [INFO] Launching ratatui-snake in embedded TUIX mode
+[2026-08-30 15:34:38] [INFO] Opened page: appstore
+[2026-08-30 15:34:40] [INFO] Awesome Ratatui: loaded 400 apps from cache (610s old)
+[2026-08-30 15:34:40] [INFO] Awesome Ratatui browser: opened with 400 apps
+[2026-08-30 15:36:37] [INFO] App Store: closed
+[2026-08-30 15:36:39] [INFO] Opened page: appstore
+[2026-08-30 15:37:31] [INFO] Awesome Ratatui: loaded 400 apps from cache (781s old)
+[2026-08-30 15:37:31] [INFO] Awesome Ratatui browser: opened with 400 apps
+[2026-08-30 15:41:31] [INFO] Awesome Ratatui: added 'bbcli' (Productivity and Utilities) to registered apps as 'bbcli'
+[2026-08-30 15:41:31] [INFO] Awesome Ratatui: added 'bbcli' to app store
+[2026-08-30 15:41:34] [INFO] App Store: closed
+[2026-08-30 15:41:36] [INFO] Opened page: appstore
+[2026-08-30 15:42:21] [INFO] Awesome Ratatui: loaded 400 apps from cache (1071s old)
+[2026-08-30 15:42:21] [INFO] Awesome Ratatui browser: opened with 400 apps
+[2026-08-30 15:42:27] [INFO] Awesome Ratatui: loaded 400 apps from cache (1077s old)
+[2026-08-30 15:42:27] [INFO] Awesome Ratatui browser: opened with 400 apps
+[2026-08-30 15:42:40] [INFO] Awesome Ratatui: loaded 400 apps from cache (1090s old)
+[2026-08-30 15:42:40] [INFO] Awesome Ratatui browser: opened with 400 apps
+[2026-08-30 15:43:45] [ERROR] App Store: cargo install failed for bbcli
+[2026-08-30 15:43:45] [ERROR] App Store: install failed for bbcli
+[2026-08-30 15:44:15] [INFO] Awesome Ratatui: loaded 400 apps from cache (1185s old)
+[2026-08-30 15:44:15] [INFO] Awesome Ratatui browser: opened with 400 apps
+[2026-08-30 15:44:54] [INFO] Awesome Ratatui: removed 'battleship-rs' from registered apps
+[2026-08-30 15:44:54] [INFO] Awesome Ratatui: removed 'Battleship.rs' from app store
+[2026-08-30 15:45:57] [INFO] Awesome Ratatui: added 'fitui' (Productivity and Utilities) to registered apps as 'fitui'
+[2026-08-30 15:45:57] [INFO] Awesome Ratatui: added 'fitui' to app store
+[2026-08-30 15:46:01] [INFO] Awesome Ratatui: removed 'fitui' from registered apps
+[2026-08-30 15:46:01] [INFO] Awesome Ratatui: removed 'fitui' from app store
+[2026-08-30 15:48:32] [INFO] Awesome Ratatui: loaded 400 apps from cache (1442s old)
+[2026-08-30 15:48:32] [INFO] Awesome Ratatui browser: opened with 400 apps
+[2026-08-30 15:48:36] [INFO] Awesome Ratatui: loaded 400 apps from cache (1446s old)
+[2026-08-30 15:48:36] [INFO] Awesome Ratatui browser: opened with 400 apps
+[2026-08-30 15:48:50] [INFO] Awesome Ratatui: loaded 400 apps from cache (1460s old)
+[2026-08-30 15:48:50] [INFO] Awesome Ratatui browser: opened with 400 apps
+[2026-08-30 16:05:54] [INFO] TUIX started
+[2026-08-30 16:05:54] [INFO] App Store sync: added wordl (found installed)
+[2026-08-30 16:05:54] [INFO] App Store sync: added chess-tui (found installed)
+[2026-08-30 16:05:54] [INFO] App Store sync: added sigye (found installed)
+[2026-08-30 16:05:54] [INFO] App Store sync: configs updated
+[2026-08-30 16:06:15] [INFO] Opened page: appstore
+[2026-08-30 16:06:19] [INFO] Awesome Ratatui: loaded 400 apps from cache (2509s old)
+[2026-08-30 16:06:19] [INFO] Awesome Ratatui browser: opened with 400 apps
+[2026-08-30 16:07:55] [INFO] App Store: opening URL: https://github.com/jesper-olsen/connect-four
+[2026-08-30 16:08:03] [INFO] Awesome Ratatui: loaded 400 apps from cache (2613s old)
+[2026-08-30 16:08:03] [INFO] Awesome Ratatui browser: opened with 400 apps
+[2026-08-30 16:08:09] [INFO] Awesome Ratatui: added 'Connect-four' (Games) to registered apps as 'connect-four'
+[2026-08-30 16:08:09] [INFO] Awesome Ratatui: added 'Connect-four' to app store, prompting install
+[2026-08-30 16:08:14] [INFO] App Store: added chess-tui to apps.json
+[2026-08-30 16:08:26] [INFO] Awesome Ratatui: removed 'connect-four' from registered apps
+[2026-08-30 16:08:26] [INFO] App Store: removed 'connect-four' (non-approved)
+[2026-08-30 16:08:28] [INFO] Awesome Ratatui: loaded 400 apps from cache (2638s old)
+[2026-08-30 16:08:28] [INFO] Awesome Ratatui browser: opened with 400 apps
+[2026-08-30 16:08:32] [INFO] Awesome Ratatui: added 'Connect-four' (Games) to registered apps as 'connect-four'
+[2026-08-30 16:08:32] [INFO] Awesome Ratatui: added 'Connect-four' to app store, prompting install
+[2026-08-30 16:08:37] [INFO] App Store: added chess-tui to apps.json
+[2026-08-30 16:09:03] [ERROR] App Store: cargo install failed for connect-four
+[2026-08-30 16:09:03] [ERROR] App Store: install failed for connect-four
+[2026-08-30 16:09:14] [INFO] App Store: opening URL: https://github.com/jesper-olsen/connect-four
+[2026-08-30 16:09:54] [INFO] App Store: added connect-four to apps.json
+[2026-08-30 16:11:00] [INFO] App Store: manual refresh triggered
+[2026-08-30 16:11:01] [INFO] App Store sync: removed connect-four (no longer installed)
+[2026-08-30 16:11:01] [INFO] App Store sync: configs updated
+[2026-08-30 16:12:07] [ERROR] App Store: cargo install failed for connect-four
+[2026-08-30 16:12:07] [ERROR] App Store: install failed for connect-four
+[2026-08-30 16:16:22] [INFO] Awesome Ratatui: loaded 400 apps from cache (3112s old)
+[2026-08-30 16:16:22] [INFO] Awesome Ratatui browser: opened with 400 apps
+[2026-08-30 16:21:36] [INFO] TUIX started
+[2026-08-30 16:21:38] [INFO] Opened page: appstore
+[2026-08-30 16:21:41] [INFO] Awesome Ratatui: loaded 400 apps from cache (3431s old)
+[2026-08-30 16:21:41] [INFO] Awesome Ratatui browser: opened with 400 apps
+[2026-08-30 16:24:55] [INFO] Awesome Ratatui: fetching README from GitHub...
+[2026-08-30 16:24:55] [INFO] Awesome Ratatui: parsed 400 apps from README
+[2026-08-30 16:24:55] [INFO] Awesome Ratatui browser: opened with 400 apps
+[2026-08-30 16:25:10] [INFO] Awesome Ratatui: added 'wordl' (Games) to registered apps as 'wordl-rs'
+[2026-08-30 16:25:10] [INFO] Awesome Ratatui: added 'wordl' to app store
+[2026-08-31 16:01:50] [INFO] TUIX started
+[2026-08-31 16:01:50] [INFO] App Store sync: added chess-tui (found installed)
+[2026-08-31 16:01:50] [INFO] App Store sync: added wordl (found installed)
+[2026-08-31 16:01:50] [INFO] App Store sync: added sigye (found installed)
+[2026-08-31 16:01:50] [INFO] App Store sync: configs updated
+[2026-08-31 16:01:52] [INFO] Opened page: appstore
+[2026-08-31 16:02:01] [INFO] App Store: manual refresh triggered
+[2026-08-31 16:02:05] [INFO] Awesome Ratatui: fetching README from GitHub...
+[2026-08-31 16:02:05] [INFO] Awesome Ratatui: parsed 400 apps from README
+[2026-08-31 16:02:05] [INFO] Awesome Ratatui browser: opened with 400 apps
+[2026-08-31 16:03:20] [INFO] App Store: uninstalling globally: chess-tui
+[2026-08-31 16:03:20] [INFO] App Store: chess-tui uninstalled globally
+[2026-08-31 16:03:20] [INFO] App Store: removed chess-tui from apps.json
+[2026-08-31 16:03:24] [INFO] App Store: uninstalling globally: sigye
+[2026-08-31 16:03:24] [INFO] App Store: sigye uninstalled globally
+[2026-08-31 16:03:24] [INFO] App Store: removed sigye from dashboards.json
+[2026-08-31 16:03:30] [INFO] App Store: uninstalling globally: wordl
+[2026-08-31 16:03:30] [INFO] App Store: wordl uninstalled globally
+[2026-08-31 16:03:30] [INFO] App Store: removed wordl from apps.json
+[2026-08-31 16:04:31] [INFO] Awesome Ratatui: loaded 400 apps from cache (146s old)
+[2026-08-31 16:04:31] [INFO] Awesome Ratatui browser: opened with 400 apps
+[2026-08-31 16:04:45] [INFO] Awesome Ratatui: added 'Battleship.rs' (Games) to registered apps as 'battleship-rs'
+[2026-08-31 16:04:45] [INFO] Awesome Ratatui: added 'Battleship.rs' to app store, prompting install
+[2026-08-31 16:04:50] [ERROR] App Store: cargo install failed for battleship-rs
+[2026-08-31 16:04:50] [ERROR] App Store: install failed for battleship-rs
+[2026-08-31 16:04:54] [INFO] App Store: opening URL: https://github.com/deepu105/battleship-rs
+[2026-08-31 16:04:59] [ERROR] App Store: cargo install failed for battleship-rs
+[2026-08-31 16:04:59] [ERROR] App Store: install failed for battleship-rs
+[2026-08-31 16:05:17] [ERROR] App Store: cargo build failed for battleship-rs
+[2026-08-31 16:05:17] [ERROR] App Store: install failed for battleship-rs
+[2026-08-31 16:06:47] [INFO] Awesome Ratatui: removed 'battleship-rs' from registered apps
+[2026-08-31 16:06:47] [INFO] App Store: removed 'battleship-rs' (non-approved)
+[2026-08-31 16:06:51] [INFO] Awesome Ratatui: loaded 400 apps from cache (286s old)
+[2026-08-31 16:06:51] [INFO] Awesome Ratatui browser: opened with 400 apps
+[2026-08-31 16:06:57] [INFO] Awesome Ratatui: removed 'chess-tui' from registered apps
+[2026-08-31 16:06:57] [INFO] Awesome Ratatui: removed 'Chess-tui' from app store
+[2026-08-31 16:07:19] [INFO] TUIX started
+[2026-08-31 16:07:21] [INFO] Opened page: appstore
+[2026-08-31 16:07:23] [INFO] App Store: manual refresh triggered
+[2026-08-31 16:07:30] [INFO] App Store: manual refresh triggered
+[2026-08-31 16:07:33] [INFO] TUIX started
+[2026-08-31 16:07:35] [INFO] Opened page: appstore
+[2026-08-31 16:07:48] [INFO] Awesome Ratatui: loaded 400 apps from cache (343s old)
+[2026-08-31 16:07:48] [INFO] Awesome Ratatui browser: opened with 400 apps
+[2026-08-31 16:07:59] [INFO] Awesome Ratatui: added 'Chess-tui' (Games) to registered apps as 'chess-tui'
+[2026-08-31 16:07:59] [INFO] Awesome Ratatui: added 'Chess-tui' to app store
+[2026-08-31 16:08:37] [INFO] Awesome Ratatui: removed 'chess-tui' from registered apps
+[2026-08-31 16:08:37] [INFO] Awesome Ratatui: removed 'Chess-tui' from app store
+[2026-08-31 16:08:38] [INFO] Awesome Ratatui: added 'Chess-tui' (Games) to registered apps as 'chess-tui'
+[2026-08-31 16:08:38] [INFO] Awesome Ratatui: added 'Chess-tui' to app store
+[2026-08-31 16:08:57] [INFO] TUIX started
+[2026-08-31 16:08:59] [INFO] Opened page: appstore
+[2026-08-31 16:10:15] [INFO] TUIX started
+[2026-08-31 16:10:17] [INFO] Opened page: appstore
+[2026-08-31 16:10:20] [INFO] Awesome Ratatui: loaded 400 apps from cache (495s old)
+[2026-08-31 16:10:20] [INFO] Awesome Ratatui browser: opened with 400 apps
+[2026-08-31 16:10:27] [INFO] Awesome Ratatui: added 'sigye' (Other) to registered apps as 'sigye'
+[2026-08-31 16:10:27] [INFO] Awesome Ratatui: added 'sigye' to app store
+[2026-08-31 16:10:47] [INFO] Awesome Ratatui: added 'wordl' (Games) to registered apps as 'wordl-rs'
+[2026-08-31 16:10:47] [INFO] Awesome Ratatui: added 'wordl' to app store
+[2026-08-31 16:11:37] [INFO] Awesome Ratatui: added 'Blackjack' (Games) to registered apps as 'blackjack'
+[2026-08-31 16:11:37] [INFO] Awesome Ratatui: added 'Blackjack' to app store
+[2026-08-31 16:11:45] [INFO] Awesome Ratatui: added 'Connect-four' (Games) to registered apps as 'connect-four'
+[2026-08-31 16:11:45] [INFO] Awesome Ratatui: added 'Connect-four' to app store
+[2026-08-31 16:12:06] [INFO] App Store: added blackjack to apps.json
+[2026-08-31 16:12:15] [INFO] App Store: launching blackjack in embedded TUIX mode
+[2026-08-31 16:12:26] [INFO] Opened app: blackjack
+[2026-08-31 16:12:26] [INFO] Launching blackjack in embedded TUIX mode
+[2026-08-31 16:12:59] [INFO] Opened page: appstore
+[2026-08-31 16:13:04] [INFO] App Store: uninstalling globally: blackjack
+[2026-08-31 16:13:04] [INFO] App Store: blackjack uninstalled globally
+[2026-08-31 16:13:04] [INFO] App Store: removed blackjack from apps.json
+[2026-08-31 16:13:15] [ERROR] App Store: cargo install failed for connect-four
+[2026-08-31 16:13:15] [ERROR] App Store: install failed for connect-four
+[2026-08-31 16:13:53] [INFO] App Store: added connect-four to apps.json
+[2026-08-31 16:14:00] [INFO] Awesome Ratatui: loaded 400 apps from cache (715s old)
+[2026-08-31 16:14:00] [INFO] Awesome Ratatui browser: opened with 400 apps
+[2026-08-31 16:14:02] [INFO] App Store: manual refresh triggered
+[2026-08-31 16:14:02] [INFO] App Store sync: removed connect-four (no longer installed)
+[2026-08-31 16:14:03] [INFO] App Store sync: configs updated
+[2026-08-31 16:14:14] [INFO] App Store: added connect-four to apps.json
+[2026-08-31 16:14:29] [INFO] Awesome Ratatui: loaded 400 apps from cache (744s old)
+[2026-08-31 16:14:29] [INFO] Awesome Ratatui browser: opened with 400 apps
+[2026-08-31 16:14:35] [INFO] Awesome Ratatui: added 'sxtetris' (Games) to registered apps as 'sxtetris'
+[2026-08-31 16:14:35] [INFO] Awesome Ratatui: added 'sxtetris' to app store
+[2026-08-31 16:14:35] [INFO] App Store sync: removed connect-four (no longer installed)
+[2026-08-31 16:14:35] [INFO] App Store sync: configs updated
+[2026-08-31 16:15:35] [INFO] App Store: added sxtetris to apps.json
+[2026-08-31 16:15:38] [INFO] App Store: launching sxtetris in embedded TUIX mode
+[2026-08-31 16:15:59] [INFO] Opened page: appstore
+[2026-08-31 16:16:05] [INFO] Awesome Ratatui: removed 'blackjack' from registered apps
+[2026-08-31 16:16:05] [INFO] App Store: removed 'blackjack' (non-approved)
+[2026-08-31 16:16:11] [INFO] Awesome Ratatui: removed 'connect-four' from registered apps
+[2026-08-31 16:16:11] [INFO] App Store: removed 'connect-four' (non-approved)
+[2026-08-31 16:17:15] [INFO] App Store: added sxtetris to apps.json
+[2026-08-31 16:18:45] [INFO] App Store: set run source for sxtetris to local
+[2026-08-31 16:18:49] [INFO] App Store: running sxtetris from Downloads source
+[2026-08-31 16:18:49] [INFO] App Store: launching sxtetris in embedded TUIX mode
+[2026-08-31 16:18:53] [INFO] Opened page: appstore
+[2026-08-31 16:19:02] [INFO] App Store: set window mode for sxtetris to fullscreen
+[2026-08-31 16:19:04] [INFO] App Store: running sxtetris from Downloads source
+[2026-08-31 16:19:04] [INFO] App Store: launching sxtetris in embedded TUIX mode
+[2026-08-31 16:20:34] [INFO] TUIX started
+[2026-08-31 16:20:36] [INFO] Opened page: appstore
+[2026-08-31 16:22:10] [INFO] App Store: added sigye to apps.json
+[2026-08-31 16:22:29] [INFO] App Store: launching sigye in embedded TUIX mode
+[2026-08-31 16:22:31] [INFO] Opened page: appstore
+[2026-08-31 16:22:36] [INFO] App Store: set window mode for sigye to fullscreen
+[2026-08-31 16:22:37] [INFO] App Store: launching sigye in embedded TUIX mode
+[2026-08-31 16:22:39] [INFO] Opened page: appstore
+[2026-08-31 16:24:01] [INFO] App Store: added sigye to apps.json
+[2026-08-31 16:24:39] [INFO] App Store: set run source for sigye to local
+[2026-08-31 16:24:42] [INFO] App Store: running sigye from Downloads source
+[2026-08-31 16:24:42] [INFO] App Store: launching sigye in embedded TUIX mode
+[2026-08-31 16:24:47] [INFO] TUIX started
+[2026-08-31 16:24:49] [INFO] Opened page: appstore
+[2026-08-31 16:24:52] [INFO] App Store: set window mode for sigye to embedded
+[2026-08-31 16:24:54] [INFO] App Store: running sigye from Downloads source
+[2026-08-31 16:24:54] [INFO] App Store: launching sigye in embedded TUIX mode
+[2026-08-31 16:24:56] [INFO] TUIX started
+[2026-08-31 16:24:59] [INFO] Navigated to dashboard: Dashboard-2
+[2026-08-31 16:25:02] [INFO] Opened page: appstore
+[2026-08-31 16:25:05] [INFO] Opened app: sigye
+[2026-08-31 16:25:05] [INFO] Launching sigye in embedded TUIX mode
+[2026-08-31 16:25:07] [INFO] TUIX started
+[2026-08-31 16:25:11] [INFO] Opened page: appstore
+[2026-08-31 16:26:31] [INFO] App Store: set run source for sigye to global
+[2026-08-31 16:26:50] [INFO] App Store: running sigye from PATH source
+[2026-08-31 16:26:50] [INFO] App Store: launching sigye in embedded TUIX mode
+[2026-09-14 17:46:08] [INFO] TUIX started
+[2026-09-14 17:46:08] [INFO] App Store sync: added sigye (found installed)
+[2026-09-14 17:46:08] [INFO] App Store sync: configs updated
+[2026-09-14 17:47:35] [INFO] TUIX started
+[2026-09-14 17:47:40] [INFO] Opened app: FileExplorer
+[2026-09-14 17:47:41] [INFO] Opened page: appstore
+[2026-09-14 17:47:48] [INFO] Awesome Ratatui: fetching README from GitHub...
+[2026-09-14 17:47:56] [INFO] Awesome Ratatui: parsed 416 apps from README
+[2026-09-14 17:47:56] [INFO] Awesome Ratatui browser: opened with 416 apps
+[2026-09-14 17:48:06] [INFO] App Store: opening URL: https://github.com/shixinhuang99/sxtetris
+[2026-09-14 17:48:13] [INFO] Awesome Ratatui: added 'sxtetris' (Games) to registered apps as 'sxtetris'
+[2026-09-14 17:48:13] [INFO] Awesome Ratatui: added 'sxtetris' to app store, prompting install
+[2026-09-14 17:48:13] [INFO] App Store sync: added sxtetris (found installed)
+[2026-09-14 17:48:13] [INFO] App Store sync: configs updated
+[2026-09-14 17:49:53] [INFO] TUIX started
+[2026-09-14 17:49:58] [INFO] TUIX started
+[2026-09-14 17:50:00] [INFO] Opened page: appstore
+[2026-09-14 17:51:14] [INFO] Awesome Ratatui: loaded 416 apps from cache (198s old)
+[2026-09-14 17:51:14] [INFO] Awesome Ratatui browser: opened with 416 apps
+[2026-09-14 17:51:33] [INFO] Awesome Ratatui: added 'Connect-four' (Games) to registered apps as 'connect-four'
+[2026-09-14 17:51:33] [INFO] Awesome Ratatui: added 'Connect-four' to app store
+[2026-09-14 17:51:38] [INFO] App Store: manual refresh triggered
+[2026-09-14 17:51:46] [ERROR] App Store: cargo install failed for connect-four
+[2026-09-14 17:51:46] [ERROR] App Store: install failed for connect-four
+[2026-09-14 17:52:01] [INFO] App Store: added connect-four to apps.json
+[2026-09-14 17:52:08] [INFO] Opened app: connect-four
+[2026-09-14 17:52:08] [INFO] Launching connect-four in embedded TUIX mode
+[2026-09-14 17:52:10] [INFO] Opened page: appstore
+[2026-09-14 17:52:10] [INFO] App Store sync: removed connect-four (no longer installed)
+[2026-09-14 17:52:10] [INFO] App Store sync: configs updated
+[2026-09-14 17:52:29] [INFO] Awesome Ratatui: loaded 416 apps from cache (273s old)
+[2026-09-14 17:52:29] [INFO] Awesome Ratatui browser: opened with 416 apps
+[2026-09-14 17:52:43] [INFO] Awesome Ratatui: loaded 416 apps from cache (287s old)
+[2026-09-14 17:52:43] [INFO] Awesome Ratatui browser: opened with 416 apps
+[2026-09-14 17:53:28] [INFO] Awesome Ratatui: loaded 416 apps from cache (332s old)
+[2026-09-14 17:53:28] [INFO] Awesome Ratatui browser: opened with 416 apps
+[2026-09-14 17:53:52] [INFO] Awesome Ratatui: added 'tic-tac-toe' (Games) to registered apps as 'tic-tac-toe'
+[2026-09-14 17:53:52] [INFO] Awesome Ratatui: added 'tic-tac-toe' to app store, prompting install
+[2026-09-14 17:57:28] [INFO] App Store: added chess-tui to apps.json
+[2026-09-14 17:59:04] [ERROR] App Store: cargo install failed for connect-four
+[2026-09-14 17:59:04] [ERROR] App Store: install failed for connect-four
+[2026-09-14 18:00:02] [INFO] App Store: opening URL: https://github.com/jesper-olsen/connect-four
+[2026-09-14 18:01:54] [INFO] App Store: opening URL: https://github.com/jesper-olsen/connect-four
+[2026-09-14 18:03:17] [INFO] App Store: manual refresh triggered
+[2026-09-14 18:06:32] [INFO] TUIX started
+[2026-09-14 18:06:35] [INFO] Opened page: appstore
+[2026-09-14 18:06:42] [INFO] TUIX started
+[2026-09-14 18:13:33] [INFO] TUIX started
+[2026-09-14 18:13:36] [INFO] Opened page: appstore
+[2026-09-14 18:16:46] [INFO] App Store: manual refresh triggered
+[2026-09-15 11:37:15] [INFO] TUIX started
+[2026-09-15 11:37:15] [INFO] App Store sync: added connect-four (found installed)
+[2026-09-15 11:37:16] [INFO] App Store: resolved binary for connect-four -> play
+[2026-09-15 11:37:16] [INFO] App Store: resolved binary for sxtetris -> sxtetris
+[2026-09-15 11:37:16] [INFO] App Store: resolved binary for chess-tui -> chess-tui
+[2026-09-15 11:37:16] [INFO] App Store: resolved binary for sigye -> sigye
+[2026-09-15 11:37:16] [INFO] App Store sync: configs updated
+[2026-09-15 11:37:19] [INFO] Opened page: appstore
+[2026-09-15 11:37:19] [INFO] App Store sync: updated connect-four (install details changed)
+[2026-09-15 11:37:19] [INFO] App Store sync: configs updated
+[2026-09-15 11:37:24] [INFO] Opened page: settings
+[2026-09-15 11:37:30] [INFO] Opened page: appstore
+[2026-09-15 11:37:45] [INFO] App Store: uninstalling globally: connect_four
+[2026-09-15 11:37:45] [INFO] App Store: connect_four uninstalled globally
+[2026-09-15 11:37:45] [INFO] App Store: removing local install: .\downloads\applications\connect-four
+[2026-09-15 11:37:46] [INFO] App Store: connect-four removed locally
+[2026-09-15 11:37:46] [INFO] App Store: removed connect-four from apps.json
+[2026-09-15 11:38:02] [INFO] Running sxtetris from PATH source
+[2026-09-15 11:38:02] [INFO] App Store: launching sxtetris in embedded TUIX mode
+[2026-09-15 11:38:05] [INFO] Opened page: appstore
+[2026-09-15 11:38:16] [ERROR] App Store: cargo install failed for tic-tac-toe
+[2026-09-15 11:38:16] [ERROR] App Store: install failed for tic-tac-toe
+[2026-09-15 11:39:02] [INFO] App Store: resolved binary for tic-tac-toe -> tic-tac-toe
+[2026-09-15 11:39:02] [INFO] App Store: added tic-tac-toe to apps.json
+[2026-09-15 11:39:22] [INFO] App Store: launching tic-tac-toe in embedded TUIX mode
+[2026-09-15 11:39:35] [INFO] Opened page: appstore
+[2026-09-15 11:40:32] [INFO] App Store: added tic-tac-toe to apps.json
+[2026-09-15 11:40:37] [INFO] App Store: set run source for tic-tac-toe to local
+[2026-09-15 11:40:38] [INFO] App Store: set run source for tic-tac-toe to global
+[2026-09-15 11:40:39] [INFO] App Store: set run source for tic-tac-toe to local
+[2026-09-15 11:40:40] [INFO] App Store: set run source for tic-tac-toe to global
+[2026-09-15 11:40:41] [INFO] App Store: set run source for tic-tac-toe to local
+[2026-09-15 11:40:46] [INFO] App Store: opening in OS file manager: .\downloads\applications\tic-tac-toe\target\release
+[2026-09-15 11:40:55] [INFO] App Store: set window mode for tic-tac-toe to fullscreen
+[2026-09-15 11:40:56] [INFO] App Store: set window mode for tic-tac-toe to embedded
+[2026-09-15 11:40:57] [INFO] App Store: set window mode for tic-tac-toe to fullscreen
+[2026-09-15 11:40:58] [INFO] Running tic-tac-toe from Downloads source
+[2026-09-15 11:40:58] [INFO] App Store: launching tic-tac-toe in embedded TUIX mode
+[2026-09-15 11:41:03] [INFO] Opened page: appstore
+[2026-09-15 11:41:09] [INFO] App Store: uninstalling globally: tic-tac-toe
+[2026-09-15 11:41:09] [INFO] App Store: tic-tac-toe uninstalled globally
+[2026-09-15 11:41:09] [INFO] App Store: removing local install: .\downloads\applications\tic-tac-toe
+[2026-09-15 11:41:10] [ERROR] App Store: failed to remove .\downloads\applications\tic-tac-toe: Access is denied. (os error 5)
+[2026-09-15 11:41:10] [INFO] App Store: removed tic-tac-toe from apps.json
+[2026-09-15 11:41:20] [INFO] App Store: removing local install: .\downloads\applications\tic-tac-toe
+[2026-09-15 11:41:20] [ERROR] App Store: failed to remove .\downloads\applications\tic-tac-toe: Access is denied. (os error 5)
+[2026-09-15 11:41:20] [INFO] App Store: removed tic-tac-toe from apps.json
+[2026-09-15 11:43:05] [INFO] TUIX started
+[2026-09-15 11:43:05] [INFO] App Store sync: added tic-tac-toe (found installed)
+[2026-09-15 11:43:06] [INFO] App Store sync: configs updated
+[2026-09-15 11:43:18] [INFO] Opened page: appstore
+[2026-09-15 11:43:23] [INFO] App Store: removing local install: .\downloads\applications\tic-tac-toe
+[2026-09-15 11:43:23] [INFO] App Store: tic-tac-toe removed locally
+[2026-09-15 11:43:23] [INFO] App Store: removed tic-tac-toe from apps.json
+[2026-09-15 11:44:00] [INFO] Opened page: logs
+[2026-09-15 11:44:31] [INFO] Opened page: appstore
+[2026-09-15 11:44:34] [INFO] Awesome Ratatui: fetching README from GitHub...
+[2026-09-15 11:44:35] [INFO] Awesome Ratatui: parsed 416 apps from README
+[2026-09-15 11:44:35] [INFO] Awesome Ratatui browser: opened with 416 apps
+[2026-09-15 11:46:41] [INFO] TUIX started
+[2026-09-15 11:46:43] [INFO] Opened page: appstore
+[2026-09-15 11:46:47] [INFO] Awesome Ratatui: loaded 416 apps from cache (132s old)
+[2026-09-15 11:46:47] [INFO] Awesome Ratatui browser: opened with 416 apps
+[2026-09-15 11:47:06] [INFO] Awesome Ratatui: added 'tetris-tui' (Games) to registered apps as 'tetris-tui'
+[2026-09-15 11:47:06] [INFO] Awesome Ratatui: added 'tetris-tui' to app store
+[2026-09-15 11:47:07] [INFO] App Store sync: added tetris-tui (found installed)
+[2026-09-15 11:47:07] [INFO] App Store: resolved binary for tetris-tui -> tetris-tui
+[2026-09-15 11:47:07] [INFO] App Store sync: configs updated
+[2026-09-15 11:47:29] [INFO] Running sxtetris from PATH source
+[2026-09-15 11:47:29] [INFO] App Store: launching sxtetris in embedded TUIX mode
+[2026-09-15 11:47:32] [INFO] Opened page: appstore
+[2026-09-15 11:47:38] [INFO] App Store: launching tetris-tui in embedded TUIX mode
+[2026-09-15 11:48:00] [INFO] Opened app: sxtetris
+[2026-09-15 11:48:00] [INFO] Running sxtetris from PATH source
+[2026-09-15 11:48:00] [INFO] Launching sxtetris in embedded TUIX mode
+[2026-09-15 11:48:13] [INFO] Opened app: tetris-tui
+[2026-09-15 11:48:13] [INFO] Launching tetris-tui in embedded TUIX mode
+[2026-09-15 11:48:14] [INFO] Opened page: appstore
+[2026-09-15 11:48:18] [INFO] App Store: set window mode for tetris-tui to fullscreen
+[2026-09-15 11:48:22] [INFO] Opened app: sxtetris
+[2026-09-15 11:48:22] [INFO] Running sxtetris from PATH source
+[2026-09-15 11:48:22] [INFO] Launching sxtetris in embedded TUIX mode
+[2026-09-15 11:48:37] [INFO] TUIX started
+[2026-09-15 11:48:40] [INFO] Opened page: appstore
+[2026-09-15 11:48:47] [INFO] Awesome Ratatui: removed 'connect-four' from registered apps
+[2026-09-15 11:48:47] [INFO] App Store: removed 'connect-four' (non-approved)
+[2026-09-15 11:48:49] [INFO] Awesome Ratatui: loaded 416 apps from cache (254s old)
+[2026-09-15 11:48:49] [INFO] Awesome Ratatui browser: opened with 416 apps
+[2026-09-15 11:48:55] [INFO] Awesome Ratatui: added 'Connect-four' (Games) to registered apps as 'connect-four'
+[2026-09-15 11:48:55] [INFO] Awesome Ratatui: added 'Connect-four' to app store, prompting install
+[2026-09-15 11:49:04] [ERROR] App Store: cargo install failed for connect-four
+[2026-09-15 11:49:04] [ERROR] App Store: install failed for connect-four
+[2026-09-15 11:49:48] [INFO] App Store: resolved binary for connect-four -> play
+[2026-09-15 11:49:48] [INFO] App Store: added connect-four to apps.json
+[2026-09-15 11:50:15] [INFO] App Store: launching connect-four in embedded TUIX mode
+[2026-09-15 11:50:21] [INFO] Opened page: appstore
+[2026-09-15 11:50:30] [INFO] App Store: launching connect-four in embedded TUIX mode
+[2026-09-15 11:50:56] [INFO] Opened page: appstore
+[2026-09-15 11:52:14] [INFO] Awesome Ratatui: loaded 416 apps from cache (459s old)
+[2026-09-15 11:52:14] [INFO] Awesome Ratatui browser: opened with 416 apps
+[2026-09-15 11:53:56] [INFO] Awesome Ratatui: added 'Inertia' (Other) to registered apps as 'inertia'
+[2026-09-15 11:53:56] [INFO] Awesome Ratatui: added 'Inertia' to app store, prompting install
+[2026-09-15 11:54:00] [ERROR] App Store: cargo install failed for inertia
+[2026-09-15 11:54:00] [ERROR] App Store: install failed for inertia
+[2026-09-15 11:54:07] [ERROR] App Store: cargo install failed for inertia
+[2026-09-15 11:54:07] [ERROR] App Store: install failed for inertia
+[2026-09-15 11:56:12] [INFO] App Store: resolved binary for inertia -> inertia
+[2026-09-15 11:56:12] [INFO] App Store: added inertia to apps.json
+[2026-09-15 11:56:18] [INFO] App Store: launching inertia in embedded TUIX mode
+[2026-09-15 11:57:00] [INFO] Opened app: inertia
+[2026-09-15 11:57:00] [INFO] Launching inertia in embedded TUIX mode
+[2026-09-15 11:57:18] [INFO] Opened app: connect-four
+[2026-09-15 11:57:18] [INFO] Launching connect-four in embedded TUIX mode
+[2026-09-15 11:57:30] [INFO] Opened app: inertia
+[2026-09-15 11:57:30] [INFO] Launching inertia in embedded TUIX mode
+[2026-09-15 11:58:26] [INFO] Opened app: inertia
+[2026-09-15 11:58:26] [INFO] Launching inertia in embedded TUIX mode
+[2026-09-15 11:58:28] [INFO] Opened page: appstore
+[2026-09-15 12:00:10] [INFO] App Store: added inertia to apps.json
+[2026-09-16 15:10:16] [INFO] TUIX started
+[2026-09-16 15:10:16] [INFO] App Store sync: added chess-tui (found installed)
+[2026-09-16 15:10:16] [INFO] App Store sync: added sigye (found installed)
+[2026-09-16 15:10:17] [INFO] App Store: resolved binary for chess-tui -> chess-tui
+[2026-09-16 15:10:17] [INFO] App Store: resolved binary for sigye -> sigye
+[2026-09-16 15:10:17] [INFO] App Store sync: configs updated
+[2026-09-16 15:10:20] [INFO] Opened page: appstore
+[2026-09-16 15:27:54] [INFO] TUIX started
+[2026-09-16 15:27:57] [INFO] Opened page: appstore
+[2026-09-16 15:28:01] [INFO] Awesome Ratatui: fetching README from GitHub...
+[2026-09-16 15:28:06] [INFO] Awesome Ratatui: parsed 236 apps from README
+[2026-09-16 15:28:06] [INFO] Awesome Ratatui browser: opened with 236 apps
+[2026-09-16 15:28:12] [INFO] Awesome Ratatui: added 'Connect-four' (Games) to registered apps as 'connect-four'
+[2026-09-16 15:28:12] [INFO] Awesome Ratatui: added 'Connect-four' to app store, prompting install
+[2026-09-16 15:28:21] [INFO] App Store: added connect-four to apps.json
+[2026-09-16 15:28:30] [INFO] App Store: manual refresh triggered
+[2026-09-16 15:28:31] [INFO] App Store sync: removed connect-four (no longer installed)
+[2026-09-16 15:28:31] [INFO] App Store sync: configs updated
+[2026-09-16 15:28:34] [INFO] Awesome Ratatui: loaded 236 apps from cache (28s old)
+[2026-09-16 15:28:34] [INFO] Awesome Ratatui browser: opened with 236 apps
+[2026-09-16 15:28:44] [ERROR] App Store: cargo install failed for connect-four
+[2026-09-16 15:28:44] [ERROR] App Store: install failed for connect-four
+[2026-09-16 15:28:59] [INFO] App Store: added connect-four to apps.json
+[2026-09-16 15:29:02] [INFO] Awesome Ratatui: loaded 236 apps from cache (56s old)
+[2026-09-16 15:29:02] [INFO] Awesome Ratatui browser: opened with 236 apps
+[2026-09-16 15:29:09] [INFO] Awesome Ratatui: added 'cube timer' (Games) to registered apps as 'cube'
+[2026-09-16 15:29:09] [INFO] Awesome Ratatui: added 'cube timer' to app store, prompting install
+[2026-09-16 15:29:09] [INFO] App Store sync: removed connect-four (no longer installed)
+[2026-09-16 15:29:09] [INFO] App Store sync: configs updated
+[2026-09-16 15:29:15] [ERROR] App Store: cargo install failed for cube
+[2026-09-16 15:29:15] [ERROR] App Store: install failed for cube
+[2026-09-16 15:30:34] [ERROR] App Store: cargo install --git failed for https://github.com/paarthmadan/cube
+[2026-09-16 15:30:34] [ERROR] App Store: install failed for cube
+[2026-09-16 15:30:41] [INFO] Awesome Ratatui: removed 'cube' from registered apps
+[2026-09-16 15:30:41] [INFO] App Store: removed 'cube' (non-approved)
+[2026-09-16 15:30:43] [INFO] Awesome Ratatui: loaded 236 apps from cache (157s old)
+[2026-09-16 15:30:43] [INFO] Awesome Ratatui browser: opened with 236 apps
+[2026-09-16 15:30:59] [INFO] App Store: set window mode for chess-tui to fullscreen
+[2026-09-16 15:31:01] [INFO] App Store: launching chess-tui in a new window
+[2026-09-16 15:31:16] [INFO] Opened page: settings
+[2026-09-16 15:31:24] [SETTINGS] New window apps: TUIX stays open
+[2026-09-16 15:31:26] [INFO] Opened page: appstore
+[2026-09-16 15:31:28] [INFO] App Store: launching chess-tui in a new window
+[2026-09-16 15:31:28] [INFO] Launching in a new window: ["chess-tui"]
+[2026-09-16 15:31:39] [INFO] App Store: set window mode for sigye to fullscreen
+[2026-09-16 15:31:40] [INFO] App Store: launching sigye in a new window
+[2026-09-16 15:31:40] [INFO] Launching in a new window: ["sigye"]
+[2026-09-16 15:31:56] [INFO] TUIX started
+[2026-09-16 15:31:59] [INFO] Opened app: chess-tui
+[2026-09-16 15:31:59] [INFO] Launching chess-tui in a new window
+[2026-09-16 15:31:59] [INFO] Launching in a new window: ["chess-tui"]
+[2026-09-16 15:32:03] [INFO] Navigated to dashboard: sigye
+[2026-09-16 15:32:03] [INFO] Launching dashboard sigye in a new window
+[2026-09-16 15:32:03] [INFO] Launching in a new window: ["sigye"]
+[2026-09-16 15:32:13] [INFO] Opened page: appstore
+[2026-09-16 15:32:16] [INFO] App Store: set window mode for chess-tui to embedded
+[2026-09-16 15:32:18] [INFO] App Store: launching chess-tui in embedded TUIX mode
+[2026-09-16 15:32:30] [INFO] Opened page: appstore
+[2026-09-16 15:32:41] [INFO] App Store: launching sigye in a new window
+[2026-09-16 15:32:41] [INFO] Launching in a new window: ["sigye"]
+[2026-09-16 15:32:55] [INFO] TUIX started
+[2026-09-16 15:35:15] [INFO] Opened page: logs
+[2026-09-16 15:35:30] [INFO] Navigated to dashboard: sigye
+[2026-09-16 15:35:30] [INFO] Launching dashboard sigye in a new window
+[2026-09-16 15:35:30] [INFO] Launching in a new window: ["sigye"]
+[2026-09-16 15:35:36] [INFO] Opened page: appstore
+[2026-09-16 15:35:41] [INFO] App Store: set window mode for sigye to embedded
+[2026-09-16 15:35:44] [INFO] Awesome Ratatui: loaded 236 apps from cache (458s old)
+[2026-09-16 15:35:44] [INFO] Awesome Ratatui browser: opened with 236 apps
+[2026-09-16 15:35:53] [INFO] Awesome Ratatui: added 'Inertia' (Games) to registered apps as 'inertia'
+[2026-09-16 15:35:53] [INFO] Awesome Ratatui: added 'Inertia' to app store
+[2026-09-16 15:35:53] [INFO] App Store sync: added inertia (found installed)
+[2026-09-16 15:35:53] [INFO] App Store: resolved binary for inertia -> inertia
+[2026-09-16 15:35:53] [INFO] App Store sync: configs updated
+[2026-09-16 15:36:08] [INFO] Running inertia from PATH source
+[2026-09-16 15:36:08] [INFO] App Store: launching inertia in embedded TUIX mode
+[2026-09-16 15:36:15] [INFO] Opened page: appstore
+[2026-09-16 15:36:19] [INFO] App Store: set window mode for inertia to fullscreen
+[2026-09-16 15:36:21] [INFO] Running inertia from PATH source
+[2026-09-16 15:36:21] [INFO] App Store: launching inertia in a new window
+[2026-09-16 15:36:21] [INFO] Launching in a new window: ["inertia"]
+[2026-09-16 15:39:01] [INFO] Opened page: logs
+[2026-09-16 15:39:06] [INFO] Opened page: appstore
+[2026-09-16 15:39:10] [INFO] App Store: uninstalling globally: inertia-tui
+[2026-09-16 15:39:10] [ERROR] App Store: failed to uninstall inertia-tui
+[2026-09-16 15:39:10] [INFO] App Store: removed inertia from apps.json
+[2026-09-16 15:39:11] [INFO] Running inertia from PATH source
+[2026-09-16 15:39:11] [INFO] App Store: launching inertia in a new window
+[2026-09-16 15:39:11] [INFO] Launching in a new window: ["inertia"]
+[2026-09-16 15:39:16] [INFO] App Store: set run source for inertia to local
+[2026-09-16 15:39:16] [INFO] App Store: set run source for inertia to global
+[2026-09-16 15:39:22] [INFO] App Store: uninstalling globally: inertia-tui
+[2026-09-16 15:39:22] [ERROR] App Store: failed to uninstall inertia-tui
+[2026-09-16 15:39:22] [INFO] App Store: removed inertia from apps.json
+[2026-09-16 15:39:35] [INFO] App Store: set run source for inertia to local
+[2026-09-16 15:39:37] [INFO] App Store: uninstalling globally: inertia-tui
+[2026-09-16 15:39:37] [ERROR] App Store: failed to uninstall inertia-tui
+[2026-09-16 15:39:37] [INFO] App Store: removed inertia from apps.json
+[2026-09-16 15:39:59] [INFO] App Store: uninstalling globally: sigye
+[2026-09-16 15:39:59] [INFO] App Store: sigye uninstalled globally
+[2026-09-16 15:39:59] [INFO] App Store: removed sigye from dashboards.json
+[2026-09-16 15:41:35] [INFO] App Store: added sigye to dashboards.json
+[2026-09-16 15:41:38] [INFO] Opened page: logs
+[2026-09-16 15:42:09] [INFO] Opened page: appstore
+[2026-09-16 15:42:09] [INFO] App Store sync: added inertia (found installed)
+[2026-09-16 15:42:09] [INFO] App Store sync: configs updated
+[2026-09-16 15:42:11] [INFO] Awesome Ratatui: loaded 236 apps from cache (845s old)
+[2026-09-16 15:42:11] [INFO] Awesome Ratatui browser: opened with 236 apps
+[2026-09-16 15:42:36] [INFO] Awesome Ratatui: added 'bandwhich' (Networking and Internet) to registered apps as 'bandwhich'
+[2026-09-16 15:42:36] [INFO] Awesome Ratatui: added 'bandwhich' to app store, prompting install
+[2026-09-16 15:43:55] [INFO] App Store: resolved binary for bandwhich -> bandwhich
+[2026-09-16 15:43:55] [INFO] App Store: added bandwhich to apps.json
+[2026-09-16 15:44:02] [INFO] App Store: launching bandwhich in embedded TUIX mode
+[2026-09-16 15:44:05] [INFO] Opened page: appstore
+[2026-09-16 15:44:07] [INFO] App Store: set window mode for bandwhich to fullscreen
+[2026-09-16 15:44:09] [INFO] App Store: launching bandwhich in a new window
+[2026-09-16 15:44:09] [INFO] Launching in a new window: ["bandwhich"]
+[2026-09-16 15:44:13] [INFO] App Store: launching bandwhich in a new window
+[2026-09-16 15:44:13] [INFO] Launching in a new window: ["bandwhich"]
+[2026-09-16 15:44:38] [INFO] App Store: uninstalling globally: bandwhich
+[2026-09-16 15:44:38] [INFO] App Store: bandwhich uninstalled globally
+[2026-09-16 15:44:38] [INFO] App Store: removed bandwhich from apps.json
+[2026-09-16 15:46:44] [INFO] App Store: added bandwhich to apps.json
+[2026-09-16 15:48:43] [INFO] TUIX started
+[2026-09-16 15:48:47] [INFO] Opened page: appstore
+[2026-09-16 15:49:07] [INFO] App Store: uninstalling globally: sigye
+[2026-09-16 15:49:07] [INFO] App Store: sigye uninstalled globally
+[2026-09-16 15:49:07] [INFO] App Store: removed sigye from dashboards.json
+[2026-09-16 15:49:58] [INFO] App Store: added sigye to dashboards.json
+[2026-09-16 15:49:58] [INFO] App Store: installed sigye from crates.io (cargo install sigye) to C:\Users\Ben Mulligan\.cargo\bin\sigye.exe
+[2026-09-16 15:50:16] [INFO] Awesome Ratatui: loaded 236 apps from cache (1330s old)
+[2026-09-16 15:50:16] [INFO] Awesome Ratatui browser: opened with 236 apps
+[2026-09-16 15:52:05] [INFO] Awesome Ratatui: loaded 236 apps from cache (1439s old)
+[2026-09-16 15:52:05] [INFO] Awesome Ratatui browser: opened with 236 apps
+[2026-09-16 15:52:20] [INFO] Awesome Ratatui: added 'sxtetris' (Games) to registered apps as 'sxtetris'
+[2026-09-16 15:52:20] [INFO] Awesome Ratatui: added 'sxtetris' to app store
+[2026-09-16 15:52:21] [INFO] App Store sync: added sxtetris (found installed)
+[2026-09-16 15:52:21] [INFO] App Store: resolved binary for sxtetris -> sxtetris
+[2026-09-16 15:52:21] [INFO] App Store sync: configs updated
+[2026-09-16 15:52:29] [INFO] App Store: uninstalling globally: sxtetris
+[2026-09-16 15:52:29] [INFO] App Store: sxtetris uninstalled globally
+[2026-09-16 15:52:29] [INFO] App Store: removing local install: .\downloads\applications\sxtetris
+[2026-09-16 15:52:30] [INFO] App Store: sxtetris removed locally
+[2026-09-16 15:52:30] [INFO] App Store: removed sxtetris from apps.json
+[2026-09-16 15:52:31] [INFO] Awesome Ratatui: removed 'sxtetris' from registered apps
+[2026-09-16 15:52:31] [INFO] App Store: removed 'sxtetris' (non-approved)
+[2026-09-16 15:52:34] [INFO] Awesome Ratatui: loaded 236 apps from cache (1468s old)
+[2026-09-16 15:52:34] [INFO] Awesome Ratatui browser: opened with 236 apps
+[2026-09-16 15:52:50] [INFO] Awesome Ratatui: added 'sxtetris' (Games) to registered apps as 'sxtetris'
+[2026-09-16 15:52:50] [INFO] Awesome Ratatui: added 'sxtetris' to app store, prompting install
+[2026-09-16 15:53:45] [INFO] App Store: resolved binary for sxtetris -> sxtetris
+[2026-09-16 15:53:45] [INFO] App Store: added sxtetris to apps.json
+[2026-09-16 15:53:45] [INFO] App Store: installed sxtetris from crates.io (cargo install sxtetris) to C:\Users\Ben Mulligan\.cargo\bin\sxtetris.exe
+[2026-09-16 15:53:49] [INFO] App Store: launching sxtetris in embedded TUIX mode
+[2026-09-16 15:53:53] [INFO] Opened page: appstore
+[2026-09-16 15:53:55] [INFO] App Store: set window mode for sxtetris to fullscreen
+[2026-09-16 15:53:57] [INFO] App Store: launching sxtetris in a new window
+[2026-09-16 15:53:57] [INFO] Launching in a new window: ["sxtetris"]
+[2026-09-16 15:54:57] [INFO] TUIX started
+[2026-09-16 15:54:59] [INFO] Opened page: appstore
+[2026-09-16 15:55:06] [INFO] TUIX started
+[2026-09-16 15:55:08] [INFO] Opened page: settings
+[2026-09-16 15:55:24] [INFO] Opened app: TextEditor
+[2026-09-16 15:55:35] [INFO] TUIX started
+[2026-09-16 15:55:42] [INFO] Opened page: appstore
+[2026-09-16 15:55:46] [INFO] Opened page: settings
+[2026-09-16 15:55:55] [INFO] Opened page: appstore
+[2026-09-16 15:56:01] [INFO] Opened page: settings
+[2026-09-16 15:56:02] [INFO] Opened page: appstore
+[2026-09-16 15:56:05] [INFO] Opened page: settings
+[2026-09-16 15:56:06] [INFO] Opened page: appstore
+[2026-09-16 15:56:15] [INFO] App Store: launching bandwhich in a new window
+[2026-09-16 15:56:15] [INFO] Launching in a new window: ["bandwhich"]
+[2026-09-16 15:56:17] [INFO] App Store: set window mode for bandwhich to embedded
+[2026-09-16 15:56:20] [INFO] App Store: uninstalling globally: bandwhich
+[2026-09-16 15:56:20] [INFO] App Store: bandwhich uninstalled globally
+[2026-09-16 15:56:20] [INFO] App Store: removed bandwhich from apps.json
+[2026-09-16 15:58:25] [INFO] App Store: added bandwhich to apps.json
+[2026-09-16 15:58:25] [INFO] App Store: installed bandwhich from git repository https://github.com/imsnif/bandwhich (cargo install --git) to C:\Users\Ben Mulligan\.cargo\bin\bandwhich.exe
+[2026-09-16 15:58:47] [INFO] App Store: launching bandwhich in embedded TUIX mode
+[2026-09-16 15:58:50] [INFO] Opened page: appstore
+[2026-09-16 15:58:53] [INFO] App Store: set window mode for bandwhich to fullscreen
+[2026-09-16 15:58:54] [INFO] App Store: launching bandwhich in a new window
+[2026-09-16 15:58:54] [INFO] Launching in a new window: ["bandwhich"]
+[2026-09-16 15:58:57] [INFO] App Store: uninstalling globally: bandwhich
+[2026-09-16 15:58:57] [INFO] App Store: bandwhich uninstalled globally
+[2026-09-16 15:58:57] [INFO] App Store: removed bandwhich from apps.json
+[2026-09-16 15:58:59] [INFO] Awesome Ratatui: removed 'bandwhich' from registered apps
+[2026-09-16 15:58:59] [INFO] App Store: removed 'bandwhich' (non-approved)
+[2026-09-16 15:59:22] [INFO] TUIX started
+[2026-09-16 15:59:24] [INFO] Opened page: appstore
+[2026-09-21 16:44:27] [INFO] TUIX started
+[2026-09-21 16:44:35] [INFO] Opened page: appstore
+[2026-09-21 16:48:24] [INFO] Awesome Ratatui: fetching README from GitHub...
+[2026-09-21 16:48:24] [INFO] Awesome Ratatui: parsed 240 apps from README
+[2026-09-21 16:48:24] [INFO] Awesome Ratatui browser: opened with 240 apps
+[2026-09-21 16:48:59] [INFO] App Store: opening URL: https://github.com/stylebending/Aperture
+[2026-09-21 16:49:11] [INFO] Awesome Ratatui: added 'Aperture' (System Administration) to registered apps as 'aperture'
+[2026-09-21 16:49:11] [INFO] Awesome Ratatui: added 'Aperture' to app store, prompting install
+[2026-09-21 16:49:16] [ERROR] App Store: cargo install failed for aperture
+[2026-09-21 16:49:16] [ERROR] App Store: install failed for aperture
+[2026-09-21 16:51:02] [INFO] App Store: resolved binary for aperture -> aperture
+[2026-09-21 16:51:02] [INFO] App Store: added aperture to apps.json
+[2026-09-21 16:51:02] [INFO] App Store: installed aperture from git repository https://github.com/stylebending/Aperture (cargo install --git) to C:\Users\Ben Mulligan\.cargo\bin\aperture.exe
+[2026-09-21 16:51:29] [INFO] App Store: launching aperture in embedded TUIX mode
+[2026-09-21 16:52:01] [INFO] Navigated to dashboard: Dashboard-2
+[2026-09-21 16:52:04] [INFO] Opened page: appstore
+[2026-09-21 16:56:02] [INFO] App Store: launching aperture in embedded TUIX mode
+[2026-09-21 16:56:08] [INFO] Opened page: appstore
+[2026-09-21 16:56:23] [ERROR] App Store: cargo install failed for connect-four
+[2026-09-21 16:56:24] [ERROR] App Store: install failed for connect-four
+[2026-09-21 16:56:29] [INFO] Awesome Ratatui: removed 'connect-four' from registered apps
+[2026-09-21 16:56:29] [INFO] App Store: removed 'connect-four' (non-approved)
+[2026-09-21 16:56:30] [INFO] Running inertia from Downloads source
+[2026-09-21 16:56:30] [INFO] App Store: launching inertia in a new window
+[2026-09-21 16:56:30] [INFO] Launching in a new window: ["\\\\?\\C:\\Users\\Ben Mulligan\\Desktop\\Project TUI\\TUIX Rust\\downloads\\applications\\inertia\\target\\release\\inertia.exe"]
+[2026-09-21 16:56:43] [INFO] App Store: uninstalling globally: inertia-tui
+[2026-09-21 16:56:44] [INFO] App Store: inertia-tui uninstalled globally
+[2026-09-21 16:56:44] [INFO] App Store: removing local install: .\downloads\applications\inertia
+[2026-09-21 16:56:44] [INFO] App Store: inertia removed locally
+[2026-09-21 16:56:44] [INFO] App Store: removed inertia from apps.json
+[2026-09-21 16:56:45] [INFO] Awesome Ratatui: removed 'inertia' from registered apps
+[2026-09-21 16:56:45] [INFO] App Store: removed 'inertia' (non-approved)
+[2026-09-21 16:56:51] [INFO] App Store: launching sxtetris in a new window
+[2026-09-21 16:56:51] [INFO] Launching in a new window: ["sxtetris"]
+[2026-09-21 16:57:01] [INFO] App Store: uninstalling globally: sxtetris
+[2026-09-21 16:57:01] [INFO] App Store: sxtetris uninstalled globally
+[2026-09-21 16:57:01] [INFO] App Store: removed sxtetris from apps.json
+[2026-09-21 16:58:03] [INFO] App Store: added sxtetris to apps.json
+[2026-09-21 16:58:03] [INFO] App Store: installed sxtetris from crates.io (cargo install sxtetris) to C:\Users\Ben Mulligan\.cargo\bin\sxtetris.exe
+[2026-09-21 16:58:06] [INFO] App Store: manual refresh triggered
+[2026-09-21 16:58:14] [INFO] TUIX started
+[2026-09-21 16:58:16] [INFO] Opened page: appstore
+[2026-09-21 16:58:22] [INFO] App Store: uninstalling globally: Aperture
+[2026-09-21 16:58:22] [INFO] App Store: Aperture uninstalled globally
+[2026-09-21 16:58:22] [INFO] App Store: removed aperture from apps.json
+[2026-09-21 16:58:23] [INFO] Awesome Ratatui: removed 'aperture' from registered apps
+[2026-09-21 16:58:23] [INFO] App Store: removed 'aperture' (non-approved)
+[2026-09-21 16:58:25] [INFO] Awesome Ratatui: loaded 240 apps from cache (601s old)
+[2026-09-21 16:58:25] [INFO] Awesome Ratatui browser: opened with 240 apps
+[2026-09-21 16:58:43] [INFO] Awesome Ratatui: added 'Snake' (Games) to registered apps as 'ratatui-snake'
+[2026-09-21 16:58:43] [INFO] Awesome Ratatui: added 'Snake' to app store
+[2026-09-21 16:58:43] [INFO] App Store sync: added ratatui-snake (found installed)
+[2026-09-21 16:58:43] [INFO] App Store: resolved binary for ratatui-snake -> ratatui-snake
+[2026-09-21 16:58:43] [INFO] App Store sync: configs updated
+[2026-09-21 16:58:53] [INFO] Awesome Ratatui: added 'tetris-tui' (Games) to registered apps as 'tetris-tui'
+[2026-09-21 16:58:53] [INFO] Awesome Ratatui: added 'tetris-tui' to app store
+[2026-09-21 16:58:53] [INFO] App Store sync: added tetris-tui (found installed)
+[2026-09-21 16:58:53] [INFO] App Store: resolved binary for tetris-tui -> tetris-tui
+[2026-09-21 16:58:53] [INFO] App Store sync: configs updated
+[2026-09-21 17:00:04] [INFO] TUIX started
+[2026-09-21 17:00:06] [INFO] Opened page: appstore
+[2026-09-21 17:01:38] [INFO] TUIX started
+[2026-09-21 17:01:39] [INFO] Opened page: appstore
+[2026-09-21 17:02:15] [INFO] Awesome Ratatui: loaded 240 apps from cache (831s old)
+[2026-09-21 17:02:15] [INFO] Awesome Ratatui browser: opened with 240 apps
+[2026-09-21 17:02:27] [INFO] Awesome Ratatui: added 'wordl' (Games) to registered apps as 'wordl-rs'
+[2026-09-21 17:02:27] [INFO] Awesome Ratatui: added 'wordl' to app store
+[2026-09-21 17:02:53] [INFO] App Store: opening URL: https://github.com/palerdot/wordl-rs
+[2026-09-21 17:03:38] [INFO] App Store: resolved binary for wordl -> wordl
+[2026-09-21 17:03:38] [INFO] App Store: added wordl to apps.json
+[2026-09-21 17:03:38] [INFO] App Store: installed wordl from crates.io (cargo install wordl) to C:\Users\Ben Mulligan\.cargo\bin\wordl.exe
+[2026-09-21 17:03:51] [INFO] App Store: uninstalling globally: wordl
+[2026-09-21 17:03:51] [INFO] App Store: wordl uninstalled globally
+[2026-09-21 17:03:51] [INFO] App Store: removed wordl from apps.json
+[2026-09-21 17:03:55] [INFO] Awesome Ratatui: removed 'wordl-rs' from registered apps
+[2026-09-21 17:03:55] [INFO] App Store: removed 'wordl-rs' (non-approved)
+[2026-09-21 17:04:31] [INFO] TUIX started
+[2026-09-21 17:04:32] [INFO] Opened page: appstore
+[2026-09-21 17:04:51] [INFO] Awesome Ratatui: loaded 240 apps from cache (987s old)
+[2026-09-21 17:04:51] [INFO] Awesome Ratatui browser: opened with 240 apps
+[2026-09-21 17:05:04] [INFO] Awesome Ratatui: added 'confetty_rs' (Games) to registered apps as 'confetty_rs'
+[2026-09-21 17:05:04] [INFO] Awesome Ratatui: added 'confetty_rs' to app store
+[2026-09-21 17:05:27] [INFO] Awesome Ratatui: added 'wordl' (Games) to registered apps as 'wordl-rs'
+[2026-09-21 17:05:27] [INFO] Awesome Ratatui: added 'wordl' to app store
+[2026-09-21 17:05:49] [INFO] Awesome Ratatui: added 'sparkplayer' (Music and Media) to registered apps as 'main'
+[2026-09-21 17:05:49] [INFO] Awesome Ratatui: added 'sparkplayer' to app store
+[2026-09-21 17:05:49] [INFO] App Store sync: added main (found installed)
+[2026-09-21 17:05:50] [INFO] App Store: resolved binary for main -> main
+[2026-09-21 17:05:50] [INFO] App Store sync: configs updated
+[2026-09-21 17:06:14] [ERROR] App Store: cargo install failed for wordl-rs
+[2026-09-21 17:06:14] [ERROR] App Store: install failed for wordl-rs
+[2026-09-21 17:07:06] [INFO] App Store: resolved binary for wordl-rs -> wordl
+[2026-09-21 17:07:06] [INFO] App Store: added wordl-rs to apps.json
+[2026-09-21 17:07:06] [INFO] App Store: installed wordl-rs from git repository https://github.com/palerdot/wordl-rs (cargo install --git) to C:\Users\Ben Mulligan\.cargo\bin\wordl.exe
+[2026-09-21 17:07:14] [INFO] App Store: launching wordl-rs in embedded TUIX mode
+[2026-09-21 17:07:24] [INFO] Opened page: appstore
+[2026-09-21 17:07:24] [INFO] App Store sync: added wordl (found installed)
+[2026-09-21 17:07:24] [INFO] App Store sync: configs updated
+[2026-09-21 17:08:28] [INFO] TUIX started
+[2026-09-21 17:08:30] [INFO] Opened page: appstore
+[2026-09-21 17:08:46] [INFO] App Store: launching main in embedded TUIX mode
+[2026-09-21 17:08:50] [INFO] TUIX started
+[2026-09-21 17:08:53] [INFO] Opened page: appstore
+[2026-09-21 17:08:58] [INFO] App Store: set window mode for main to fullscreen
+[2026-09-21 17:08:59] [INFO] App Store: launching main in a new window
+[2026-09-21 17:08:59] [INFO] Launching in a new window: ["main"]
+[2026-09-21 17:09:07] [INFO] App Store: uninstalling globally: main
+[2026-09-21 17:09:07] [ERROR] App Store: failed to uninstall main
+[2026-09-21 17:09:07] [INFO] App Store: removed main from apps.json
+[2026-09-21 17:09:11] [INFO] App Store: uninstalling globally: main
+[2026-09-21 17:09:11] [ERROR] App Store: failed to uninstall main
+[2026-09-21 17:09:11] [INFO] App Store: removed main from apps.json
+[2026-09-21 17:09:37] [INFO] App Store: launching ratatui-snake in embedded TUIX mode
+[2026-09-21 17:09:45] [INFO] Opened page: appstore
+[2026-09-21 17:09:45] [INFO] App Store sync: added main (found installed)
+[2026-09-21 17:09:45] [INFO] App Store sync: configs updated
+[2026-09-21 17:09:48] [INFO] App Store: uninstalling globally: ratatui-snake
+[2026-09-21 17:09:48] [INFO] App Store: ratatui-snake uninstalled globally
+[2026-09-21 17:09:48] [INFO] App Store: removed ratatui-snake from apps.json
+[2026-09-21 17:09:50] [INFO] Awesome Ratatui: removed 'ratatui-snake' from registered apps
+[2026-09-21 17:09:50] [INFO] App Store: removed 'ratatui-snake' (non-approved)
+[2026-09-21 17:09:58] [INFO] Awesome Ratatui: removed 'confetty_rs' from registered apps
+[2026-09-21 17:09:58] [INFO] App Store: removed 'confetty_rs' (non-approved)
+[2026-09-21 17:10:44] [INFO] TUIX started
+[2026-09-21 17:10:46] [INFO] Opened page: appstore
+[2026-09-21 17:10:58] [INFO] App Store: launching sxtetris in a new window
+[2026-09-21 17:10:58] [INFO] Launching in a new window: ["sxtetris"]
+[2026-09-21 17:11:04] [INFO] App Store: launching tetris-tui in embedded TUIX mode
+[2026-09-21 17:11:08] [INFO] Opened page: appstore
+[2026-09-21 17:12:19] [INFO] TUIX started
+[2026-09-21 17:12:21] [INFO] Opened page: appstore
+[2026-09-21 17:16:24] [INFO] TUIX started
+[2026-09-21 17:16:25] [INFO] Opened page: appstore
+[2026-09-21 17:16:31] [INFO] App Store: uninstalling globally: wordl
+[2026-09-21 17:16:31] [INFO] App Store: wordl uninstalled globally
+[2026-09-21 17:16:31] [INFO] App Store: removed wordl-rs from apps.json
+[2026-09-21 17:17:02] [INFO] App Store: added wordl-rs to apps.json
+[2026-09-21 17:17:02] [INFO] App Store: installed wordl-rs from git clone of https://github.com/palerdot/wordl-rs (built from source) to .\downloads\applications\wordl-rs\target\release\wordl.exe
+[2026-09-21 17:17:08] [INFO] App Store: launching wordl-rs in embedded TUIX mode
+[2026-09-21 17:17:11] [INFO] Opened page: appstore
+[2026-09-21 17:17:14] [INFO] Awesome Ratatui: loaded 240 apps from cache (1730s old)
+[2026-09-21 17:17:14] [INFO] Awesome Ratatui browser: opened with 240 apps
+[2026-09-21 17:17:22] [INFO] Awesome Ratatui: added 'Inertia' (Games) to registered apps as 'inertia'
+[2026-09-21 17:17:22] [INFO] Awesome Ratatui: added 'Inertia' to app store, prompting install
+[2026-09-21 17:17:24] [ERROR] App Store: cargo install failed for inertia
+[2026-09-21 17:17:24] [ERROR] App Store: install failed for inertia
+[2026-09-21 17:18:43] [INFO] App Store: resolved binary for inertia -> inertia
+[2026-09-21 17:18:43] [INFO] App Store: added inertia to apps.json
+[2026-09-21 17:18:43] [INFO] App Store: installed inertia from git repository https://github.com/aclfe/inertia (cargo install --git) to C:\Users\Ben Mulligan\.cargo\bin\inertia.exe
+[2026-09-21 17:18:43] [INFO] App Store: set run source for inertia to global
+[2026-09-21 17:18:45] [INFO] App Store: launching inertia in a new window
+[2026-09-21 17:18:45] [INFO] Launching in a new window: ["inertia"]
+[2026-09-21 17:21:05] [INFO] TUIX started
+[2026-09-21 17:21:06] [INFO] Opened page: appstore
+[2026-09-21 17:21:08] [INFO] App Store: launching inertia in a new window
+[2026-09-21 17:21:08] [INFO] Launching in a new window: ["inertia"]
+[2026-09-21 17:21:16] [INFO] App Store: uninstalling globally: inertia-tui
+[2026-09-21 17:21:16] [ERROR] App Store: failed to uninstall inertia-tui
+[2026-09-21 17:21:16] [INFO] App Store: removed inertia from apps.json
+[2026-09-21 17:21:22] [INFO] App Store: launching inertia in a new window
+[2026-09-21 17:21:22] [INFO] Launching in a new window: ["inertia"]
+[2026-09-21 17:34:24] [INFO] TUIX started
+[2026-09-21 17:34:24] [INFO] App Store sync: added inertia (found installed)
+[2026-09-21 17:34:24] [INFO] App Store sync: configs updated
+[2026-09-21 17:34:27] [INFO] Opened page: appstore
+[2026-09-21 17:34:30] [INFO] App Store: launching inertia in a new window
+[2026-09-21 17:34:30] [INFO] Launching in a new window: ["inertia"]
+[2026-09-21 17:34:33] [INFO] App Store: uninstalling inertia-tui from PATH
+[2026-09-21 17:34:34] [ERROR] App Store: cargo uninstall inertia-tui failed
+[2026-09-21 17:34:34] [INFO] App Store: removed inertia from apps.json
+[2026-09-21 17:34:39] [INFO] App Store: uninstalling inertia-tui from PATH
+[2026-09-21 17:34:39] [ERROR] App Store: cargo uninstall inertia-tui failed
+[2026-09-21 17:34:39] [INFO] App Store: removed inertia from apps.json
+[2026-09-21 17:34:50] [INFO] App Store: uninstalling inertia-tui from PATH
+[2026-09-21 17:34:50] [INFO] App Store: inertia-tui removed from PATH
+[2026-09-21 17:34:50] [INFO] App Store: removed inertia from apps.json
+[2026-09-21 17:34:58] [INFO] Opened page: logs
+[2026-09-21 17:35:04] [INFO] Opened page: appstore
+[2026-09-21 17:35:06] [INFO] Opened page: appstore
+[2026-09-21 17:35:09] [INFO] Opened page: logs
+[2026-09-21 17:35:22] [INFO] Opened page: appstore
+[2026-09-21 17:35:27] [ERROR] App Store: cargo install failed for inertia
+[2026-09-21 17:35:27] [ERROR] App Store: install failed for inertia
+[2026-09-21 17:36:45] [INFO] App Store: added inertia to apps.json
+[2026-09-21 17:36:45] [INFO] App Store: installed inertia from git repository https://github.com/aclfe/inertia (cargo install --git) to C:\Users\Ben Mulligan\.cargo\bin\inertia.exe
+[2026-09-21 17:37:56] [INFO] App Store: added inertia to apps.json
+[2026-09-21 17:37:56] [INFO] App Store: installed inertia from git clone of https://github.com/aclfe/inertia (built from source) to .\downloads\applications\inertia\target\release\inertia.exe
+[2026-09-21 17:39:16] [INFO] App Store: set window mode for inertia to embedded
+[2026-09-21 17:39:17] [INFO] App Store: set window mode for inertia to fullscreen
+[2026-09-21 17:39:19] [INFO] App Store: set window mode for inertia to embedded
+[2026-09-21 17:39:19] [INFO] App Store: set window mode for inertia to fullscreen
+[2026-09-21 17:39:20] [INFO] Running inertia from PATH source
+[2026-09-21 17:39:20] [INFO] App Store: launching inertia in a new window
+[2026-09-21 17:39:20] [INFO] Launching in a new window: ["inertia"]
+[2026-09-21 17:39:39] [INFO] App Store: uninstalling inertia-tui from PATH
+[2026-09-21 17:39:39] [ERROR] App Store: cargo uninstall inertia-tui failed
+[2026-09-21 17:39:39] [INFO] App Store: removed inertia from apps.json
+[2026-09-21 17:39:45] [INFO] App Store: set run source for inertia to local
+[2026-09-21 17:39:45] [INFO] App Store: set run source for inertia to global
+[2026-09-21 17:39:46] [INFO] App Store: set run source for inertia to local
+[2026-09-21 17:39:50] [INFO] Running inertia from Downloads source
+[2026-09-21 17:39:50] [INFO] App Store: launching inertia in a new window
+[2026-09-21 17:39:50] [INFO] Launching in a new window: ["\\\\?\\C:\\Users\\Ben Mulligan\\Desktop\\Project TUI\\TUIX Rust\\downloads\\applications\\inertia\\target\\release\\inertia.exe"]
+[2026-09-21 17:40:10] [INFO] App Store: removing local install: .\downloads\applications\inertia
+[2026-09-21 17:40:10] [ERROR] App Store: inertia files could not be removed under .\downloads\applications\inertia (4 left)
+[2026-09-21 17:40:10] [ERROR] App Store: locked file: .\downloads\applications\inertia\target\release\inertia.exe
+[2026-09-21 17:40:10] [ERROR] App Store: locked file: .\downloads\applications\inertia\target\release
+[2026-09-21 17:40:10] [ERROR] App Store: locked file: .\downloads\applications\inertia\target
+[2026-09-21 17:40:10] [ERROR] App Store: locked file: .\downloads\applications\inertia
+[2026-09-21 17:40:10] [ERROR] App Store: inertia was partly uninstalled — some files are still in use. Close any running windows of it and restart TUIX to finish removing them.
+[2026-09-21 17:40:10] [INFO] App Store: removed inertia from apps.json
+[2026-09-21 17:40:26] [INFO] TUIX started
+[2026-09-21 17:40:26] [INFO] App Store sync: added inertia (found installed)
+[2026-09-21 17:40:26] [INFO] App Store sync: configs updated
+[2026-09-21 17:40:29] [INFO] Opened page: appstore
+[2026-09-21 17:40:35] [INFO] App Store: removing local install: .\downloads\applications\inertia
+[2026-09-21 17:40:35] [ERROR] App Store: inertia files could not be removed under .\downloads\applications\inertia (4 left)
+[2026-09-21 17:40:35] [ERROR] App Store: locked file: .\downloads\applications\inertia\target\release\inertia.exe
+[2026-09-21 17:40:35] [ERROR] App Store: locked file: .\downloads\applications\inertia\target\release
+[2026-09-21 17:40:35] [ERROR] App Store: locked file: .\downloads\applications\inertia\target
+[2026-09-21 17:40:35] [ERROR] App Store: locked file: .\downloads\applications\inertia
+[2026-09-21 17:40:35] [ERROR] App Store: inertia was partly uninstalled — some files are still in use. Close any running windows of it and restart TUIX to finish removing them.
+[2026-09-21 17:40:35] [INFO] App Store: removed inertia from apps.json
+[2026-09-21 17:40:40] [INFO] App Store: removing local install: .\downloads\applications\inertia
+[2026-09-21 17:40:40] [INFO] App Store: inertia removed locally
+[2026-09-21 17:40:40] [INFO] App Store: removed inertia from apps.json
+[2026-09-21 17:40:41] [INFO] App Store: set run source for inertia to global
+[2026-09-21 17:40:43] [INFO] App Store: uninstalling inertia-tui from PATH
+[2026-09-21 17:40:44] [INFO] App Store: inertia-tui removed from PATH
+[2026-09-21 17:40:44] [INFO] App Store: removed inertia from apps.json
+[2026-09-21 17:46:57] [INFO] TUIX started
+[2026-09-21 17:46:57] [INFO] App Store sync: added chess-tui (found installed)
+[2026-09-21 17:46:57] [INFO] App Store sync: added sigye (found installed)
+[2026-09-21 17:46:57] [INFO] App Store sync: added wordl-rs (found installed)
+[2026-09-21 17:46:57] [INFO] App Store sync: added tetris-tui (found installed)
+[2026-09-21 17:46:57] [INFO] App Store sync: added sxtetris (found installed)
+[2026-09-21 17:46:57] [INFO] App Store sync: configs updated
+[2026-09-21 17:47:19] [INFO] TUIX started
+[2026-09-22 17:39:48] [INFO] TUIX started
+[2026-09-22 17:39:52] [INFO] Opened page: appstore
+[2026-09-22 17:40:05] [INFO] App Store: uninstalling sxtetris from PATH
+[2026-09-22 17:40:05] [INFO] App Store: sxtetris removed from PATH
+[2026-09-22 17:40:05] [INFO] App Store: removed sxtetris from apps.json
+[2026-09-22 17:41:55] [INFO] App Store: added sxtetris to apps.json
+[2026-09-22 17:41:55] [INFO] App Store: installed sxtetris from crates.io (cargo install sxtetris) to C:\Users\Ben Mulligan\.cargo\bin\sxtetris.exe
+[2026-09-22 18:22:18] [INFO] TUIX started
+[2026-09-22 18:22:21] [INFO] Opened page: appstore
+[2026-09-22 18:22:30] [INFO] App Store: queued uninstall of wordl-rs (Downloads)
+[2026-09-22 18:22:30] [INFO] App Store: starting uninstall of wordl-rs (Downloads)
+[2026-09-22 18:22:30] [INFO] App Store: removing local install: .\downloads\applications\wordl-rs
+[2026-09-22 18:22:30] [INFO] App Store: wordl-rs removed locally
+[2026-09-22 18:22:30] [INFO] App Store: removed wordl-rs from apps.json
+[2026-09-22 18:22:30] [INFO] App Store: uninstalled wordl-rs (Downloads)
+[2026-09-22 18:23:11] [INFO] App Store: queued install of wordl-rs (PATH)
+[2026-09-22 18:23:11] [INFO] App Store: starting install of wordl-rs (PATH)
+[2026-09-22 18:23:11] [ERROR] App Store: cargo install failed for wordl-rs
+[2026-09-22 18:23:12] [ERROR] App Store: install failed for wordl-rs
+[2026-09-22 18:23:17] [INFO] App Store: queued install of wordl-rs (PATH (Git))
+[2026-09-22 18:23:17] [INFO] App Store: starting install of wordl-rs (PATH (Git))
+[2026-09-22 18:23:20] [INFO] App Store: queued install of wordl-rs (Downloads)
+[2026-09-22 18:23:39] [INFO] App Store: added wordl-rs to apps.json
+[2026-09-22 18:23:39] [INFO] App Store: installed wordl-rs from git repository https://github.com/palerdot/wordl-rs (cargo install --git) to C:\Users\Ben Mulligan\.cargo\bin\wordl.exe
+[2026-09-22 18:23:40] [INFO] App Store: starting install of wordl-rs (Downloads)
+[2026-09-22 18:24:04] [INFO] App Store: added wordl-rs to apps.json
+[2026-09-22 18:24:04] [INFO] App Store: installed wordl-rs from git clone of https://github.com/palerdot/wordl-rs (built from source) to .\downloads\applications\wordl-rs\target\release\wordl.exe
+[2026-09-22 18:27:59] [INFO] App Store: queued install of tetris-tui (Downloads)
+[2026-09-22 18:28:37] [INFO] App Store: starting install of tetris-tui (Downloads)
+[2026-09-22 18:28:58] [INFO] App Store: added tetris-tui to apps.json
+[2026-09-22 18:28:58] [INFO] App Store: installed tetris-tui from git clone of https://github.com/Axyl1410/tetris-tui (built from source) to .\downloads\applications\tetris-tui\target\release\tetris-tui.exe
+[2026-09-22 18:31:38] [INFO] App Store: queued uninstall of wordl-rs (PATH + Downloads)
+[2026-09-22 18:31:38] [INFO] App Store: starting uninstall of wordl-rs (PATH + Downloads)
+[2026-09-22 18:31:38] [INFO] App Store: uninstalling wordl from PATH
+[2026-09-22 18:31:38] [INFO] App Store: wordl removed from PATH
+[2026-09-22 18:31:38] [INFO] App Store: removing local install: .\downloads\applications\wordl-rs
+[2026-09-22 18:31:38] [INFO] App Store: wordl-rs removed locally
+[2026-09-22 18:31:38] [INFO] App Store: removed wordl-rs from apps.json
+[2026-09-22 18:31:39] [INFO] App Store: uninstalled wordl-rs (PATH + Downloads)
+[2026-09-22 18:31:42] [INFO] App Store: queued install of wordl-rs (PATH)
+[2026-09-22 18:31:42] [INFO] App Store: starting install of wordl-rs (PATH)
+[2026-09-22 18:31:43] [ERROR] App Store: cargo install failed for wordl-rs
+[2026-09-22 18:31:43] [ERROR] App Store: install failed for wordl-rs
+[2026-09-22 18:35:00] [INFO] App Store: queued install of wordl-rs (PATH)
+[2026-09-22 18:35:00] [INFO] App Store: starting install of wordl-rs (PATH)
+[2026-09-22 18:35:00] [ERROR] App Store: cargo install failed for wordl-rs
+[2026-09-22 18:35:00] [ERROR] App Store: install failed for wordl-rs
+[2026-09-22 18:35:14] [INFO] App Store: queued uninstall of tetris-tui (PATH)
+[2026-09-22 18:35:14] [INFO] App Store: starting uninstall of tetris-tui (PATH)
+[2026-09-22 18:35:14] [INFO] App Store: uninstalling tetris-tui from PATH
+[2026-09-22 18:35:14] [INFO] App Store: tetris-tui removed from PATH
+[2026-09-22 18:35:14] [INFO] App Store: removed tetris-tui from apps.json
+[2026-09-22 18:35:14] [INFO] App Store: uninstalled tetris-tui (PATH)
+[2026-09-22 18:35:15] [INFO] App Store: set run source for tetris-tui to local
+[2026-09-22 18:35:43] [INFO] App Store: queued install of sxtetris (Downloads)
+[2026-09-22 18:35:43] [INFO] App Store: starting install of sxtetris (Downloads)
+[2026-09-22 18:36:29] [INFO] App Store: added sxtetris to apps.json
+[2026-09-22 18:36:29] [INFO] App Store: installed sxtetris from git clone of https://github.com/shixinhuang99/sxtetris (built from source) to .\downloads\applications\sxtetris\target\release\sxtetris.exe
+[2026-09-22 18:38:47] [INFO] Opened page: logs
+[2026-09-22 18:46:03] [INFO] TUIX started
+[2026-09-22 18:46:03] [INFO] App Store sync: added tetris-tui (found installed)
+[2026-09-22 18:46:03] [INFO] App Store sync: updated sxtetris (install details changed)
+[2026-09-22 18:46:04] [INFO] App Store sync: configs updated
+[2026-09-22 18:46:07] [INFO] Opened page: appstore
+[2026-09-22 18:46:12] [INFO] App Store: queued install of wordl-rs (PATH)
+[2026-09-22 18:46:12] [INFO] App Store: starting install of wordl-rs (PATH)
+[2026-09-22 18:46:13] [ERROR] App Store: cargo install failed for wordl-rs
+[2026-09-22 18:46:13] [ERROR] App Store: install failed for wordl-rs
+[2026-09-22 18:47:46] [INFO] Opened page: logs
+[2026-09-22 18:58:56] [INFO] TUIX started
+[2026-09-22 18:58:58] [INFO] Opened page: appstore
+[2026-09-22 18:59:02] [INFO] App Store: queued install of wordl-rs (PATH (Git))
+[2026-09-22 18:59:02] [INFO] App Store: starting install of wordl-rs (PATH (Git))
+[2026-09-22 18:59:21] [INFO] App Store: added wordl-rs to apps.json
+[2026-09-22 18:59:21] [INFO] App Store: installed wordl-rs from git repository https://github.com/palerdot/wordl-rs (cargo install --git) to C:\Users\Ben Mulligan\.cargo\bin\wordl.exe
+[2026-09-22 19:04:13] [INFO] App Store: queued uninstall of sigye (PATH)
+[2026-09-22 19:04:13] [INFO] App Store: starting uninstall of sigye (PATH)
+[2026-09-22 19:04:13] [INFO] App Store: uninstalling sigye from PATH
+[2026-09-22 19:04:13] [INFO] App Store: sigye removed from PATH
+[2026-09-22 19:04:13] [INFO] App Store: removed sigye from dashboards.json
+[2026-09-22 19:04:13] [INFO] App Store: uninstalled sigye (PATH)
+[2026-09-22 19:04:16] [INFO] App Store: queued install of sigye (PATH)
+[2026-09-22 19:04:16] [INFO] App Store: starting install of sigye (PATH)
+[2026-09-22 19:05:07] [INFO] App Store: added sigye to dashboards.json
+[2026-09-22 19:05:07] [INFO] App Store: installed sigye from crates.io (cargo install sigye) to C:\Users\Ben Mulligan\.cargo\bin\sigye.exe
+[2026-09-22 19:14:46] [INFO] Awesome Ratatui: fetching README from GitHub...
+[2026-09-22 19:14:46] [INFO] Awesome Ratatui: parsed 240 apps from README
+[2026-09-22 19:14:46] [INFO] Awesome Ratatui browser: opened with 240 apps
+[2026-09-22 19:14:51] [INFO] Awesome Ratatui: added 'confetty_rs' (Games) to registered apps as 'confetty_rs'
+[2026-09-22 19:14:51] [INFO] Awesome Ratatui: added 'confetty_rs' to app store, prompting install
+[2026-09-22 19:14:52] [INFO] App Store: queued install of confetty_rs (PATH (Git))
+[2026-09-22 19:14:52] [INFO] App Store: starting install of confetty_rs (PATH (Git))
+[2026-09-22 19:15:15] [INFO] App Store: resolved binary for confetty_rs -> confetty_rs
+[2026-09-22 19:15:15] [INFO] App Store: added confetty_rs to apps.json
+[2026-09-22 19:15:15] [INFO] App Store: installed confetty_rs from git repository https://github.com/Handfish/confetty_rs (cargo install --git) to C:\Users\Ben Mulligan\.cargo\bin\confetty_rs.exe
+[2026-09-22 19:15:22] [INFO] App Store: launching confetty_rs in embedded TUIX mode
+[2026-09-22 19:15:24] [INFO] Opened page: appstore
+[2026-09-22 19:15:27] [INFO] App Store: set window mode for confetty_rs to fullscreen
+[2026-09-22 19:15:28] [INFO] App Store: launching confetty_rs in a new window
+[2026-09-22 19:23:58] [INFO] TUIX started
+[2026-09-22 19:24:08] [INFO] TUIX started
+[2026-09-22 19:24:29] [INFO] TUIX started
+[2026-09-22 19:24:39] [INFO] TUIX started
+[2026-09-22 19:24:46] [INFO] Opened page: appstore
+[2026-09-22 19:26:25] [INFO] App Store: queued uninstall of sxtetris (PATH)
+[2026-09-22 19:26:25] [INFO] App Store: starting uninstall of sxtetris (PATH)
+[2026-09-22 19:26:25] [INFO] App Store: uninstalling sxtetris from PATH
+[2026-09-22 19:26:25] [INFO] App Store: sxtetris removed from PATH
+[2026-09-22 19:26:25] [INFO] App Store: removed sxtetris from apps.json
+[2026-09-22 19:26:25] [INFO] App Store: uninstalled sxtetris (PATH)
+[2026-09-22 19:26:25] [INFO] App Store: set run source for sxtetris to local
+[2026-09-22 19:27:20] [INFO] Opened page: settings
+[2026-09-22 19:27:29] [INFO] Opened page: settings
+[2026-09-22 19:27:46] [INFO] Opened page: appstore
+[2026-09-22 19:27:46] [INFO] App Store sync: added sxtetris (found installed)
+[2026-09-22 19:27:46] [INFO] App Store sync: configs updated
+[2026-09-22 19:28:21] [INFO] App Store: queued uninstall of tetris-tui (Downloads)
+[2026-09-22 19:28:21] [INFO] App Store: starting uninstall of tetris-tui (Downloads)
+[2026-09-22 19:28:21] [INFO] App Store: removing local install: .\downloads\applications\tetris-tui
+[2026-09-22 19:28:21] [INFO] App Store: tetris-tui removed locally
+[2026-09-22 19:28:21] [INFO] App Store: removed tetris-tui from apps.json
+[2026-09-22 19:28:21] [INFO] App Store: uninstalled tetris-tui (Downloads)
+[2026-09-22 19:28:24] [INFO] App Store: queued install of tetris-tui (PATH)
+[2026-09-22 19:28:24] [INFO] App Store: starting install of tetris-tui (PATH)
+[2026-09-22 19:28:49] [INFO] App Store: added tetris-tui to apps.json
+[2026-09-22 19:28:49] [INFO] App Store: installed tetris-tui from crates.io (cargo install tetris-tui) to C:\Users\Ben Mulligan\.cargo\bin\tetris-tui.exe
+[2026-09-22 19:28:49] [INFO] App Store: set run source for tetris-tui to global
+[2026-09-22 19:32:52] [INFO] Opened app: confetty_rs
+[2026-09-22 19:32:52] [INFO] Launching confetty_rs in a new window
+[2026-09-22 19:37:19] [INFO] TUIX started
+[2026-09-22 19:37:23] [INFO] Opened page: settings
+[2026-09-22 19:37:33] [SETTINGS] Settings restored to defaults
+[2026-09-22 19:39:19] [INFO] TUIX started
+[2026-09-22 19:39:27] [INFO] TUIX started
+[2026-09-22 19:39:29] [INFO] Opened page: appstore
+[2026-09-22 19:43:48] [INFO] TUIX started
+[2026-09-22 19:43:51] [INFO] Opened app: CharacterSet
+[2026-09-22 19:43:55] [INFO] Navigated to dashboard: Dashboard-2
+[2026-09-22 19:43:57] [INFO] Navigated to dashboard: Dashboard-1
+[2026-09-25 13:41:12] [INFO] TUIX started
+[2026-09-25 13:41:28] [INFO] Opened app: sxtetris
+[2026-09-25 13:41:28] [INFO] Launching sxtetris in embedded TUIX mode
+[2026-09-25 13:41:33] [INFO] Opened app: chess-tui
+[2026-09-25 13:41:33] [INFO] Launching chess-tui in embedded TUIX mode
+[2026-09-25 13:41:47] [INFO] Opened page: appstore
+[2026-09-25 13:41:53] [INFO] Opened app: confetty_rs
+[2026-09-25 13:41:53] [INFO] Launching confetty_rs in embedded TUIX mode
+[2026-09-25 13:41:57] [INFO] Opened app: wordl-rs
+[2026-09-25 13:41:57] [INFO] Launching wordl-rs in embedded TUIX mode
+[2026-09-25 13:42:20] [INFO] Navigated to dashboard: Dashboard-1
+[2026-09-25 13:42:22] [INFO] Opened page: appstore
+[2026-09-25 13:42:32] [INFO] Navigated to dashboard: Dashboard-1
+[2026-09-25 13:42:34] [INFO] Navigated to dashboard: sigye
+[2026-09-25 13:42:34] [INFO] Launching dashboard sigye in embedded TUIX mode
+[2026-09-25 13:42:38] [INFO] Opened app: sxtetris
+[2026-09-25 13:42:38] [INFO] Launching sxtetris in embedded TUIX mode
+[2026-09-25 13:42:55] [INFO] Opened page: appstore
+[2026-09-25 13:42:58] [INFO] App Store: set window mode for sxtetris to fullscreen
+[2026-09-25 13:43:02] [INFO] Opened app: sxtetris
+[2026-09-25 13:43:02] [INFO] Launching sxtetris in a new window
+[2026-09-25 13:43:18] [INFO] TUIX started

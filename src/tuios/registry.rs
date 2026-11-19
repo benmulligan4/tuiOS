@@ -32,7 +32,9 @@ const BUILTIN_APPS: &[(&str, &str, &str)] = &[
     ("CharacterSet", "Character Set", "applications::character_set"),
     ("FileExplorer", "File Explorer", "applications::file_explorer"),
     ("Notes", "Notes", "applications::notes"),
+    ("MarkdownViewer", "Markdown Viewer", "applications::markdown_viewer"),
     ("TextEditor", "Text Editor", "applications::text_editor"),
+    ("WidgetGallery", "Widget Gallery", "applications::widget_gallery"),
 ];
 
 const BUILTIN_DASHBOARDS: &[(&str, &str, &str)] = &[
@@ -48,7 +50,9 @@ pub const BUILTIN_DASHBOARD_CATEGORY: &str = "tuiOS Dashboards";
 const BUILTIN_DESCRIPTIONS: &[(&str, &str)] = &[
     ("CharacterSet", "Browse and copy Unicode characters, box-drawing glyphs and symbols."),
     ("FileExplorer", "Navigate the filesystem, preview files and open them in the text editor."),
+    ("MarkdownViewer", "Open and scroll through an example Markdown document."),
     ("TextEditor", "A lightweight editor for quick edits without leaving tuiOS."),
+    ("WidgetGallery", "Interactive examples of Ratatui widgets, layouts, charts and terminal effects."),
     ("Dashboard-1", "The default home screen — large clock, date and system greeting."),
     ("Dashboard-2", "Live CPU, memory, disk and network statistics at a glance."),
 ];
