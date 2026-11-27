@@ -1,14 +1,14 @@
 # Changelog
 
-All notable changes to this project are documented here, newest first. The project was originally named TUIX and was renamed to tuiOS on 2026-09-23. Entries are grouped by date; PR numbers refer to `benmulligan4/TUIX`. The crate version in `Cargo.toml` is still `0.1.0`, and no release tags exist.
+All notable changes to this project are documented here, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/), staying below 1.0.0 while it is in early development. The current version is stored in the `version` field of `Cargo.toml` (currently **0.13.0**). The project was originally named TUIX and was renamed to tuiOS in 0.9.0. PR numbers refer to `benmulligan4/TUIX`. Versions were assigned retroactively from the git history, so no git tags exist for them yet.
 
-## 2026-11-27
+## [0.13.0] - 2026-11-27
 
 ### Added
 - Task manager bar, a compact system bar with tiles, its own design and colours, and a new Task Bar settings page for choosing item content (#25).
 - Expanded the registered apps list in `config/registered-apps.json` (#25).
 
-## 2026-10-27
+## [0.12.0] - 2026-10-27
 
 ### Added
 - Favourite apps: mark apps as favourites from the app store (#24).
@@ -26,7 +26,7 @@ All notable changes to this project are documented here, newest first. The proje
 - The apps category submenu is enabled for the navigation bar menu item (#22).
 - Third-party dashboard runner and dashboard 2 updated for the task manager (#22).
 
-## 2026-10-26
+## [0.11.0] - 2026-10-26
 
 ### Added
 - Navbar settings subpage and category ordering page. The Apps menu dropdown can be organised by category (#20).
@@ -51,12 +51,12 @@ All notable changes to this project are documented here, newest first. The proje
 - Dropdown settings not showing on Raspberry Pi (#15).
 - Loading bar colour for the static rainbow animation (#15).
 
-## 2026-09-25
+## [0.10.0] - 2026-09-25
 
 ### Added
 - Modern boot animation using the tuiOS logo, alongside the retro one (#14).
 
-## 2026-09-23
+## [0.9.0] - 2026-09-23
 
 ### Added
 - Boot animation (#13).
@@ -65,24 +65,24 @@ All notable changes to this project are documented here, newest first. The proje
 ### Changed
 - Renamed TUIX to tuiOS, including the `src/tuix` module, which is now `src/tuios`, and the `x/` scripts.
 
-## 2026-09-21
+## [0.8.0] - 2026-09-21
 
 ### Added
 - Awesome Ratatui app browser in the app store (#9).
 - Navigation bar position toggle, top or bottom (#10).
 
-## 2026-08-27
+## [0.7.0] - 2026-08-27
 
 ### Added
 - App store, with install, uninstall and a registered apps list (#8).
 
-## 2026-08-01
+## [0.6.0] - 2026-08-01
 
 ### Added
 - Settings, with pages for About, Appearance, Audio, Button mapping, Display, Git, Hotkeys, Power, Scripts, Utilities and Wi-Fi/Bluetooth. Settings are persisted (#7).
 - File explorer app (#6).
 
-## 2026-07-13
+## [0.5.0] - 2026-07-13
 
 ### Added
 - Third-party app and script support: `x/build`, `x/install` and `x/setup` scripts, plus updated `x/clone` scripts (#5).
@@ -90,29 +90,29 @@ All notable changes to this project are documented here, newest first. The proje
 ### Changed
 - Moved the character set and text editor apps out of `applications/default` (#5).
 
-## 2026-07-12
+## [0.4.1] - 2026-07-12
 
 ### Fixed
 - Log scrolling (two fixes).
 
-## 2026-07-10
+## [0.4.0] - 2026-07-10
 
 ### Added
 - Logging utility with an in-app log view (#3).
 
-## 2026-07-01
+## [0.3.0] - 2026-07-01
 
 ### Added
 - Restart and shut down actions (#2).
 
-## 2026-06-30
+## [0.2.0] - 2026-06-30
 
 ### Added
 - On-screen keyboard and a text editor app, with a later interface update.
 - Third-party dashboard support, including input handling for third-party dashboards and applications (#1).
 - `x/clone.sh` and `x/clone.bat` clone scripts.
 
-## 2026-06-29
+## [0.1.0] - 2026-06-29
 
 ### Added
-- Initial TUIX release: window/app manager with process manager and registry, character set app, two sample dashboards, and settings and touchscreen page stubs.
+- Initial TUIX release (0.1.0): window/app manager with process manager and registry, character set app, two sample dashboards, and settings and touchscreen page stubs.
