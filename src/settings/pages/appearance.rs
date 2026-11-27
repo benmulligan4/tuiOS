@@ -28,9 +28,7 @@ enum Row {
     ClockSeconds,
     Dashboard,
     Border,
-    StatusBar,
     NewWindow,
-    NavBarSettings,
     BootSettings,
 }
 
@@ -49,9 +47,7 @@ fn rows() -> Vec<Row> {
         Row::ClockSeconds,
         Row::Dashboard,
         Row::Border,
-        Row::StatusBar,
         Row::NewWindow,
-        Row::NavBarSettings,
         Row::BootSettings,
     ]
 }
@@ -63,11 +59,6 @@ fn row_at(cursor: usize) -> Option<Row> {
 /// True when the cursor is on the row that opens the boot animation page.
 pub fn is_boot_settings(cursor: usize) -> bool {
     row_at(cursor) == Some(Row::BootSettings)
-}
-
-/// True when the cursor is on the row that opens the navigation bar page.
-pub fn is_navbar_settings(cursor: usize) -> bool {
-    row_at(cursor) == Some(Row::NavBarSettings)
 }
 
 /// Step to the next option in a fixed list and store it.
@@ -148,7 +139,6 @@ fn label_value(row: Row, s: &Value) -> (&'static str, String) {
         ),
         Row::Dashboard => ("Default Dashboard", persistence::get_str(s, "default_dashboard", "Dashboard-1")),
         Row::Border => ("Border Style", persistence::get_str(s, "appearance.border_style", "Rounded")),
-        Row::StatusBar => ("Status Bar", enabled(persistence::get_bool(s, "appearance.status_bar_enabled", false))),
         Row::NewWindow => (
             "New Window Apps",
             if persistence::get_bool(s, "appearance.new_window_keeps_tuios_open", false) {
@@ -157,7 +147,6 @@ fn label_value(row: Row, s: &Value) -> (&'static str, String) {
                 "Close tuiOS while running".into()
             },
         ),
-        Row::NavBarSettings => ("Navigation Bar", "Open ›".into()),
         Row::BootSettings => ("Boot Up Animation", "Open ›".into()),
     }
 }
@@ -265,11 +254,6 @@ pub fn handle_enter(cursor: usize) {
             let current = persistence::get_bool(&settings, "appearance.clock_show_seconds", false);
             persistence::set(&mut settings, "appearance.clock_show_seconds", serde_json::Value::Bool(!current));
             crate::utilities::logging::settings(&format!("Clock seconds {}", if !current { "shown" } else { "hidden" }));
-        }
-        Row::StatusBar => {
-            let current = persistence::get_bool(&settings, "appearance.status_bar_enabled", false);
-            persistence::set(&mut settings, "appearance.status_bar_enabled", serde_json::Value::Bool(!current));
-            crate::utilities::logging::settings(&format!("Status bar {}", if !current { "enabled" } else { "disabled" }));
         }
         Row::NewWindow => {
             let current = persistence::get_bool(&settings, "appearance.new_window_keeps_tuios_open", false);

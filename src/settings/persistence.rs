@@ -37,7 +37,6 @@ pub fn default_settings() -> Value {
             "clock_format_24h": true,
             "clock_show_seconds": false,
             "border_style": "Rounded",
-            "status_bar_enabled": false,
             "new_window_keeps_tuios_open": false,
             "navbar_position": "Top",
             "group_apps_by_category": true,
@@ -78,7 +77,8 @@ pub fn default_settings() -> Value {
         "utilities": {
             "onscreen_keyboard_enabled": false
         },
-        "task_manager": crate::task_manager::config::default_settings()
+        "task_manager": crate::task_manager::config::default_settings(),
+        "task_bar": crate::task_manager::bar_config::default_settings()
     })
 }
 

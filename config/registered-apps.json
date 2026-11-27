@@ -1,71 +1,262 @@
 {
-  "tetris-tui": {
-    "approved": false,
-    "author": "Axyl1410",
-    "bin_name": "tetris-tui",
+  "a-puzzle-a-day": {
+    "label": "a-puzzle-a-day",
+    "description": "Generate and browse all solutions to A-Puzzle-A-Day.",
     "category": "Games",
+    "author": "mrbjarksen",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/mrbjarksen/a-puzzle-a-day",
+    "crate_name": "a-puzzle-a-day",
     "cmd": [
-      "tetris-tui"
+      "a-puzzle-a-day"
     ],
-    "crate_name": "tetris-tui",
+    "pre_installed": false,
+    "install_methods": [
+      "git",
+      "local"
+    ],
     "default_window_mode": "embedded",
-    "description": "Terminal Tetris following the Tetris Guideline.",
+    "supports_embedded": true,
+    "approved": false,
+    "failed_install_methods": [
+      "global"
+    ]
+  },
+  "absorb": {
+    "label": "absorb",
+    "description": "Quickly read a file without moving your eyes.",
+    "category": "Terminal Workflow",
+    "author": "kloki",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/kloki/absorb",
+    "crate_name": "absorb",
+    "cmd": [
+      "absorb"
+    ],
+    "pre_installed": false,
     "install_methods": [
       "global",
       "git",
       "local"
     ],
-    "label": "tetris-tui",
-    "license": "unknown",
-    "pre_installed": false,
-    "repository": "https://github.com/Axyl1410/tetris-tui",
+    "default_window_mode": "embedded",
     "supports_embedded": true,
-    "version": "unknown"
-  },
-  "wordl-rs": {
     "approved": false,
-    "author": "palerdot",
-    "bin_name": "wordl",
-    "category": "Games",
-    "cmd": [
-      "wordl"
-    ],
-    "crate_name": "wordl-rs",
-    "default_window_mode": "embedded",
-    "description": "Terminal-based Wordle game. Web like experience with keyboard hints and guess reveal animations.",
-    "install_methods": [
-      "git",
-      "local"
-    ],
-    "label": "wordl",
-    "license": "unknown",
-    "pre_installed": false,
-    "repository": "https://github.com/palerdot/wordl-rs",
-    "supports_embedded": true,
-    "version": "unknown"
+    "bin_name": "absorb"
   },
-  "sigye": {
-    "approved": true,
-    "author": "am2rican5",
-    "bin_name": "sigye",
-    "category": "Dashboard",
+  "alphai-tui": {
+    "label": "alphai-tui",
+    "description": "A stock dashboard with quotes, candlestick charts, AI-scored news and SEC Form 4 insider activity.",
+    "category": "Productivity and Planning",
+    "author": "makeev",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/makeev/alphai-tui",
+    "crate_name": "alphai-tui",
     "cmd": [
-      "sigye"
+      "alphai-tui"
     ],
-    "crate_name": "sigye",
-    "default_window_mode": "embedded",
-    "description": "A feature-rich terminal clock with ASCII art fonts, animated backgrounds, and productivity timers. 6 display modes including Clock, Pomodoro, Timer, Stopwatch, World Clock, and Countdown. 40+ bundled FIGlet fonts, 18 color themes, 21 animated backgrounds, and desktop notifications.",
+    "pre_installed": false,
     "install_methods": [
       "global",
       "git",
       "local"
     ],
-    "label": "Sigye — Terminal Clock",
-    "license": "MIT",
-    "pre_installed": true,
-    "repository": "https://github.com/am2rican5/sigye",
+    "default_window_mode": "embedded",
     "supports_embedded": true,
-    "version": "0.6.0"
+    "approved": false,
+    "bin_name": "alphai-tui"
+  },
+  "basilk": {
+    "label": "basilk",
+    "description": "A TUI to manage your tasks with minimal kanban logic.",
+    "category": "Productivity and Planning",
+    "author": "GabAlpha",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/GabAlpha/basilk",
+    "crate_name": "basilk",
+    "cmd": [
+      "basilk"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "bin_name": "basilk"
+  },
+  "battleship-rs": {
+    "label": "Battleship.rs",
+    "description": "Terminal-based Battleship game.",
+    "category": "Games",
+    "author": "deepu105",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/deepu105/battleship-rs",
+    "crate_name": "battleship-rs",
+    "cmd": [
+      "battleship-rs"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "failed_install_methods": [
+      "global"
+    ]
+  },
+  "bbcli": {
+    "label": "bbcli",
+    "description": "A terminal-based BBC News reader featuring a compact, numbered list interface with vim-like navigation.",
+    "category": "Reading and Learning",
+    "author": "hako",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/hako/bbcli",
+    "crate_name": "bbcli",
+    "cmd": [
+      "bbcli"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "failed_install_methods": [
+      "global"
+    ]
+  },
+  "bluetui": {
+    "label": "bluetui",
+    "description": "A TUI for managing Bluetooth devices.",
+    "category": "Hardware and Embedded",
+    "author": "pythops",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/pythops/bluetui",
+    "crate_name": "bluetui",
+    "cmd": [
+      "bluetui"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "failed_install_methods": [
+      "global"
+    ]
+  },
+  "bottom": {
+    "label": "bottom",
+    "description": "Cross-platform graphical process/system monitor.",
+    "category": "System Administration",
+    "author": "ClementTsang",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/ClementTsang/bottom",
+    "crate_name": "bottom",
+    "cmd": [
+      "btm"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "bin_name": "btm"
+  },
+  "brew-explorer": {
+    "label": "brew-explorer",
+    "description": "A TUI for exploring and managing your Homebrew packages with ease.",
+    "category": "System Administration",
+    "author": "cosmincatalin",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/cosmincatalin/brew-explorer",
+    "crate_name": "brew-explorer",
+    "cmd": [
+      "brew-explorer"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "failed_install_methods": [
+      "global"
+    ]
+  },
+  "budget-tracker-tui": {
+    "label": "budget-tracker-tui",
+    "description": "A fast, keyboard-driven TUI for tracking expenses, tracking investments, and analyzing your budget with ease.",
+    "category": "Productivity and Planning",
+    "author": "Feromond",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/Feromond/budget-tracker-tui",
+    "crate_name": "budget-tracker-tui",
+    "cmd": [
+      "budget-tracker"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "bin_name": "budget-tracker"
+  },
+  "caligula": {
+    "label": "caligula",
+    "description": "A user-friendly, lightweight TUI for disk imaging.",
+    "category": "System Administration",
+    "author": "ifd3f",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/ifd3f/caligula",
+    "crate_name": "caligula",
+    "cmd": [
+      "caligula"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "failed_install_methods": [
+      "global"
+    ]
   },
   "chess-tui": {
     "approved": true,
@@ -90,6 +281,470 @@
     "supports_embedded": true,
     "version": "2.7.1"
   },
+  "columbus": {
+    "label": "columbus",
+    "description": "A GUI-like TUI file explorer.",
+    "category": "Files, Data, and Documents",
+    "author": "sivaprakashkrp",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/sivaprakashkrp/columbus",
+    "crate_name": "columbus",
+    "cmd": [
+      "columbus"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "failed_install_methods": [
+      "global"
+    ]
+  },
+  "connect-four": {
+    "label": "Connect-four",
+    "description": "Connect-four; interactive game + perfect solver.",
+    "category": "Games",
+    "author": "jesper-olsen",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/jesper-olsen/connect-four",
+    "crate_name": "connect-four",
+    "cmd": [
+      "connect-four"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false
+  },
+  "csvlens": {
+    "label": "csvlens",
+    "description": "Command line csv viewer.",
+    "category": "Files, Data, and Documents",
+    "author": "YS-L",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/YS-L/csvlens",
+    "crate_name": "csvlens",
+    "cmd": [
+      "csvlens"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "bin_name": "csvlens"
+  },
+  "dua-cli": {
+    "label": "dua-cli",
+    "description": "View disk space usage and delete unwanted data, fast.",
+    "category": "System Administration",
+    "author": "Byron",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/Byron/dua-cli",
+    "crate_name": "dua-cli",
+    "cmd": [
+      "dua-cli"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false
+  },
+  "edamame": {
+    "label": "edamame",
+    "description": "A Terminal Markdown editor that stays rendered while you edit.",
+    "category": "Files, Data, and Documents",
+    "author": "mijowi",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/mijowi/edamame",
+    "crate_name": "edamame",
+    "cmd": [
+      "edamame"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false
+  },
+  "exabind": {
+    "label": "exabind",
+    "description": "An animated TUI for viewing KDE shortcuts.",
+    "category": "Terminal Workflow",
+    "author": "junkdog",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/junkdog/exabind",
+    "crate_name": "exabind",
+    "cmd": [
+      "exabind"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "failed_install_methods": [
+      "global"
+    ]
+  },
+  "fileview": {
+    "label": "FileView",
+    "description": "A terminal file browser with image previews, Git status, search, and an MCP server.",
+    "category": "Files, Data, and Documents",
+    "author": "Hiro-Chiba",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/Hiro-Chiba/fileview",
+    "crate_name": "fileview",
+    "cmd": [
+      "fv"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "bin_name": "fv"
+  },
+  "gitui": {
+    "label": "gitui",
+    "description": "Terminal UI for Git.",
+    "category": "Development Tools",
+    "author": "gitui-org",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/gitui-org/gitui",
+    "crate_name": "gitui",
+    "cmd": [
+      "gitui"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "failed_install_methods": [
+      "global"
+    ]
+  },
+  "impala": {
+    "label": "impala",
+    "description": "TUI for managing wifi on Linux.",
+    "category": "Networking and Internet",
+    "author": "pythops",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/pythops/impala",
+    "crate_name": "impala",
+    "cmd": [
+      "impala"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "failed_install_methods": [
+      "global"
+    ]
+  },
+  "inertia": {
+    "label": "Inertia",
+    "description": "A 3D physics simulator in your terminal.",
+    "category": "Games",
+    "author": "aclfe",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/aclfe/inertia",
+    "crate_name": "inertia",
+    "cmd": [
+      "inertia"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "failed_install_methods": [
+      "global"
+    ],
+    "bin_name": "inertia"
+  },
+  "logss": {
+    "label": "logss",
+    "description": "A simple cli for logs splitting.",
+    "category": "System Administration",
+    "author": "todoesverso",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/todoesverso/logss",
+    "crate_name": "logss",
+    "cmd": [
+      "logss"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "bin_name": "logss"
+  },
+  "mirador": {
+    "label": "mirador",
+    "description": "A personal dashboard with world clocks, calendar, weather, tasks, notes, a market watchlist and live CPU and network graphs.",
+    "category": "Productivity and Planning",
+    "author": "jchultarsky",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/jchultarsky/mirador",
+    "crate_name": "mirador",
+    "cmd": [
+      "mirador"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "bin_name": "mirador"
+  },
+  "myx": {
+    "label": "myx",
+    "description": "Modern Spotify player for the terminal. With reactive themes.",
+    "category": "Music and Media",
+    "author": "HaseebKhalid1507",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/HaseebKhalid1507/Myx",
+    "crate_name": "myx",
+    "cmd": [
+      "myx"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "bin_name": "myx"
+  },
+  "netscanner": {
+    "label": "netscanner",
+    "description": "Network scanning tool.",
+    "category": "Networking and Internet",
+    "author": "Chleba",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/Chleba/netscanner",
+    "crate_name": "netscanner",
+    "cmd": [
+      "netscanner"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "bin_name": "netscanner"
+  },
+  "orbit-tui": {
+    "label": "orbit-tui",
+    "description": "Keyboard-driven terminal system dashboard (~3MB, 0.5% CPU) with CPU, memory, disk, network, GPU, processes, and audio visualizer.",
+    "category": "System Administration",
+    "author": "ziuus",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/ziuus/orbit-tui",
+    "crate_name": "orbit-tui",
+    "cmd": [
+      "orbit"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "bin_name": "orbit"
+  },
+  "planner123": {
+    "label": "Planner123",
+    "description": "A local-first TUI calendar with an AI planning inbox that schedules your to-dos into reviewable proposals, plus Google Calendar sync and .ics import.",
+    "category": "Productivity and Planning",
+    "author": "blackopsrepl",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/blackopsrepl/Planner123",
+    "crate_name": "planner123",
+    "cmd": [
+      "planner123"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "failed_install_methods": [
+      "global"
+    ]
+  },
+  "quick-note": {
+    "label": "quick-note",
+    "description": "A simple note-taking tool.",
+    "category": "Productivity and Planning",
+    "author": "daniel-valencia-ts",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/daniel-valencia-ts/quick-note",
+    "crate_name": "quick-note",
+    "cmd": [
+      "quick-note"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "bin_name": "quick-note"
+  },
+  "sigye": {
+    "approved": true,
+    "author": "am2rican5",
+    "bin_name": "sigye",
+    "category": "Dashboard",
+    "cmd": [
+      "sigye"
+    ],
+    "crate_name": "sigye",
+    "default_window_mode": "embedded",
+    "description": "A feature-rich terminal clock with ASCII art fonts, animated backgrounds, and productivity timers. 6 display modes including Clock, Pomodoro, Timer, Stopwatch, World Clock, and Countdown. 40+ bundled FIGlet fonts, 18 color themes, 21 animated backgrounds, and desktop notifications.",
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "label": "Sigye — Terminal Clock",
+    "license": "MIT",
+    "pre_installed": true,
+    "repository": "https://github.com/am2rican5/sigye",
+    "supports_embedded": true,
+    "version": "0.6.0"
+  },
+  "splashboard": {
+    "label": "splashboard",
+    "description": "A customizable terminal splash rendered on shell startup or directory updates.",
+    "category": "Terminal Workflow",
+    "author": "unhappychoice",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/unhappychoice/splashboard",
+    "crate_name": "splashboard",
+    "cmd": [
+      "splashboard"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "bin_name": "splashboard"
+  },
+  "spotatui": {
+    "label": "spotatui",
+    "description": "Spotify client with native streaming, synced lyrics, and audio visualization. A direct fork of spotify-tui with continued development and new features.",
+    "category": "Music and Media",
+    "author": "LargeModGames",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/LargeModGames/spotatui",
+    "crate_name": "spotatui",
+    "cmd": [
+      "spotatui"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "bin_name": "spotatui"
+  },
   "sxtetris": {
     "approved": false,
     "author": "shixinhuang99",
@@ -110,7 +765,167 @@
     "license": "unknown",
     "pre_installed": false,
     "repository": "https://github.com/shixinhuang99/sxtetris",
+    "supports_embedded": false,
+    "version": "unknown"
+  },
+  "tetris-tui": {
+    "approved": false,
+    "author": "Axyl1410",
+    "bin_name": "tetris-tui",
+    "category": "Games",
+    "cmd": [
+      "tetris-tui"
+    ],
+    "crate_name": "tetris-tui",
+    "default_window_mode": "embedded",
+    "description": "Terminal Tetris following the Tetris Guideline.",
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "label": "tetris-tui",
+    "license": "unknown",
+    "pre_installed": false,
+    "repository": "https://github.com/Axyl1410/tetris-tui",
     "supports_embedded": true,
     "version": "unknown"
+  },
+  "tickrs": {
+    "label": "tickrs",
+    "description": "Stock market ticker in the terminal.",
+    "category": "Productivity and Planning",
+    "author": "tarkah",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/tarkah/tickrs",
+    "crate_name": "tickrs",
+    "cmd": [
+      "tickrs"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "bin_name": "tickrs"
+  },
+  "tui-journal": {
+    "label": "tui-journal",
+    "description": "Journaling/Notes-taking terminal-based app.",
+    "category": "Productivity and Planning",
+    "author": "AmmarAbouZor",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/AmmarAbouZor/tui-journal",
+    "crate_name": "tui-journal",
+    "cmd": [
+      "tjournal"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "bin_name": "tjournal"
+  },
+  "tuitar": {
+    "label": "Tuitar",
+    "description": "A portable guitar training tool.",
+    "category": "Music and Media",
+    "author": "orhun",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/orhun/tuitar",
+    "crate_name": "tuitar",
+    "cmd": [
+      "tuitar"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "bin_name": "tuitar"
+  },
+  "tuxedo": {
+    "label": "tuxedo",
+    "description": "A fast, keyboard-driven terminal UI for todo.txt.",
+    "category": "Productivity and Planning",
+    "author": "webstonehq",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/webstonehq/tuxedo",
+    "crate_name": "tuxedo",
+    "cmd": [
+      "tuxedo"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false,
+    "failed_install_methods": [
+      "global"
+    ]
+  },
+  "wordl-rs": {
+    "approved": false,
+    "author": "palerdot",
+    "bin_name": "wordl",
+    "category": "Games",
+    "cmd": [
+      "wordl"
+    ],
+    "crate_name": "wordl-rs",
+    "default_window_mode": "embedded",
+    "description": "Terminal-based Wordle game. Web like experience with keyboard hints and guess reveal animations.",
+    "install_methods": [
+      "git",
+      "local"
+    ],
+    "label": "wordl",
+    "license": "unknown",
+    "pre_installed": false,
+    "repository": "https://github.com/palerdot/wordl-rs",
+    "supports_embedded": true,
+    "version": "unknown"
+  },
+  "work-tuimer": {
+    "label": "work-tuimer",
+    "description": "A TUI for easier time tracking each day, task-per-task with summaries.",
+    "category": "Productivity and Planning",
+    "author": "Kamyil",
+    "version": "unknown",
+    "license": "unknown",
+    "repository": "https://github.com/Kamyil/work-tuimer",
+    "crate_name": "work-tuimer",
+    "cmd": [
+      "work-tuimer"
+    ],
+    "pre_installed": false,
+    "install_methods": [
+      "global",
+      "git",
+      "local"
+    ],
+    "default_window_mode": "embedded",
+    "supports_embedded": true,
+    "approved": false
   }
 }

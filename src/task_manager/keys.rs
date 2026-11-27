@@ -179,7 +179,7 @@ fn confirm_key(action: Action, state: &mut TuiosState, sessions: &mut Sessions) 
     Vec::new()
 }
 
-fn run_action(action: TmAction, id: SessionId, state: &mut TuiosState, sessions: &mut Sessions) -> Vec<SessionEvent> {
+pub(crate) fn run_action(action: TmAction, id: SessionId, state: &mut TuiosState, sessions: &mut Sessions) -> Vec<SessionEvent> {
     let Some(s) = sessions.get(id) else { return Vec::new() };
     let label = s.label.clone();
     let external = s.is_external();
