@@ -533,12 +533,11 @@ fn junction(existing: &str, from_above: bool, double: bool) -> Option<&'static s
     })
 }
 
-fn join(frame: &mut Frame, x: u16, y: u16, from_above: bool, double: bool) {
+fn join(frame: &mut Frame, x: u16, y: u16, colour: Color, from_above: bool, double: bool) {
     if let Some(cell) = frame.buffer_mut().cell_mut((x, y)) {
-        // Titles and other content on the border line are left alone; the joint keeps
-        // the container's colour since one cell cannot hold two
+        // Titles and other content on the border line are left alone
         if let Some(symbol) = junction(cell.symbol(), from_above, double) {
-            cell.set_symbol(symbol);
+            cell.set_symbol(symbol).set_fg(colour);
         }
     }
 }
@@ -640,8 +639,8 @@ pub fn render_bar(
         };
         frame.render_widget(Paragraph::new(body).alignment(Alignment::Center), inner);
         if let Some(y) = joint_row {
-            join(frame, rect.x, y, header_top, double);
-            join(frame, rect.right() - 1, y, header_top, double);
+            join(frame, rect.x, y, colour, header_top, double);
+            join(frame, rect.right() - 1, y, colour, header_top, double);
         }
         if i == sel {
             selected_rect = Some(rect);
